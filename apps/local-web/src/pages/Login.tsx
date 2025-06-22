@@ -16,20 +16,30 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-      login(
-        {
-          id: '1',
-          name: 'Admin User',
-          email: formData.email,
-          role: 'admin',
-          divisions: ['sugar', 'power', 'ethanol', 'feed'],
-        },
-        'dummy-token'
-      )
-      navigate('/')
-    }, 1000)
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      console.log('Using API URL:', apiUrl)
+      console.log('Login data:', formData)
+      
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        login(data.user, data.token)
+        navigate('/')
+      } else {
+        alert('Invalid credentials')
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      alert(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

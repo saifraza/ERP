@@ -1,4 +1,5 @@
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
   Home, Factory, Zap, Droplets, Package2, Users, Scale, 
@@ -26,7 +27,7 @@ const navigation = [
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, logout } = useAuthStore()
+  const logout = useAuthStore((state) => state.logout)
 
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">

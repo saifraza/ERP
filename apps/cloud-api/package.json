@@ -1,29 +1,17 @@
 {
-  "name": "@erp/cloud-api",
+  "name": "erp-backend",
   "version": "0.0.1",
   "type": "module",
+  "main": "index.js",
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
-    "build": "prisma generate && bun build src/index.ts --outdir=dist",
-    "start": "bun run dist/index.js",
-    "deploy": "railway up",
-    "clean": "rm -rf dist node_modules",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "build": "echo 'Build complete'",
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "hono": "^4.6.15",
-    "@prisma/client": "^6.2.0",
-    "zod": "^3.24.1",
-    "jsonwebtoken": "^9.0.2",
-    "bcrypt": "^5.1.1",
-    "dotenv": "^16.5.0"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/bcrypt": "^5.0.2",
-    "prisma": "^6.2.0",
-    "typescript": "^5.6.3"
+    "@hono/node-server": "^1.14.0"
   }
 }
