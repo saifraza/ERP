@@ -121,12 +121,14 @@ ERP/
 - [x] Division-specific modules (Common, Sugar, Power, Ethanol, Feed)
 - [x] Docker setup for cross-platform deployment
 - [x] GitHub repository setup
-- [x] Railway cloud deployment setup
+- [x] Railway cloud deployment (Complete!)
 - [x] PostgreSQL database on Railway
 - [x] Backend API deployed to Railway
-- [ ] Frontend deployment optimization
+- [x] Frontend deployed to Railway
+- [x] Authentication system working
 - [ ] Hardware integration implementation
 - [ ] MCP server implementation
+- [ ] Business logic implementation
 
 ## Phase 1: Foundation (Weeks 1-2) ✅ COMPLETED
 ### Completed Tasks
@@ -299,13 +301,19 @@ pnpm db:studio       # Open Prisma Studio
 
 ## Deployment URLs
 
-### Production Services
-- **Cloud API**: https://backend-api-production-5e68.up.railway.app
+### Production Services (Railway)
+- **Frontend**: https://frontend-production-adfe.up.railway.app
+- **Backend API**: https://backend-api-production-5e68.up.railway.app
 - **GitHub Repository**: https://github.com/SaifRaza/ERP
 
 ### Local Development
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:3001
+
+### Login Credentials
+- **Admin**: admin@erp.com / admin123
+- **Manager**: manager@erp.com / manager123  
+- **Operator**: operator@erp.com / operator123
 
 ## Environment Variables
 ```env
