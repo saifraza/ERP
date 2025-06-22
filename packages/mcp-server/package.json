@@ -1,23 +1,29 @@
 {
-  "name": "@erp/mcp-server",
-  "version": "0.0.1",
+  "name": "google-workspace-server",
+  "version": "0.1.0",
+  "description": "A Model Context Protocol server",
+  "private": true,
   "type": "module",
-  "description": "MCP Server for ERP Factory Operations",
-  "main": "index.js",
+  "bin": {
+    "google-workspace-server": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
   "scripts": {
-    "dev": "node --watch index.js",
-    "build": "echo 'No build needed'",
-    "start": "node index.js",
-    "deploy": "railway up",
-    "clean": "rm -rf node_modules"
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0",
+    "@google-cloud/local-auth": "^3.0.1",
+    "@modelcontextprotocol/sdk": "0.6.0",
+    "googleapis": "^144.0.0",
     "axios": "^1.7.9"
   },
   "devDependencies": {
-  },
-  "engines": {
-    "node": ">=20.0.0"
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
   }
 }

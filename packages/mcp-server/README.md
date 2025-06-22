@@ -1,127 +1,194 @@
-# ERP Factory MCP Server
+# Google Workspace MCP Server
 
-A Model Context Protocol (MCP) server that provides AI-powered tools for factory operations, enabling natural language queries and intelligent automation for the ERP system.
+A Model Context Protocol (MCP) server that provides tools for interacting with Gmail and Calendar APIs. This server enables you to manage your emails and calendar events programmatically through the MCP interface.
 
 ## Features
 
-### 🤖 AI Tools Available
+### Gmail Tools
+- `list_emails`: List recent emails from your inbox with optional filtering
+- `search_emails`: Advanced email search with Gmail query syntax
+- `send_email`: Send new emails with support for CC and BCC
+- `modify_email`: Modify email labels (archive, trash, mark read/unread)
 
-1. **get_production_status** - Get real-time production metrics for all divisions
-2. **get_farmer_info** - Query farmer information and payment status
-3. **analyze_efficiency** - AI-powered efficiency analysis with recommendations
-4. **generate_report** - Create custom reports (production, financial, efficiency, maintenance)
-5. **predict_maintenance** - Predictive maintenance alerts using AI
+### Calendar Tools
+- `list_events`: List upcoming calendar events with date range filtering
+- `create_event`: Create new calendar events with attendees
+- `update_event`: Update existing calendar events
+- `delete_event`: Delete calendar events
 
-### 💬 Natural Language Queries
+## Prerequisites
 
-- "What's today's sugar production?"
-- "Show me farmers with pending payments"
-- "Which equipment needs maintenance?"
-- "Generate efficiency report for ethanol division"
-- "Any maintenance alerts this week?"
+1. **Node.js**: Install Node.js version 14 or higher
+2. **Google Cloud Console Setup**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the Gmail API and Google Calendar API:
+     1. Go to "APIs & Services" > "Library"
+     2. Search for and enable "Gmail API"
+     3. Search for and enable "Google Calendar API"
+   - Set up OAuth 2.0 credentials:
+     1. Go to "APIs & Services" > "Credentials"
+     2. Click "Create Credentials" > "OAuth client ID"
+     3. Choose "Web application"
+     4. Set "Authorized redirect URIs" to include: `http://localhost:4100/code`
+     5. Note down the Client ID and Client Secret
 
-### 📊 Smart Analytics
+## Setup Instructions
 
-- Production optimization suggestions
-- Quality trend analysis
-- Resource allocation recommendations
-- Predictive maintenance alerts
-- Cost optimization insights
+1. **Clone and Install**:
+   ```bash
+   git clone https://github.com/epaproditus/google-workspace-mcp-server.git
+   cd google-workspace-mcp-server
+   npm install
+   ```
 
-## Installation
+2. **Create OAuth Credentials**:
+   Create a `credentials.json` file in the root directory:
+   ```json
+   {
+       "web": {
+           "client_id": "YOUR_CLIENT_ID",
+           "client_secret": "YOUR_CLIENT_SECRET",
+           "redirect_uris": ["http://localhost:4100/code"],
+           "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+           "token_uri": "https://oauth2.googleapis.com/token"
+       }
+   }
+   ```
 
-```bash
-# Install dependencies
-pnpm install
+3. **Get Refresh Token**:
+   ```bash
+   node get-refresh-token.js
+   ```
+   This will:
+   - Open your browser for Google OAuth authentication
+   - Request the following permissions:
+     - `https://www.googleapis.com/auth/gmail.modify`
+     - `https://www.googleapis.com/auth/calendar`
+     - `https://www.googleapis.com/auth/gmail.send`
+   - Save the credentials to `token.json`
+   - Display the refresh token in the console
 
-# Development mode
-pnpm dev
+4. **Configure MCP Settings**:
+   Add the server configuration to your MCP settings file:
+   - For VSCode Claude extension: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+   - For Claude desktop app: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-# Build for production
-pnpm build
+   Add this to the `mcpServers` object:
+   ```json
+   {
+     "mcpServers": {
+       "google-workspace": {
+         "command": "node",
+         "args": ["/path/to/google-workspace-server/build/index.js"],
+         "env": {
+           "GOOGLE_CLIENT_ID": "your_client_id",
+           "GOOGLE_CLIENT_SECRET": "your_client_secret",
+           "GOOGLE_REFRESH_TOKEN": "your_refresh_token"
+         }
+       }
+     }
+   }
+   ```
 
-# Start production server
-pnpm start
-```
+5. **Build and Run**:
+   ```bash
+   npm run build
+   ```
 
-## Usage with Claude Desktop
+## Usage Examples
 
-Add to your `claude_desktop_config.json`:
+### Gmail Operations
 
-```json
-{
-  "mcpServers": {
-    "erp-factory": {
-      "command": "node",
-      "args": ["/path/to/erp/packages/mcp-server/dist/index.js"]
-    }
-  }
-}
-```
+1. **List Recent Emails**:
+   ```json
+   {
+     "maxResults": 5,
+     "query": "is:unread"
+   }
+   ```
 
-## API Integration
+2. **Search Emails**:
+   ```json
+   {
+     "query": "from:example@gmail.com has:attachment",
+     "maxResults": 10
+   }
+   ```
 
-The MCP server connects to your ERP backend API at:
-- **Default**: `https://backend-api-production-5e68.up.railway.app`
-- **Override**: Set `ERP_API_URL` environment variable
+3. **Send Email**:
+   ```json
+   {
+     "to": "recipient@example.com",
+     "subject": "Hello",
+     "body": "Message content",
+     "cc": "cc@example.com",
+     "bcc": "bcc@example.com"
+   }
+   ```
 
-## Example Interactions
+4. **Modify Email**:
+   ```json
+   {
+     "id": "message_id",
+     "addLabels": ["UNREAD"],
+     "removeLabels": ["INBOX"]
+   }
+   ```
 
-### Production Status Query
-```
-User: "How is production doing today?"
-AI: "📊 Current Production Status
-Sugar Division: 2,450 MT (98% of target)
-Power Division: 12.5 MW generated, 8.5 MW exported
-Ethanol Division: 45,000 L (102% of target) ✅
-..."
-```
+### Calendar Operations
 
-### Efficiency Analysis
-```
-User: "Analyze sugar division efficiency"
-AI: "⚡ Sugar division is at 92.5% efficiency (target: 95%)
-Recommendations:
-- Optimize crushing mill settings (+1.5% potential)
-- Check juice extraction efficiency
-- Review crystallization parameters"
-```
+1. **List Events**:
+   ```json
+   {
+     "maxResults": 10,
+     "timeMin": "2024-01-01T00:00:00Z",
+     "timeMax": "2024-12-31T23:59:59Z"
+   }
+   ```
 
-### Maintenance Predictions
-```
-User: "Any equipment maintenance needed?"
-AI: "🔧 URGENT: Boiler #1 has 75% failure probability
-Recommended: Immediate inspection
-Cost to fix now: ₹50,000 vs ₹2,50,000 if it breaks"
-```
+2. **Create Event**:
+   ```json
+   {
+     "summary": "Team Meeting",
+     "location": "Conference Room",
+     "description": "Weekly sync-up",
+     "start": "2024-01-24T10:00:00Z",
+     "end": "2024-01-24T11:00:00Z",
+     "attendees": ["colleague@example.com"]
+   }
+   ```
 
-## Architecture
+3. **Update Event**:
+   ```json
+   {
+     "eventId": "event_id",
+     "summary": "Updated Meeting Title",
+     "location": "Virtual",
+     "start": "2024-01-24T11:00:00Z",
+     "end": "2024-01-24T12:00:00Z"
+   }
+   ```
 
-```
-Claude Desktop ↔ MCP Server ↔ ERP Backend API ↔ Database
-```
+4. **Delete Event**:
+   ```json
+   {
+     "eventId": "event_id"
+   }
+   ```
 
-- **MCP Server**: Translates natural language to API calls
-- **ERP Backend**: Provides data and business logic
-- **Database**: PostgreSQL with all factory data
+## Troubleshooting
 
-## Development
+1. **Authentication Issues**:
+   - Ensure all required OAuth scopes are granted
+   - Verify client ID and secret are correct
+   - Check if refresh token is valid
 
-The server is built with:
-- **TypeScript** for type safety
-- **@modelcontextprotocol/sdk** for MCP implementation
-- **Zod** for data validation
-- **Axios** for API communication
-
-## Deployment
-
-Deploy to Railway or any Node.js hosting platform:
-
-```bash
-# Deploy to Railway
-pnpm deploy
-```
+2. **API Errors**:
+   - Check Google Cloud Console for API quotas and limits
+   - Ensure APIs are enabled for your project
+   - Verify request parameters match the required format
 
 ## License
 
-Part of the ERP Factory system.
+This project is licensed under the MIT License.
