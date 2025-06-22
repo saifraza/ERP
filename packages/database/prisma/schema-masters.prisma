@@ -1,0 +1,466 @@
+// Master Data Schema for Multi-Factory ERP System
+// This schema handles company, factory, and all master data tables
+
+// Company Master - Top level entity for multi-company support
+model Company {
+  id                String   @id @default(uuid())
+  code              String   @unique // e.g., "COMP001"
+  name              String
+  legalName         String
+  
+  // Registration Details
+  gstNumber         String   @unique
+  panNumber         String   @unique
+  tanNumber         String?  // For TDS
+  cinNumber         String?  // Company Identification Number
+  
+  // Address
+  addressLine1      String
+  addressLine2      String?
+  city              String
+  state             String
+  pincode           String
+  country           String   @default("India")
+  
+  // Contact
+  email             String
+  phone             String
+  website           String?
+  
+  // Financial Year Settings
+  fyStartMonth      Int      @default(4) // April
+  currentFY         String   // e.g., "2024-25"
+  
+  // Settings
+  settings          String?  // JSON for company-specific settings
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  factories         Factory[]
+  users             CompanyUser[]
+  fiscalYears       FiscalYear[]
+  
+  @@index([code])
+  @@index([gstNumber])
+}
+
+// Factory/Plant Master
+model Factory {
+  id                String   @id @default(uuid())
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  
+  code              String   // e.g., "PLANT001"
+  name              String
+  type              String   // sugar, ethanol, integrated, feed
+  
+  // Location
+  addressLine1      String
+  addressLine2      String?
+  city              String
+  state             String
+  pincode           String
+  
+  // Registration
+  gstNumber         String?  // If different from company
+  factoryLicense    String?
+  pollutionLicense  String?
+  
+  // Capacity
+  crushingCapacity  Float?   // TCD for sugar mills
+  powerCapacity     Float?   // MW
+  ethanolCapacity   Float?   // KL/day
+  
+  // Settings
+  settings          String?  // JSON for factory-specific settings
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  costCenters       CostCenter[]
+  warehouses        Warehouse[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+// User-Company Mapping for Multi-tenancy
+model CompanyUser {
+  id                String   @id @default(uuid())
+  userId            String
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  
+  factories         String[] // Array of factory IDs user has access to
+  role              String   // ADMIN, MANAGER, OPERATOR, VIEWER
+  permissions       String?  // JSON array of specific permissions
+  
+  isDefault         Boolean  @default(false) // Default company for user
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+}
+
+// Fiscal Year Master
+model FiscalYear {
+  id                String   @id @default(uuid())
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  
+  year              String   // e.g., "2024-25"
+  startDate         DateTime
+  endDate           DateTime
+  
+  isClosed          Boolean  @default(false)
+  closedAt          DateTime?
+  closedBy          String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([companyId, year])
+  @@index([companyId])
+}
+
+// Material/Item Master
+model MaterialMaster {
+  id                String   @id @default(uuid())
+  code              String   @unique // Global item code
+  name              String
+  description       String?
+  
+  // Classification
+  category          String   // raw_material, spare_parts, consumables, finished_goods
+  subCategory       String?
+  materialType      String   // inventory, non-inventory, service
+  
+  // Units
+  baseUOM           String   // Base unit of measure
+  purchaseUOM       String?
+  salesUOM          String?
+  conversionFactor  Float    @default(1)
+  
+  // Inventory Settings
+  maintainStock     Boolean  @default(true)
+  reorderLevel      Float?
+  reorderQty        Float?
+  minQty            Float?
+  maxQty            Float?
+  
+  // Financial
+  valuationMethod   String   @default("FIFO") // FIFO, LIFO, Weighted Average
+  hsnCode           String?  // HSN/SAC code for GST
+  gstRate           Float?   // GST percentage
+  
+  // Specs
+  specifications    String?  // JSON
+  technicalDetails  String?  // JSON
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([code])
+  @@index([category])
+  @@index([hsnCode])
+}
+
+// Unit of Measure Master
+model UOMMaster {
+  id                String   @id @default(uuid())
+  code              String   @unique // e.g., "KG", "MT", "L"
+  name              String   // e.g., "Kilogram", "Metric Ton", "Liter"
+  category          String   // weight, volume, quantity, length
+  
+  // Conversion to base unit
+  baseUnit          String?  // Reference to base unit code
+  conversionFactor  Float    @default(1)
+  
+  decimalPlaces     Int      @default(2)
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([category])
+}
+
+// Cost Center Master
+model CostCenter {
+  id                String   @id @default(uuid())
+  factoryId         String
+  factory           Factory  @relation(fields: [factoryId], references: [id])
+  
+  code              String   // e.g., "CC001"
+  name              String
+  type              String   // production, service, profit_center
+  
+  parentId          String?  // For hierarchical cost centers
+  level             Int      @default(1)
+  
+  budgetAllocated   Float    @default(0)
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([factoryId, code])
+  @@index([factoryId])
+  @@index([parentId])
+}
+
+// Chart of Accounts Master
+model AccountMaster {
+  id                String   @id @default(uuid())
+  code              String   @unique // e.g., "1001"
+  name              String
+  
+  // Account Classification
+  accountType       String   // asset, liability, equity, revenue, expense
+  accountGroup      String   // current_assets, fixed_assets, etc.
+  natureOfAccount   String   // debit, credit
+  
+  // Hierarchy
+  parentId          String?
+  level             Int      @default(1)
+  isGroup           Boolean  @default(false) // Group account or ledger
+  
+  // Settings
+  affectGrossProfit Boolean  @default(false)
+  isTDSApplicable   Boolean  @default(false)
+  tdsSection        String?  // e.g., "194C", "194J"
+  tdsRate           Float?
+  
+  // GST Settings
+  gstApplicable     Boolean  @default(false)
+  gstType           String?  // goods, services
+  
+  isSystemAccount   Boolean  @default(false) // Cannot be deleted
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([accountType])
+  @@index([accountGroup])
+  @@index([parentId])
+}
+
+// Tax Master for GST
+model TaxMaster {
+  id                String   @id @default(uuid())
+  name              String   // e.g., "GST 18%", "GST 5%"
+  taxType           String   // GST, TDS, TCS
+  
+  // GST Details
+  cgstRate          Float?   // Central GST
+  sgstRate          Float?   // State GST
+  igstRate          Float?   // Integrated GST
+  cessRate          Float?   // Cess if applicable
+  
+  // TDS/TCS Details
+  section           String?  // e.g., "194C", "206C"
+  rate              Float?
+  threshold         Float?   // Threshold limit
+  
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([taxType])
+  @@index([section])
+}
+
+// HSN/SAC Master
+model HSNMaster {
+  id                String   @id @default(uuid())
+  code              String   @unique // HSN/SAC code
+  description       String
+  
+  type              String   // goods, services
+  gstRate           Float    // Default GST rate
+  
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([code])
+}
+
+// Warehouse/Location Master
+model Warehouse {
+  id                String   @id @default(uuid())
+  factoryId         String
+  factory           Factory  @relation(fields: [factoryId], references: [id])
+  
+  code              String   // e.g., "WH001"
+  name              String
+  type              String   // main, temporary, transit, quarantine
+  
+  // Location
+  building          String?
+  floor             String?
+  section           String?
+  
+  // Capacity
+  totalArea         Float?   // sq ft
+  storageCapacity   Float?   // MT or units
+  
+  // Settings
+  allowNegativeStock Boolean @default(false)
+  isDefault         Boolean  @default(false)
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  bins              BinLocation[]
+  
+  @@unique([factoryId, code])
+  @@index([factoryId])
+}
+
+// Bin Location Master
+model BinLocation {
+  id                String   @id @default(uuid())
+  warehouseId       String
+  warehouse         Warehouse @relation(fields: [warehouseId], references: [id])
+  
+  code              String   // e.g., "A-01-01"
+  name              String?
+  
+  // Location Details
+  zone              String?  // A, B, C
+  rack              String?  // 01, 02
+  shelf             String?  // 01, 02
+  
+  capacity          Float?
+  currentOccupancy  Float    @default(0)
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([warehouseId, code])
+  @@index([warehouseId])
+}
+
+// Approval Matrix Master
+model ApprovalMatrix {
+  id                String   @id @default(uuid())
+  companyId         String
+  
+  documentType      String   // PO, Invoice, Payment, JV
+  transactionType   String?  // Regular, Urgent, Capital
+  
+  // Approval Levels (JSON structure for flexibility)
+  // Example: [
+  //   { level: 1, role: "MANAGER", limit: 100000 },
+  //   { level: 2, role: "GM", limit: 500000 },
+  //   { level: 3, role: "DIRECTOR", limit: null }
+  // ]
+  approvalLevels    String   // JSON array
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([companyId])
+  @@index([documentType])
+}
+
+// Number Series Master
+model NumberSeries {
+  id                String   @id @default(uuid())
+  companyId         String
+  factoryId         String?  // Optional, for factory-specific series
+  
+  documentType      String   // PO, Invoice, Receipt, Payment
+  prefix            String   // e.g., "PO/2024-25/"
+  suffix            String?
+  
+  currentNumber     Int      @default(0)
+  startNumber       Int      @default(1)
+  numberLength      Int      @default(6) // Padding zeros
+  
+  resetFrequency    String   @default("NEVER") // NEVER, YEARLY, MONTHLY
+  lastReset         DateTime?
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([companyId, documentType, factoryId])
+  @@index([companyId])
+}
+
+// Currency Master
+model CurrencyMaster {
+  id                String   @id @default(uuid())
+  code              String   @unique // e.g., "INR", "USD"
+  name              String   // e.g., "Indian Rupee"
+  symbol            String   // e.g., "₹", "$"
+  
+  decimalPlaces     Int      @default(2)
+  isBaseCurrency    Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Exchange Rate Master
+model ExchangeRate {
+  id                String   @id @default(uuid())
+  fromCurrency      String   // Currency code
+  toCurrency        String   // Currency code
+  
+  exchangeRate      Float
+  effectiveDate     DateTime
+  
+  source            String?  // RBI, Manual
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([fromCurrency, toCurrency])
+  @@index([effectiveDate])
+}
+
+// Terms and Conditions Master
+model TermsMaster {
+  id                String   @id @default(uuid())
+  companyId         String
+  
+  code              String   // e.g., "PAYMENT-30"
+  name              String
+  type              String   // payment, delivery, warranty, general
+  
+  termsText         String   // Full terms text
+  isDefault         Boolean  @default(false)
+  
+  applicableTo      String[] // PO, SO, Invoice
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([type])
+}

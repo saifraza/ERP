@@ -7,28 +7,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User and Authentication
+// User and Authentication (Updated for Multi-tenancy)
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
   name      String
-  role      String   @default("USER") // ADMIN, MANAGER, OPERATOR, USER
-  divisions String  // JSON string of division IDs
+  role      String   @default("USER") // SUPER_ADMIN, ADMIN, MANAGER, OPERATOR, USER
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Multi-tenancy
+  defaultCompanyId String?
+  companyAccess    CompanyUser[]
+  
   // Relations
   farmerPayments PaymentTransaction[]
   weighbridgeEntries WeighbridgeTransaction[]
   documents Document[]
 }
 
-// Farmer Management
+// Company and Factory Models (Referenced from schema-masters.prisma)
+// These will be imported during build
+
+// Farmer Management (Multi-tenant)
 model Farmer {
   id             String   @id @default(uuid())
-  code           String   @unique
+  companyId      String   // Multi-tenant field
+  factoryId      String   // Factory association
+  code           String   
   name           String
   village        String
   phoneNumber    String
@@ -43,6 +51,9 @@ model Farmer {
   deliveries     CaneDelivery[]
   payments       PaymentTransaction[]
   contracts      Contract[]
+  
+  @@unique([companyId, code])
+  @@index([companyId, factoryId])
 }
 
 // Cane Management

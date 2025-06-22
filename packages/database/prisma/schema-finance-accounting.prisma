@@ -1,0 +1,830 @@
+// Finance & Accounting Module Schema
+// Handles accounting, invoices, payments, and financial transactions
+
+// Vendor Invoice (Accounts Payable)
+model VendorInvoice {
+  id                String   @id @default(uuid())
+  invoiceNo         String   @unique // Internal number
+  companyId         String
+  factoryId         String
+  
+  // Vendor Details
+  vendorId          String
+  vendorCode        String
+  vendorName        String
+  vendorGST         String?
+  
+  // Vendor's Invoice Details
+  vendorInvoiceNo   String
+  vendorInvoiceDate DateTime
+  
+  // Reference
+  poId              String?  // Purchase Order reference
+  grnId             String?  // Goods Receipt reference
+  
+  // Invoice Type
+  invoiceType       String   @default("PURCHASE") // PURCHASE, SERVICE, EXPENSE
+  
+  // Dates
+  receivedDate      DateTime @default(now())
+  dueDate           DateTime
+  
+  // Amounts
+  grossAmount       Float
+  discountAmount    Float    @default(0)
+  taxableAmount     Float
+  
+  // GST
+  cgstAmount        Float    @default(0)
+  sgstAmount        Float    @default(0)
+  igstAmount        Float    @default(0)
+  cessAmount        Float    @default(0)
+  
+  // TDS
+  tdsApplicable     Boolean  @default(false)
+  tdsSection        String?
+  tdsRate           Float?
+  tdsAmount         Float    @default(0)
+  
+  // Other
+  otherCharges      Float    @default(0)
+  roundOff          Float    @default(0)
+  totalAmount       Float
+  netPayable        Float    // After TDS
+  
+  // Status
+  status            String   @default("PENDING") // PENDING, VERIFIED, APPROVED, PAID, CANCELLED
+  
+  // Three-way Match
+  poMatched         Boolean  @default(false)
+  grnMatched        Boolean  @default(false)
+  matchingStatus    String?  // MATCHED, MISMATCHED, PARTIAL
+  
+  // Workflow
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  approvedBy        String?
+  approvedAt        DateTime?
+  
+  // Payment Status
+  paymentStatus     String   @default("UNPAID") // UNPAID, PARTIAL, PAID
+  paidAmount        Float    @default(0)
+  
+  // GL Posting
+  glPosted          Boolean  @default(false)
+  glPostDate        DateTime?
+  voucherNo         String?
+  
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  items             VendorInvoiceItem[]
+  payments          PaymentVoucher[]
+  glEntries         GeneralLedger[]
+  
+  @@index([companyId, factoryId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([invoiceNo])
+}
+
+model VendorInvoiceItem {
+  id                String   @id @default(uuid())
+  invoiceId         String
+  invoice           VendorInvoice @relation(fields: [invoiceId], references: [id])
+  
+  lineNo            Int
+  
+  // Item Details
+  description       String
+  hsnCode           String?
+  
+  // GL Account
+  glAccountCode     String
+  costCenterId      String?
+  
+  // Quantity & Rate
+  quantity          Float    @default(1)
+  uom               String   @default("NOS")
+  rate              Float
+  amount            Float
+  
+  // Tax
+  gstRate           Float    @default(0)
+  cgstAmount        Float    @default(0)
+  sgstAmount        Float    @default(0)
+  igstAmount        Float    @default(0)
+  
+  totalAmount       Float
+  
+  // Reference
+  poLineRef         String?  // PO line reference
+  grnLineRef        String?  // GRN line reference
+  
+  @@index([invoiceId])
+  @@index([glAccountCode])
+}
+
+// Customer Invoice (Accounts Receivable)
+model CustomerInvoice {
+  id                String   @id @default(uuid())
+  invoiceNo         String   @unique
+  companyId         String
+  factoryId         String
+  
+  // Customer Details
+  customerId        String
+  customerCode      String
+  customerName      String
+  customerGST       String?
+  
+  // Invoice Details
+  invoiceDate       DateTime @default(now())
+  dueDate           DateTime
+  
+  // Type
+  invoiceType       String   @default("SALES") // SALES, SERVICE, DEBIT_NOTE
+  
+  // Reference
+  salesOrderId      String?
+  deliveryNoteId    String?
+  
+  // Billing Address
+  billingAddress    String
+  shippingAddress   String?
+  
+  // Amounts
+  grossAmount       Float
+  discountAmount    Float    @default(0)
+  taxableAmount     Float
+  
+  // GST
+  cgstAmount        Float    @default(0)
+  sgstAmount        Float    @default(0)
+  igstAmount        Float    @default(0)
+  cessAmount        Float    @default(0)
+  
+  // TCS
+  tcsApplicable     Boolean  @default(false)
+  tcsRate           Float?
+  tcsAmount         Float    @default(0)
+  
+  otherCharges      Float    @default(0)
+  roundOff          Float    @default(0)
+  totalAmount       Float
+  
+  // Status
+  status            String   @default("DRAFT") // DRAFT, APPROVED, SENT, PAID, CANCELLED
+  
+  // Payment Status
+  paymentStatus     String   @default("UNPAID") // UNPAID, PARTIAL, PAID
+  receivedAmount    Float    @default(0)
+  
+  // E-Invoice
+  eInvoiceNo        String?
+  eInvoiceDate      DateTime?
+  irnNumber         String?
+  qrCode            String?
+  
+  // GL Posting
+  glPosted          Boolean  @default(false)
+  glPostDate        DateTime?
+  voucherNo         String?
+  
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  items             CustomerInvoiceItem[]
+  receipts          ReceiptVoucher[]
+  glEntries         GeneralLedger[]
+  
+  @@index([companyId, factoryId])
+  @@index([customerId])
+  @@index([status])
+  @@index([invoiceNo])
+}
+
+model CustomerInvoiceItem {
+  id                String   @id @default(uuid())
+  invoiceId         String
+  invoice           CustomerInvoice @relation(fields: [invoiceId], references: [id])
+  
+  lineNo            Int
+  
+  // Item Details
+  materialCode      String?
+  description       String
+  hsnCode           String?
+  
+  // GL Account
+  glAccountCode     String
+  
+  // Quantity & Rate
+  quantity          Float
+  uom               String
+  rate              Float
+  amount            Float
+  
+  // Discount
+  discountPercent   Float    @default(0)
+  discountAmount    Float    @default(0)
+  
+  // Tax
+  taxableAmount     Float
+  gstRate           Float    @default(0)
+  cgstAmount        Float    @default(0)
+  sgstAmount        Float    @default(0)
+  igstAmount        Float    @default(0)
+  
+  totalAmount       Float
+  
+  @@index([invoiceId])
+  @@index([materialCode])
+}
+
+// Payment Voucher (Accounts Payable)
+model PaymentVoucher {
+  id                String   @id @default(uuid())
+  voucherNo         String   @unique
+  companyId         String
+  factoryId         String
+  
+  paymentDate       DateTime @default(now())
+  
+  // Vendor
+  vendorId          String
+  vendorName        String
+  
+  // Payment Mode
+  paymentMode       String   // BANK, CASH, CHEQUE, DD, NEFT, RTGS, UPI
+  
+  // Bank Details
+  bankAccountId     String?
+  bankName          String?
+  chequeNo          String?
+  chequeDate        DateTime?
+  utrNo             String?   // For electronic payments
+  
+  // Amount
+  amount            Float
+  
+  // TDS
+  tdsAmount         Float    @default(0)
+  netAmount         Float    // Amount - TDS
+  
+  // Status
+  status            String   @default("DRAFT") // DRAFT, APPROVED, PAID, CANCELLED, FAILED
+  
+  // Reference
+  referenceNo       String?
+  narration         String?
+  
+  // Approval
+  approvedBy        String?
+  approvedAt        DateTime?
+  
+  // GL Posting
+  glPosted          Boolean  @default(false)
+  glPostDate        DateTime?
+  
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  allocations       PaymentAllocation[]
+  glEntries         GeneralLedger[]
+  
+  @@index([companyId, factoryId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([voucherNo])
+}
+
+// Payment Allocation (Against Invoices)
+model PaymentAllocation {
+  id                String   @id @default(uuid())
+  paymentId         String
+  payment           PaymentVoucher @relation(fields: [paymentId], references: [id])
+  
+  invoiceId         String
+  invoice           VendorInvoice @relation(fields: [invoiceId], references: [id])
+  
+  allocatedAmount   Float
+  
+  @@index([paymentId])
+  @@index([invoiceId])
+}
+
+// Receipt Voucher (Accounts Receivable)
+model ReceiptVoucher {
+  id                String   @id @default(uuid())
+  voucherNo         String   @unique
+  companyId         String
+  factoryId         String
+  
+  receiptDate       DateTime @default(now())
+  
+  // Customer
+  customerId        String
+  customerName      String
+  
+  // Receipt Mode
+  receiptMode       String   // BANK, CASH, CHEQUE, DD, NEFT, RTGS, UPI
+  
+  // Bank Details
+  bankAccountId     String?
+  bankName          String?
+  chequeNo          String?
+  chequeDate        DateTime?
+  utrNo             String?
+  
+  // Amount
+  amount            Float
+  
+  // TCS (if applicable)
+  tcsAmount         Float    @default(0)
+  
+  // Status
+  status            String   @default("DRAFT") // DRAFT, APPROVED, CLEARED, BOUNCED, CANCELLED
+  
+  // Reference
+  referenceNo       String?
+  narration         String?
+  
+  // Clearing (for cheques)
+  clearingDate      DateTime?
+  
+  // GL Posting
+  glPosted          Boolean  @default(false)
+  glPostDate        DateTime?
+  
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  allocations       ReceiptAllocation[]
+  glEntries         GeneralLedger[]
+  
+  @@index([companyId, factoryId])
+  @@index([customerId])
+  @@index([status])
+  @@index([voucherNo])
+}
+
+// Receipt Allocation (Against Invoices)
+model ReceiptAllocation {
+  id                String   @id @default(uuid())
+  receiptId         String
+  receipt           ReceiptVoucher @relation(fields: [receiptId], references: [id])
+  
+  invoiceId         String
+  invoice           CustomerInvoice @relation(fields: [invoiceId], references: [id])
+  
+  allocatedAmount   Float
+  
+  @@index([receiptId])
+  @@index([invoiceId])
+}
+
+// Journal Voucher
+model JournalVoucher {
+  id                String   @id @default(uuid())
+  voucherNo         String   @unique
+  companyId         String
+  factoryId         String
+  
+  voucherDate       DateTime @default(now())
+  voucherType       String   @default("JOURNAL") // JOURNAL, CONTRA, CREDIT_NOTE, DEBIT_NOTE
+  
+  narration         String
+  
+  // Total Amounts (for validation)
+  totalDebit        Float
+  totalCredit       Float
+  
+  // Status
+  status            String   @default("DRAFT") // DRAFT, APPROVED, POSTED, CANCELLED
+  
+  // Approval
+  approvedBy        String?
+  approvedAt        DateTime?
+  
+  // GL Posting
+  glPosted          Boolean  @default(false)
+  glPostDate        DateTime?
+  
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  entries           JournalEntry[]
+  glEntries         GeneralLedger[]
+  
+  @@index([companyId, factoryId])
+  @@index([status])
+  @@index([voucherNo])
+}
+
+model JournalEntry {
+  id                String   @id @default(uuid())
+  journalId         String
+  journal           JournalVoucher @relation(fields: [journalId], references: [id])
+  
+  lineNo            Int
+  
+  // Account
+  glAccountCode     String
+  glAccountName     String
+  
+  // Amount
+  debitAmount       Float    @default(0)
+  creditAmount      Float    @default(0)
+  
+  // Cost Center
+  costCenterId      String?
+  
+  // Reference
+  referenceType     String?  // INVOICE, PO, etc.
+  referenceNo       String?
+  
+  narration         String?
+  
+  @@index([journalId])
+  @@index([glAccountCode])
+}
+
+// General Ledger (Main Accounting Table)
+model GeneralLedger {
+  id                String   @id @default(uuid())
+  companyId         String
+  factoryId         String
+  
+  // Posting Details
+  postingDate       DateTime
+  valueDate         DateTime @default(now())
+  
+  // Voucher Reference
+  voucherType       String   // PAYMENT, RECEIPT, JOURNAL, PURCHASE, SALES
+  voucherNo         String
+  voucherId         String
+  
+  // Account
+  glAccountCode     String
+  glAccountName     String
+  
+  // Amounts
+  debitAmount       Float    @default(0)
+  creditAmount      Float    @default(0)
+  
+  // Running Balance
+  balance           Float    @default(0)
+  
+  // Cost Center
+  costCenterId      String?
+  
+  // Party (Vendor/Customer)
+  partyType         String?  // VENDOR, CUSTOMER
+  partyId           String?
+  partyName         String?
+  
+  // Reference
+  referenceType     String?
+  referenceNo       String?
+  
+  narration         String?
+  
+  // Fiscal Year
+  fiscalYear        String
+  fiscalPeriod      Int      // Month number
+  
+  createdBy         String
+  createdAt         DateTime @default(now())
+  
+  // Relations - Multiple voucher types can create GL entries
+  vendorInvoice     VendorInvoice? @relation(fields: [voucherId], references: [id])
+  customerInvoice   CustomerInvoice? @relation(fields: [voucherId], references: [id])
+  paymentVoucher    PaymentVoucher? @relation(fields: [voucherId], references: [id])
+  receiptVoucher    ReceiptVoucher? @relation(fields: [voucherId], references: [id])
+  journalVoucher    JournalVoucher? @relation(fields: [voucherId], references: [id])
+  
+  @@index([companyId, factoryId])
+  @@index([glAccountCode])
+  @@index([postingDate])
+  @@index([voucherType, voucherNo])
+  @@index([partyId])
+}
+
+// Bank Account Management
+model BankAccount {
+  id                String   @id @default(uuid())
+  companyId         String
+  factoryId         String?  // Can be company-level or factory-level
+  
+  accountName       String
+  accountNo         String
+  
+  // Bank Details
+  bankName          String
+  branch            String
+  ifscCode          String
+  swiftCode         String?
+  
+  // Account Type
+  accountType       String   // CURRENT, SAVINGS, CASH_CREDIT, OD
+  currency          String   @default("INR")
+  
+  // GL Account
+  glAccountCode     String
+  
+  // Balance
+  currentBalance    Float    @default(0)
+  availableBalance  Float    @default(0)
+  
+  // Overdraft
+  odLimit           Float    @default(0)
+  
+  isActive          Boolean  @default(true)
+  isDefault         Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  transactions      BankTransaction[]
+  reconciliations   BankReconciliation[]
+  
+  @@unique([companyId, accountNo])
+  @@index([companyId, factoryId])
+}
+
+// Bank Transactions
+model BankTransaction {
+  id                String   @id @default(uuid())
+  bankAccountId     String
+  bankAccount       BankAccount @relation(fields: [bankAccountId], references: [id])
+  
+  transactionDate   DateTime
+  valueDate         DateTime
+  
+  // Transaction Details
+  transactionType   String   // DEPOSIT, WITHDRAWAL, TRANSFER, CHARGES
+  referenceNo       String?
+  chequeNo          String?
+  
+  description       String
+  
+  // Amount
+  debitAmount       Float    @default(0)
+  creditAmount      Float    @default(0)
+  balance           Float
+  
+  // Reconciliation
+  isReconciled      Boolean  @default(false)
+  reconciledDate    DateTime?
+  
+  // GL Reference
+  glVoucherType     String?
+  glVoucherNo       String?
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([bankAccountId])
+  @@index([transactionDate])
+  @@index([isReconciled])
+}
+
+// Bank Reconciliation
+model BankReconciliation {
+  id                String   @id @default(uuid())
+  bankAccountId     String
+  bankAccount       BankAccount @relation(fields: [bankAccountId], references: [id])
+  
+  reconcileDate     DateTime
+  
+  // Balances
+  bankBalance       Float    // As per bank statement
+  bookBalance       Float    // As per books
+  
+  // Reconciling Items
+  depositsInTransit Float    @default(0)
+  outstandingCheques Float   @default(0)
+  bankCharges       Float    @default(0)
+  bankInterest      Float    @default(0)
+  otherAdjustments  Float    @default(0)
+  
+  // Reconciled Balance
+  reconciledBalance Float
+  difference        Float    @default(0)
+  
+  status            String   @default("DRAFT") // DRAFT, COMPLETED, APPROVED
+  
+  preparedBy        String
+  preparedAt        DateTime @default(now())
+  approvedBy        String?
+  approvedAt        DateTime?
+  
+  @@index([bankAccountId])
+  @@index([reconcileDate])
+}
+
+// Budget Management
+model BudgetMaster {
+  id                String   @id @default(uuid())
+  companyId         String
+  factoryId         String?
+  
+  budgetName        String
+  budgetType        String   // EXPENSE, REVENUE, CAPEX
+  fiscalYear        String
+  
+  // Period
+  periodType        String   @default("ANNUAL") // ANNUAL, QUARTERLY, MONTHLY
+  
+  status            String   @default("DRAFT") // DRAFT, APPROVED, ACTIVE, CLOSED
+  
+  approvedBy        String?
+  approvedAt        DateTime?
+  
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  items             BudgetItem[]
+  
+  @@unique([companyId, budgetName, fiscalYear])
+  @@index([companyId, factoryId])
+  @@index([fiscalYear])
+}
+
+model BudgetItem {
+  id                String   @id @default(uuid())
+  budgetId          String
+  budget            BudgetMaster @relation(fields: [budgetId], references: [id])
+  
+  // Account/Cost Center
+  glAccountCode     String
+  costCenterId      String?
+  
+  // Amounts by period
+  period1Amount     Float    @default(0) // Jan/Q1
+  period2Amount     Float    @default(0) // Feb/Q2
+  period3Amount     Float    @default(0) // Mar/Q3
+  period4Amount     Float    @default(0) // Apr/Q4
+  period5Amount     Float    @default(0)
+  period6Amount     Float    @default(0)
+  period7Amount     Float    @default(0)
+  period8Amount     Float    @default(0)
+  period9Amount     Float    @default(0)
+  period10Amount    Float    @default(0)
+  period11Amount    Float    @default(0)
+  period12Amount    Float    @default(0)
+  
+  totalAmount       Float
+  
+  // Actuals (updated periodically)
+  actualAmount      Float    @default(0)
+  committedAmount   Float    @default(0) // POs raised
+  availableAmount   Float    @default(0)
+  
+  @@index([budgetId])
+  @@index([glAccountCode])
+}
+
+// TDS Management
+model TDSMaster {
+  id                String   @id @default(uuid())
+  companyId         String
+  
+  vendorId          String
+  vendorName        String
+  vendorPAN         String
+  
+  section           String   // 194C, 194J, etc.
+  natureOfPayment   String
+  
+  // Rates
+  individualRate    Float
+  companyRate       Float
+  
+  // Thresholds
+  singleLimit       Float    // Single payment
+  aggregateLimit    Float    // Annual aggregate
+  
+  // Certificate
+  certificateNo     String?
+  lowerRate         Float?
+  validFrom         DateTime?
+  validTo           DateTime?
+  
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  transactions      TDSTransaction[]
+  
+  @@unique([companyId, vendorId, section])
+  @@index([vendorId])
+  @@index([section])
+}
+
+model TDSTransaction {
+  id                String   @id @default(uuid())
+  tdsMasterId       String
+  tdsMaster         TDSMaster @relation(fields: [tdsMasterId], references: [id])
+  
+  // Transaction Reference
+  voucherType       String   // PAYMENT, INVOICE
+  voucherNo         String
+  voucherId         String
+  transactionDate   DateTime
+  
+  // Amounts
+  grossAmount       Float
+  tdsRate           Float
+  tdsAmount         Float
+  netAmount         Float
+  
+  // Challan Details
+  challanNo         String?
+  challanDate       DateTime?
+  bsrCode           String?
+  
+  // Certificate
+  certificateNo     String?
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([tdsMasterId])
+  @@index([voucherType, voucherNo])
+}
+
+// GST Returns Data
+model GSTReturn {
+  id                String   @id @default(uuid())
+  companyId         String
+  
+  returnType        String   // GSTR1, GSTR2A, GSTR3B
+  returnPeriod      String   // MMYYYY
+  
+  // Summary
+  totalTaxableValue Float    @default(0)
+  totalCGST         Float    @default(0)
+  totalSGST         Float    @default(0)
+  totalIGST         Float    @default(0)
+  totalCess         Float    @default(0)
+  
+  // Status
+  status            String   @default("DRAFT") // DRAFT, READY, FILED
+  filedDate         DateTime?
+  acknowledgmentNo  String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  b2bInvoices       GSTB2B[]
+  
+  @@unique([companyId, returnType, returnPeriod])
+  @@index([companyId])
+  @@index([returnPeriod])
+}
+
+// GST B2B Transactions
+model GSTB2B {
+  id                String   @id @default(uuid())
+  returnId          String
+  gstReturn         GSTReturn @relation(fields: [returnId], references: [id])
+  
+  // Invoice Details
+  invoiceNo         String
+  invoiceDate       DateTime
+  invoiceValue      Float
+  
+  // Party Details
+  partyGSTIN        String
+  partyName         String
+  
+  // Tax Details
+  taxableValue      Float
+  cgstAmount        Float    @default(0)
+  sgstAmount        Float    @default(0)
+  igstAmount        Float    @default(0)
+  cessAmount        Float    @default(0)
+  
+  // Type
+  documentType      String   // INVOICE, CREDIT_NOTE, DEBIT_NOTE
+  supplyType        String   // GOODS, SERVICES
+  
+  @@index([returnId])
+  @@index([invoiceNo])
+}
