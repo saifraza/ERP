@@ -85,25 +85,35 @@ app.get('/api/analytics/documents', (c) => {
   })
 })
 
+import { saveDocument, getDocument, documentExists } from './utils/storage.js'
+
 // Document storage endpoint for MCP server
 app.post('/api/documents', async (c) => {
   try {
     const body = await c.req.json()
     const { fileName, fileType, category, content, extractedData, metadata } = body
     
-    // In production, this would save to database
-    // For now, we'll return a mock response
+    // Save file to Railway volume
+    let storedFileName = null
+    if (content) {
+      storedFileName = await saveDocument(fileName, content)
+      console.log(`File saved to volume: ${storedFileName}`)
+    }
+    
+    // In production, also save metadata to database
     const document = {
       id: `doc-${Date.now()}`,
       fileName,
+      storedFileName, // Reference to file in volume
       fileType,
       category,
       size: content ? content.length : 0,
       extractedData,
       metadata,
       status: 'stored',
+      volumePath: storedFileName ? `/documents/${storedFileName}` : null,
       createdAt: new Date().toISOString(),
-      message: 'Document stored successfully'
+      message: 'Document stored successfully in Railway volume'
     }
     
     console.log(`Stored document: ${fileName} (${fileType})`)

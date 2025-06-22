@@ -41,3 +41,44 @@ model DashboardConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Document Management Models
+model Document {
+  id           String   @id @default(uuid())
+  name         String
+  type         String   // invoice, purchase_order, contract, offer, other
+  category     String   // purchase, sales, legal, technical
+  supplier     String?
+  customer     String?
+  date         DateTime
+  amount       Float?
+  status       String   // pending, processing, processed, approved, rejected
+  fileUrl      String?
+  fileSize     String?
+  pages        Int?
+  extractedData String? // JSON string with extracted data
+  metadata     String?  // JSON string with metadata
+  uploadedBy   String
+  uploadedAt   DateTime @default(now())
+  processedAt  DateTime?
+  approvedBy   String?
+  approvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([type, status])
+  @@index([date])
+  @@index([supplier])
+  @@index([customer])
+}
+
+model DocumentActivity {
+  id         String   @id @default(uuid())
+  documentId String
+  action     String   // uploaded, processed, approved, rejected, deleted
+  userId     String
+  comment    String?
+  createdAt  DateTime @default(now())
+  
+  @@index([documentId])
+}
