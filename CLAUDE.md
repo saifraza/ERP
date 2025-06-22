@@ -31,9 +31,14 @@ Solo-developed complete ERP system for ethanol and sugar factory operations with
 - **Real-time**: WebSockets/Server-Sent Events
 
 ### AI Integration
-- **MCP Server**: Custom tools for factory operations
+- **MCP Server**: Google Workspace MCP with Gmail integration
 - **LLM**: Claude 3.5 Sonnet
-- **Features**: Natural language queries, predictive analytics, optimization suggestions
+- **Features**: 
+  - Natural language queries, predictive analytics, optimization suggestions
+  - Gmail integration (read/send emails, calendar management)
+  - Document AI analysis (invoices, POs, offers, contracts)
+  - Email attachment extraction and processing
+  - Automated workflow: Email → Extract → Analyze → Store → Respond
 
 ### Infrastructure
 - **Local Deployment**: Windows Server
@@ -130,9 +135,12 @@ ERP/
 - [x] AI chat interface in frontend
 - [x] MCP server Railway deployment ✅
 - [x] All services deployed and working
+- [x] Gmail MCP integration with OAuth2 ✅
+- [x] Document AI analysis capabilities ✅
 - [ ] Hardware integration implementation
 - [ ] Business logic implementation
 - [ ] Connect MCP to web frontend (WebSocket)
+- [ ] Google MCP Toolbox for database integration
 
 ## Phase 1: Foundation (Weeks 1-2) ✅ COMPLETED
 ### Completed Tasks
@@ -337,6 +345,13 @@ pnpm db:studio       # Open Prisma Studio
 - "Generate efficiency report for ethanol division"
 - "How can we optimize power generation?"
 
+#### Gmail & Document AI Features:
+- "Check for new invoices in Gmail"
+- "Analyze the latest purchase order from suppliers"
+- "Send production report to management"
+- "Extract all attachments from today's emails"
+- "Process and analyze supplier invoices"
+
 ## Environment Variables
 ```env
 # Local Database
@@ -345,8 +360,11 @@ DATABASE_URL="sqlserver://localhost:1433;database=erp_local"
 # Cloud Database (Railway)
 DATABASE_URL="postgresql://postgres:qRvNDeDRjOOJQhdpNlYzGMhfJhzdAwVn@postgres.railway.internal:5432/railway"
 
-# MCP Server
-MCP_SERVER_URL="http://localhost:3001"
+# MCP Server (Gmail Integration)
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+GOOGLE_REFRESH_TOKEN="your-refresh-token"
+ERP_API_URL="https://backend-api-production-5e68.up.railway.app"
 ANTHROPIC_API_KEY="sk-..."
 
 # Hardware Integration
