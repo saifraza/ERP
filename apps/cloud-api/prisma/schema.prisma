@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Analytics and Dashboard Models
+model PlantMetrics {
+  id           String   @id @default(uuid())
+  plantId      String
+  timestamp    DateTime @default(now())
+  division     String   // sugar, power, ethanol, feed
+  production   Float
+  efficiency   Float
+  utilization  Float
+  quality      Float?
+  alerts       String   // JSON string
+  createdAt    DateTime @default(now())
+}
+
+model AlertLog {
+  id        String   @id @default(uuid())
+  plantId   String
+  division  String
+  type      String   // info, warning, error, critical
+  message   String
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+}
+
+model DashboardConfig {
+  id       String @id @default(uuid())
+  userId   String
+  config   String // JSON configuration
+  name     String
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

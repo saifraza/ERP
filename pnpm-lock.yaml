@@ -15,6 +15,43 @@ importers:
         specifier: ^5.6.3
         version: 5.8.3
 
+  apps/cloud-api:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.2.0
+        version: 6.10.1(prisma@6.10.1(typescript@5.8.3))(typescript@5.8.3)
+      bcrypt:
+        specifier: ^5.1.1
+        version: 5.1.1
+      dotenv:
+        specifier: ^16.5.0
+        version: 16.5.0
+      hono:
+        specifier: ^4.6.15
+        version: 4.8.2
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.67
+    devDependencies:
+      '@types/bcrypt':
+        specifier: ^5.0.2
+        version: 5.0.2
+      '@types/bun':
+        specifier: latest
+        version: 1.2.17
+      '@types/jsonwebtoken':
+        specifier: ^9.0.7
+        version: 9.0.10
+      prisma:
+        specifier: ^6.2.0
+        version: 6.10.1(typescript@5.8.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.8.3
+
   apps/local-api:
     dependencies:
       '@prisma/client':
