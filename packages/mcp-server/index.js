@@ -74,7 +74,7 @@ class ERPMCPServer {
           },
           {
             name: 'analyze_document',
-            description: 'Analyze uploaded factory documents (invoices, reports, etc.)',
+            description: 'Analyze uploaded factory documents (invoices, reports, POs, offers, etc.)',
             inputSchema: {
               type: 'object',
               properties: {
@@ -88,7 +88,7 @@ class ERPMCPServer {
                 },
                 documentType: {
                   type: 'string',
-                  enum: ['invoice', 'report', 'purchase_order', 'delivery_note', 'quality_cert'],
+                  enum: ['invoice', 'report', 'purchase_order', 'delivery_note', 'quality_cert', 'offer', 'contract'],
                   description: 'Type of document',
                 },
                 analysisType: {
@@ -117,6 +117,73 @@ class ERPMCPServer {
               },
             },
           },
+          {
+            name: 'send_email',
+            description: 'Send email to clients or suppliers via Gmail',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                to: {
+                  type: 'string',
+                  description: 'Recipient email address',
+                },
+                subject: {
+                  type: 'string',
+                  description: 'Email subject',
+                },
+                body: {
+                  type: 'string',
+                  description: 'Email body content',
+                },
+                attachmentId: {
+                  type: 'string',
+                  description: 'Document ID to attach',
+                },
+                cc: {
+                  type: 'string',
+                  description: 'CC email addresses (comma separated)',
+                },
+              },
+              required: ['to', 'subject', 'body'],
+            },
+          },
+          {
+            name: 'get_emails',
+            description: 'Retrieve emails from Gmail inbox',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'Search query (e.g., "from:supplier@example.com", "subject:invoice")',
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Number of emails to retrieve',
+                  default: 10,
+                },
+              },
+            },
+          },
+          {
+            name: 'extract_from_email',
+            description: 'Extract and analyze attachments from emails (invoices, POs, etc.)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                emailId: {
+                  type: 'string',
+                  description: 'Email ID to extract attachments from',
+                },
+                autoAnalyze: {
+                  type: 'boolean',
+                  description: 'Automatically analyze extracted documents',
+                  default: true,
+                },
+              },
+              required: ['emailId'],
+            },
+          },
         ],
       };
     });
@@ -135,6 +202,12 @@ class ERPMCPServer {
             return await this.analyzeDocument(args);
           case 'get_documents':
             return await this.getDocuments(args);
+          case 'send_email':
+            return await this.sendEmail(args);
+          case 'get_emails':
+            return await this.getEmails(args);
+          case 'extract_from_email':
+            return await this.extractFromEmail(args);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -289,6 +362,62 @@ Recommendations:
         };
         break;
 
+      case 'offer':
+        analysis = {
+          summary: 'Offer/Quotation analyzed with pricing details extracted',
+          keyFindings: [
+            'Total quoted amount: ₹3,50,000',
+            'Validity: 30 days from date',
+            'Payment terms: 50% advance',
+            'Delivery: Within 45 days'
+          ],
+          extractedData: {
+            offerNumber: 'QT-2025-06-789',
+            vendor: 'Industrial Supplies Ltd',
+            totalAmount: 350000,
+            items: 12,
+            validity: '30 days',
+            discountOffered: '5% on bulk order'
+          },
+          recommendations: [
+            'Compare with previous offers from same vendor',
+            'Negotiate for better payment terms',
+            'Check market rates for quoted items'
+          ],
+          alerts: [
+            { type: 'info', message: 'Offer expires in 10 days' }
+          ]
+        };
+        break;
+
+      case 'contract':
+        analysis = {
+          summary: 'Contract analyzed for key terms and obligations',
+          keyFindings: [
+            'Contract duration: 2 years',
+            'Annual value: ₹24,00,000',
+            'Penalty clause: 2% per month delay',
+            'Termination notice: 90 days'
+          ],
+          extractedData: {
+            contractNumber: 'CTR-2025-456',
+            parties: ['MSPIL', 'ABC Corporation'],
+            startDate: '2025-07-01',
+            endDate: '2027-06-30',
+            totalValue: 4800000,
+            paymentSchedule: 'Monthly'
+          },
+          recommendations: [
+            'Review penalty clauses with legal team',
+            'Set up automatic renewal reminders',
+            'Create compliance checklist'
+          ],
+          alerts: [
+            { type: 'warning', message: 'Force majeure clause needs review' }
+          ]
+        };
+        break;
+
       default:
         analysis = {
           summary: 'Document analyzed successfully',
@@ -363,6 +492,122 @@ Recommendations:
     } catch (error) {
       throw new Error(`Failed to fetch documents: ${error.message}`);
     }
+  }
+
+  async sendEmail(args) {
+    const { to, subject, body, attachmentId, cc } = args;
+    
+    // Note: This is a mock implementation
+    // In production, you would integrate with Gmail API
+    const emailData = {
+      id: Date.now().toString(),
+      to,
+      cc: cc || null,
+      subject,
+      body,
+      attachmentId: attachmentId || null,
+      sentAt: new Date().toISOString(),
+      status: 'sent'
+    };
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Email sent successfully!\n\nTo: ${to}\nSubject: ${subject}\n${cc ? `CC: ${cc}\n` : ''}${attachmentId ? 'Attachment included\n' : ''}\nStatus: Sent`,
+        },
+      ],
+    };
+  }
+
+  async getEmails(args) {
+    const { query, limit = 10 } = args;
+    
+    // Mock email data - in production, integrate with Gmail API
+    const emails = [
+      {
+        id: '1',
+        from: 'supplier@chemicals.com',
+        subject: 'Invoice for Chemical Supply - June 2025',
+        date: '2025-06-20',
+        hasAttachments: true,
+        preview: 'Please find attached invoice for your recent order...'
+      },
+      {
+        id: '2',
+        from: 'buyer@sugar.com',
+        subject: 'Purchase Order - 500 MT Sugar',
+        date: '2025-06-19',
+        hasAttachments: true,
+        preview: 'We would like to place an order for 500 MT of refined sugar...'
+      },
+      {
+        id: '3',
+        from: 'vendor@equipment.com',
+        subject: 'Quotation for Centrifuge Machine',
+        date: '2025-06-18',
+        hasAttachments: true,
+        preview: 'As per your inquiry, please find our best offer...'
+      }
+    ];
+    
+    let filtered = emails;
+    if (query) {
+      filtered = emails.filter(email => 
+        email.from.includes(query) || 
+        email.subject.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Found ${filtered.slice(0, limit).length} emails:\n\n${filtered.slice(0, limit).map((email, idx) => 
+            `${idx + 1}. From: ${email.from}\n   Subject: ${email.subject}\n   Date: ${email.date}\n   ${email.hasAttachments ? '📎 Has attachments' : ''}\n   Preview: ${email.preview}\n`
+          ).join('\n')}`,
+        },
+      ],
+    };
+  }
+
+  async extractFromEmail(args) {
+    const { emailId, autoAnalyze = true } = args;
+    
+    // Mock extraction - in production, use Gmail API to get attachments
+    const extractedDocuments = [
+      {
+        id: Date.now().toString(),
+        fileName: 'Invoice_12345.pdf',
+        fileType: 'pdf',
+        category: 'invoice',
+        extractedFrom: `Email ID: ${emailId}`,
+        content: 'Invoice content extracted from email attachment'
+      }
+    ];
+    
+    let result = `Extracted ${extractedDocuments.length} document(s) from email:\n`;
+    
+    for (const doc of extractedDocuments) {
+      result += `\n- ${doc.fileName} (${doc.category})\n`;
+      
+      if (autoAnalyze) {
+        const analysis = await this.analyzeDocument({
+          documentContent: doc.content,
+          documentType: doc.category
+        });
+        result += `  Analysis: ${analysis.content[0].text.split('\n')[0]}\n`;
+      }
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: result,
+        },
+      ],
+    };
   }
 
   async run() {

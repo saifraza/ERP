@@ -93,26 +93,47 @@ app.get('/api/analytics/plants', (c) => {
 // Document Management endpoints
 app.post('/api/documents/upload', async (c) => {
   try {
-    const body = await c.req.parseBody()
-    const file = body['file']
+    const formData = await c.req.formData()
+    const file = formData.get('file')
     
-    if (!file || typeof file === 'string') {
+    if (!file || !(file instanceof File)) {
       return c.json({ error: 'No file uploaded' }, 400)
     }
     
-    // Simulate file storage and text extraction
+    // Read file content
+    const buffer = await file.arrayBuffer()
+    const content = Buffer.from(buffer).toString('base64')
+    
+    // Extract text content (mock - in production use OCR/PDF extraction)
+    let extractedText = 'Document content would be extracted here...'
+    if (file.type === 'text/plain') {
+      extractedText = Buffer.from(buffer).toString('utf-8')
+    }
+    
+    // Determine document properties
+    const fileName = file.name
+    const fileType = fileName.split('.').pop()?.toLowerCase() || 'unknown'
+    const category = formData.get('category') || determineCategory(fileName)
+    
     const document = {
       id: Date.now().toString(),
-      fileName: file.name,
-      fileType: file.name.split('.').pop(),
+      fileName: fileName,
+      fileType: fileType,
       fileSize: file.size,
-      fileUrl: `/storage/${Date.now()}-${file.name}`,
-      category: body['category'] || 'general',
-      division: body['division'] || null,
-      content: 'Extracted text content would go here...',
+      fileUrl: `/storage/${Date.now()}-${fileName}`,
+      category: category,
+      division: formData.get('division') || null,
+      content: extractedText,
       uploadedBy: '1', // Mock user ID
-      createdAt: new Date()
+      createdAt: new Date(),
+      status: 'processing'
     }
+    
+    // Store document metadata (in production, save to database)
+    if (!globalThis.documents) {
+      globalThis.documents = []
+    }
+    globalThis.documents.unshift(document)
     
     return c.json({
       success: true,
@@ -121,53 +142,33 @@ app.post('/api/documents/upload', async (c) => {
     })
   } catch (error) {
     console.error('Upload error:', error)
-    return c.json({ error: 'Upload failed' }, 500)
+    return c.json({ error: 'Upload failed: ' + error.message }, 500)
   }
 })
+
+function determineCategory(fileName) {
+  const name = fileName.toLowerCase()
+  if (name.includes('invoice') || name.includes('inv')) return 'invoice'
+  if (name.includes('po') || name.includes('purchase')) return 'purchase_order'
+  if (name.includes('offer') || name.includes('quotation')) return 'offer'
+  if (name.includes('contract')) return 'contract'
+  if (name.includes('delivery')) return 'delivery_note'
+  if (name.includes('quality') || name.includes('cert')) return 'quality_cert'
+  return 'report'
+}
 
 // Get documents list
 app.get('/api/documents', (c) => {
   const { category, division } = c.req.query()
   
-  // Mock documents data
-  const documents = [
-    {
-      id: '1',
-      fileName: 'Sugar_Production_Report_June2025.pdf',
-      fileType: 'pdf',
-      category: 'report',
-      division: 'sugar',
-      uploadedAt: '2025-06-20',
-      status: 'analyzed',
-      insights: 'Production efficiency at 92.5%, 2.5% below target'
-    },
-    {
-      id: '2',
-      fileName: 'Ethanol_Invoice_12345.pdf',
-      fileType: 'pdf',
-      category: 'invoice',
-      division: 'ethanol',
-      uploadedAt: '2025-06-19',
-      status: 'analyzed',
-      insights: 'Amount: ₹2,25,000, Payment due in 15 days'
-    },
-    {
-      id: '3',
-      fileName: 'Power_Generation_Data.xlsx',
-      fileType: 'excel',
-      category: 'report',
-      division: 'power',
-      uploadedAt: '2025-06-18',
-      status: 'processing',
-      insights: null
-    }
-  ]
+  // Get stored documents or use defaults
+  const documents = globalThis.documents || []
   
   let filtered = documents
-  if (category) {
+  if (category && category !== 'all') {
     filtered = filtered.filter(d => d.category === category)
   }
-  if (division) {
+  if (division && division !== 'all') {
     filtered = filtered.filter(d => d.division === division)
   }
   

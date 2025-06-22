@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Upload, FileText, FileSpreadsheet, File, Search, Filter, Bot, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { useAuthStore } from '../stores/authStore'
+import toast from 'react-hot-toast'
 
 interface Document {
   id: string
@@ -17,45 +19,33 @@ interface DocumentManagerProps {
 }
 
 export default function DocumentManager({ onAnalyze }: DocumentManagerProps) {
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: '1',
-      fileName: 'Sugar_Production_Report_June2025.pdf',
-      fileType: 'pdf',
-      category: 'report',
-      division: 'sugar',
-      uploadedAt: '2025-06-20',
-      status: 'analyzed',
-      insights: 'Production efficiency at 92.5%, 2.5% below target'
-    },
-    {
-      id: '2',
-      fileName: 'Ethanol_Invoice_12345.pdf',
-      fileType: 'pdf',
-      category: 'invoice',
-      division: 'ethanol',
-      uploadedAt: '2025-06-19',
-      status: 'analyzed',
-      insights: 'Amount: ₹2,25,000, Payment due in 15 days'
-    },
-    {
-      id: '3',
-      fileName: 'Power_Generation_Data.xlsx',
-      fileType: 'excel',
-      category: 'report',
-      division: 'power',
-      uploadedAt: '2025-06-18',
-      status: 'processing',
-      insights: undefined
-    }
-  ])
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [loading, setLoading] = useState(false)
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://backend-api-production-5e68.up.railway.app'
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedDivision, setSelectedDivision] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isDragging, setIsDragging] = useState(false)
 
-  const categories = ['all', 'invoice', 'report', 'purchase_order', 'delivery_note', 'quality_cert']
+  const categories = ['all', 'invoice', 'report', 'purchase_order', 'delivery_note', 'quality_cert', 'offer', 'contract']
   const divisions = ['all', 'sugar', 'power', 'ethanol', 'feed']
+
+  // Fetch documents on mount
+  useEffect(() => {
+    fetchDocuments()
+  }, [])
+
+  const fetchDocuments = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/documents`)
+      if (response.ok) {
+        const data = await response.json()
+        setDocuments(data.documents || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch documents:', error)
+    }
+  }
 
   const getFileIcon = (fileType: string) => {
     switch (fileType) {
@@ -117,33 +107,81 @@ export default function DocumentManager({ onAnalyze }: DocumentManagerProps) {
     }
   }
 
-  const handleFileUpload = (files: File[]) => {
-    files.forEach(file => {
-      const newDoc: Document = {
-        id: Date.now().toString() + Math.random(),
-        fileName: file.name,
-        fileType: file.name.split('.').pop() || 'unknown',
-        category: 'report', // Default, would be determined by AI
-        uploadedAt: new Date().toISOString().split('T')[0],
-        status: 'processing',
+  const handleFileUpload = async (files: File[]) => {
+    for (const file of files) {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      // Determine category based on filename
+      let category = 'report'
+      const fileName = file.name.toLowerCase()
+      if (fileName.includes('invoice') || fileName.includes('inv')) category = 'invoice'
+      else if (fileName.includes('po') || fileName.includes('purchase')) category = 'purchase_order'
+      else if (fileName.includes('offer') || fileName.includes('quotation')) category = 'offer'
+      else if (fileName.includes('contract')) category = 'contract'
+      
+      formData.append('category', category)
+      
+      try {
+        setLoading(true)
+        const uploadToast = toast.loading(`Uploading ${file.name}...`)
+        
+        const response = await fetch(`${apiUrl}/api/documents/upload`, {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          toast.success(`${file.name} uploaded successfully`, { id: uploadToast })
+          
+          // Add to local state
+          const newDoc: Document = {
+            ...data.document,
+            status: 'processing'
+          }
+          setDocuments(prev => [newDoc, ...prev])
+          
+          // Trigger AI analysis
+          analyzeDocument(newDoc.id)
+        } else {
+          toast.error(`Failed to upload ${file.name}`, { id: uploadToast })
+        }
+      } catch (error) {
+        console.error('Upload error:', error)
+        toast.error(`Error uploading ${file.name}`)
+      } finally {
+        setLoading(false)
       }
+    }
+  }
+
+  const analyzeDocument = async (documentId: string) => {
+    try {
+      const response = await fetch(`${apiUrl}/api/documents/${documentId}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysisType: 'general' })
+      })
       
-      setDocuments(prev => [newDoc, ...prev])
-      
-      // Simulate processing and analysis
-      setTimeout(() => {
+      if (response.ok) {
+        const data = await response.json()
         setDocuments(prev => prev.map(doc => 
-          doc.id === newDoc.id 
+          doc.id === documentId 
             ? { 
                 ...doc, 
                 status: 'analyzed', 
-                insights: 'AI analysis complete. Key findings extracted.',
-                division: 'sugar' // Would be determined by AI
+                insights: data.analysis.insights || 'Analysis complete'
               }
             : doc
         ))
-      }, 3000)
-    })
+      }
+    } catch (error) {
+      console.error('Analysis error:', error)
+      setDocuments(prev => prev.map(doc => 
+        doc.id === documentId ? { ...doc, status: 'error' } : doc
+      ))
+    }
   }
 
   const filteredDocuments = documents.filter(doc => {
