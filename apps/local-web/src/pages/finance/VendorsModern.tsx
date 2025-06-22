@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { 
   Plus, Search, Filter, ChevronDown, MoreVertical, 
   Mail, Phone, MapPin, Star, TrendingUp, FileText,
-  CheckCircle, XCircle, Clock, Download, Upload
+  CheckCircle, XCircle, Clock, Download, Upload, Users
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
