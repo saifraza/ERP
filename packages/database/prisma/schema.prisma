@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// User and Authentication
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  divisions String[] // JSON array of division IDs
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  farmerPayments PaymentTransaction[]
+  weighbridgeEntries WeighbridgeTransaction[]
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATOR
+  USER
+}
+
+// Farmer Management
+model Farmer {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  name           String
+  village        String
+  phoneNumber    String
+  bankAccount    String?
+  landArea       Float    // in hectares
+  contractedArea Float    // in hectares
+  status         FarmerStatus @default(ACTIVE)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  deliveries     CaneDelivery[]
+  payments       PaymentTransaction[]
+  contracts      Contract[]
+}
+
+enum FarmerStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// Cane Management
+model CaneDelivery {
+  id              String   @id @default(uuid())
+  deliveryDate    DateTime @default(now())
+  farmerId        String
+  vehicleNumber   String
+  grossWeight     Float
+  tareWeight      Float
+  netWeight       Float
+  qualityGrade    String
+  recoveryRate    Float
+  amount          Float
+  paymentStatus   PaymentStatus @default(PENDING)
+  weighbridgeId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  farmer          Farmer   @relation(fields: [farmerId], references: [id])
+  weighbridge     WeighbridgeTransaction? @relation(fields: [weighbridgeId], references: [id])
+  payment         PaymentTransaction?
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+// Weighbridge
+model WeighbridgeTransaction {
+  id            String   @id @default(uuid())
+  timestamp     DateTime @default(now())
+  vehicleNumber String
+  farmerCode    String?
+  grossWeight   Float?
+  tareWeight    Float?
+  netWeight     Float?
+  receiptNumber String   @unique
+  status        WeighStatus @default(IN_PROGRESS)
+  operatorId    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  operator      User?    @relation(fields: [operatorId], references: [id])
+  delivery      CaneDelivery?
+}
+
+enum WeighStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Division: Sugar
+model SugarProduction {
+  id              String   @id @default(uuid())
+  batchNumber     String   @unique
+  productionDate  DateTime
+  caneUsed        Float    // MT
+  sugarProduced   Float    // MT
+  recoveryRate    Float    // percentage
+  grade           String
+  molassesOutput  Float    // MT
+  shift           String
+  status          ProductionStatus @default(IN_PROGRESS)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Division: Power
+model PowerGeneration {
+  id              String   @id @default(uuid())
+  timestamp       DateTime @default(now())
+  totalGeneration Float    // MW
+  gridExport      Float    // MW
+  internalUse     Float    // MW
+  bagasseUsed     Float    // MT
+  steamPressure   Float    // kg/cm²
+  efficiency      Float    // percentage
+  createdAt       DateTime @default(now())
+}
+
+// Division: Ethanol
+model EthanolProduction {
+  id                String   @id @default(uuid())
+  batchNumber       String   @unique
+  productionDate    DateTime
+  molassesUsed      Float    // MT
+  ethanolProduced   Float    // Liters
+  fermentationTime  Int      // hours
+  purity            Float    // percentage
+  tankId            String
+  status            ProductionStatus @default(IN_PROGRESS)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Division: Animal Feed
+model FeedProduction {
+  id              String   @id @default(uuid())
+  batchNumber     String   @unique
+  productionDate  DateTime
+  bagasseUsed     Float    // MT
+  feedProduced    Float    // MT
+  moistureContent Float    // percentage
+  proteinContent  Float    // percentage
+  productLine     String
+  status          ProductionStatus @default(IN_PROGRESS)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum ProductionStatus {
+  IN_PROGRESS
+  COMPLETED
+  QUALITY_CHECK
+  APPROVED
+  REJECTED
+}
+
+// Financial
+model PaymentTransaction {
+  id            String   @id @default(uuid())
+  farmerId      String
+  deliveryId    String   @unique
+  amount        Float
+  paymentDate   DateTime?
+  paymentMethod String?
+  referenceNo   String?
+  status        PaymentStatus @default(PENDING)
+  approvedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  farmer        Farmer   @relation(fields: [farmerId], references: [id])
+  delivery      CaneDelivery @relation(fields: [deliveryId], references: [id])
+  approver      User?    @relation(fields: [approvedBy], references: [id])
+}
+
+// Contracts
+model Contract {
+  id            String   @id @default(uuid())
+  contractNo    String   @unique
+  farmerId      String
+  startDate     DateTime
+  endDate       DateTime
+  area          Float    // hectares
+  estimatedYield Float   // MT
+  pricePerTon   Float
+  status        ContractStatus @default(ACTIVE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  farmer        Farmer   @relation(fields: [farmerId], references: [id])
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+// Equipment & Maintenance
+model Equipment {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  name          String
+  division      String
+  type          String
+  status        EquipmentStatus @default(OPERATIONAL)
+  lastMaintenance DateTime?
+  nextMaintenance DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  maintenanceLogs MaintenanceLog[]
+}
+
+enum EquipmentStatus {
+  OPERATIONAL
+  MAINTENANCE
+  BREAKDOWN
+  RETIRED
+}
+
+model MaintenanceLog {
+  id            String   @id @default(uuid())
+  equipmentId   String
+  maintenanceDate DateTime
+  type          String
+  description   String
+  cost          Float?
+  performedBy   String
+  nextDue       DateTime?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  equipment     Equipment @relation(fields: [equipmentId], references: [id])
+}

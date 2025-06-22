@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "paths": {
+      "@erp/shared/*": ["./packages/shared/src/*"],
+      "@erp/database": ["./packages/database/src/index.ts"],
+      "@erp/mcp-tools": ["./packages/mcp-tools/src/index.ts"],
+      "@erp/common/*": ["./modules/common/src/*"],
+      "@erp/sugar/*": ["./modules/sugar/src/*"],
+      "@erp/power/*": ["./modules/power/src/*"],
+      "@erp/ethanol/*": ["./modules/ethanol/src/*"],
+      "@erp/feed/*": ["./modules/feed/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", "build"]
+}
