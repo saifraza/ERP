@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
+import Documents from './pages/Documents'
 import { useAuthStore } from './stores/authStore'
 
 const queryClient = new QueryClient()
@@ -23,6 +24,7 @@ function App() {
                 <MainLayout>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/documents" element={<Documents />} />
                     <Route path="/sugar/*" element={<div>Sugar Division</div>} />
                     <Route path="/power/*" element={<div>Power Division</div>} />
                     <Route path="/ethanol/*" element={<div>Ethanol Division</div>} />

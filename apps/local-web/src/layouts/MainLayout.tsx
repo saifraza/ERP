@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
   Home, Factory, Zap, Droplets, Package2, Users, Scale, 
-  DollarSign, Settings, Menu, X, LogOut 
+  DollarSign, Settings, Menu, X, LogOut, FileText 
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { cn } from '../lib/utils'
@@ -14,6 +14,7 @@ interface MainLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Sugar Division', href: '/sugar', icon: Factory },
   { name: 'Power Division', href: '/power', icon: Zap },
   { name: 'Ethanol Division', href: '/ethanol', icon: Droplets },

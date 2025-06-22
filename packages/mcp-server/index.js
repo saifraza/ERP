@@ -72,6 +72,51 @@ class ERPMCPServer {
               required: ['division'],
             },
           },
+          {
+            name: 'analyze_document',
+            description: 'Analyze uploaded factory documents (invoices, reports, etc.)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                documentId: {
+                  type: 'string',
+                  description: 'Document ID to analyze',
+                },
+                documentContent: {
+                  type: 'string',
+                  description: 'Document text content to analyze',
+                },
+                documentType: {
+                  type: 'string',
+                  enum: ['invoice', 'report', 'purchase_order', 'delivery_note', 'quality_cert'],
+                  description: 'Type of document',
+                },
+                analysisType: {
+                  type: 'string',
+                  enum: ['financial', 'compliance', 'quality', 'inventory', 'general'],
+                  description: 'Type of analysis to perform',
+                },
+              },
+              required: ['documentContent', 'documentType'],
+            },
+          },
+          {
+            name: 'get_documents',
+            description: 'List and search uploaded documents',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                category: {
+                  type: 'string',
+                  description: 'Filter by document category',
+                },
+                division: {
+                  type: 'string',
+                  description: 'Filter by division',
+                },
+              },
+            },
+          },
         ],
       };
     });
@@ -86,6 +131,10 @@ class ERPMCPServer {
             return await this.getProductionStatus(args);
           case 'analyze_efficiency':
             return await this.analyzeEfficiency(args);
+          case 'analyze_document':
+            return await this.analyzeDocument(args);
+          case 'get_documents':
+            return await this.getDocuments(args);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -145,6 +194,175 @@ Recommendations:
         },
       ],
     };
+  }
+
+  async analyzeDocument(args) {
+    const { documentContent, documentType, analysisType = 'general' } = args;
+    
+    // Simulate AI document analysis based on document type
+    let analysis = {
+      summary: '',
+      keyFindings: [],
+      extractedData: {},
+      recommendations: [],
+      alerts: []
+    };
+
+    switch (documentType) {
+      case 'invoice':
+        analysis = {
+          summary: 'Invoice document analyzed successfully',
+          keyFindings: [
+            'Total amount: ₹2,45,000',
+            'Payment terms: Net 30 days',
+            'Items: 15 line items identified',
+            'Vendor: ABC Chemicals Pvt Ltd'
+          ],
+          extractedData: {
+            invoiceNumber: 'INV-2025-06-1234',
+            date: '2025-06-20',
+            totalAmount: 245000,
+            tax: 45000,
+            items: 15,
+            dueDate: '2025-07-20'
+          },
+          recommendations: [
+            'Process payment by July 15 to avail 2% early payment discount',
+            'Verify quantity against delivery notes',
+            'Check for duplicate invoice entries'
+          ],
+          alerts: [
+            { type: 'info', message: 'Large invoice amount - requires manager approval' }
+          ]
+        };
+        break;
+
+      case 'report':
+        analysis = {
+          summary: 'Production report analyzed with key metrics extracted',
+          keyFindings: [
+            'Overall efficiency: 92.5%',
+            'Production target achievement: 98%',
+            'Quality compliance: 99.2%',
+            'Downtime: 2.5 hours'
+          ],
+          extractedData: {
+            reportPeriod: 'June 2025',
+            totalProduction: 2450,
+            efficiency: 92.5,
+            targetAchievement: 98,
+            majorIssues: ['Crusher maintenance', 'Power fluctuation']
+          },
+          recommendations: [
+            'Schedule preventive maintenance for crusher',
+            'Investigate power stability issues',
+            'Optimize shift patterns to reduce downtime'
+          ],
+          alerts: [
+            { type: 'warning', message: 'Efficiency below 95% target' }
+          ]
+        };
+        break;
+
+      case 'purchase_order':
+        analysis = {
+          summary: 'Purchase order verified and analyzed',
+          keyFindings: [
+            'Order value: ₹1,85,000',
+            'Delivery date: Within 7 days',
+            'Critical items: 3 identified',
+            'Vendor performance: Good (4.2/5)'
+          ],
+          extractedData: {
+            poNumber: 'PO-2025-06-5678',
+            vendor: 'XYZ Suppliers',
+            totalValue: 185000,
+            items: 8,
+            priority: 'High'
+          },
+          recommendations: [
+            'Confirm stock availability before approval',
+            'Negotiate bulk discount for regular items',
+            'Set up automated reorder for critical items'
+          ],
+          alerts: []
+        };
+        break;
+
+      default:
+        analysis = {
+          summary: 'Document analyzed successfully',
+          keyFindings: [
+            'Document type identified',
+            'Key information extracted',
+            'Compliance check completed'
+          ],
+          extractedData: {
+            documentType: documentType,
+            wordCount: documentContent.split(' ').length,
+            dateCreated: new Date().toISOString()
+          },
+          recommendations: [
+            'Review document for completeness',
+            'Ensure proper filing and categorization'
+          ],
+          alerts: []
+        };
+    }
+
+    // Add financial analysis if requested
+    if (analysisType === 'financial') {
+      analysis.financialInsights = {
+        cashFlowImpact: 'Negative ₹2,45,000 in 30 days',
+        budgetAlignment: 'Within approved budget',
+        costSavingOpportunities: ['Early payment discount: ₹4,900', 'Bulk order savings: ₹12,000']
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Document Analysis Results:\n\n${JSON.stringify(analysis, null, 2)}`,
+        },
+      ],
+    };
+  }
+
+  async getDocuments(args) {
+    const { category, division } = args;
+    
+    try {
+      const params = new URLSearchParams();
+      if (category) params.append('category', category);
+      if (division) params.append('division', division);
+      
+      const response = await this.apiClient.get(`/api/documents?${params}`);
+      const { documents } = response.data;
+      
+      let result = `Found ${documents.length} documents\n\n`;
+      documents.forEach((doc, index) => {
+        result += `${index + 1}. ${doc.fileName}\n`;
+        result += `   Type: ${doc.fileType} | Category: ${doc.category}\n`;
+        result += `   Division: ${doc.division || 'General'}\n`;
+        result += `   Status: ${doc.status}\n`;
+        if (doc.insights) {
+          result += `   Insights: ${doc.insights}\n`;
+        }
+        result += '\n';
+      });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: result,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch documents: ${error.message}`);
+    }
   }
 
   async run() {

@@ -90,6 +90,128 @@ app.get('/api/analytics/plants', (c) => {
   })
 })
 
+// Document Management endpoints
+app.post('/api/documents/upload', async (c) => {
+  try {
+    const body = await c.req.parseBody()
+    const file = body['file']
+    
+    if (!file || typeof file === 'string') {
+      return c.json({ error: 'No file uploaded' }, 400)
+    }
+    
+    // Simulate file storage and text extraction
+    const document = {
+      id: Date.now().toString(),
+      fileName: file.name,
+      fileType: file.name.split('.').pop(),
+      fileSize: file.size,
+      fileUrl: `/storage/${Date.now()}-${file.name}`,
+      category: body['category'] || 'general',
+      division: body['division'] || null,
+      content: 'Extracted text content would go here...',
+      uploadedBy: '1', // Mock user ID
+      createdAt: new Date()
+    }
+    
+    return c.json({
+      success: true,
+      document,
+      message: 'Document uploaded successfully'
+    })
+  } catch (error) {
+    console.error('Upload error:', error)
+    return c.json({ error: 'Upload failed' }, 500)
+  }
+})
+
+// Get documents list
+app.get('/api/documents', (c) => {
+  const { category, division } = c.req.query()
+  
+  // Mock documents data
+  const documents = [
+    {
+      id: '1',
+      fileName: 'Sugar_Production_Report_June2025.pdf',
+      fileType: 'pdf',
+      category: 'report',
+      division: 'sugar',
+      uploadedAt: '2025-06-20',
+      status: 'analyzed',
+      insights: 'Production efficiency at 92.5%, 2.5% below target'
+    },
+    {
+      id: '2',
+      fileName: 'Ethanol_Invoice_12345.pdf',
+      fileType: 'pdf',
+      category: 'invoice',
+      division: 'ethanol',
+      uploadedAt: '2025-06-19',
+      status: 'analyzed',
+      insights: 'Amount: ₹2,25,000, Payment due in 15 days'
+    },
+    {
+      id: '3',
+      fileName: 'Power_Generation_Data.xlsx',
+      fileType: 'excel',
+      category: 'report',
+      division: 'power',
+      uploadedAt: '2025-06-18',
+      status: 'processing',
+      insights: null
+    }
+  ]
+  
+  let filtered = documents
+  if (category) {
+    filtered = filtered.filter(d => d.category === category)
+  }
+  if (division) {
+    filtered = filtered.filter(d => d.division === division)
+  }
+  
+  return c.json({ documents: filtered })
+})
+
+// Analyze document with AI
+app.post('/api/documents/:id/analyze', async (c) => {
+  const { id } = c.req.param()
+  const { analysisType } = await c.req.json()
+  
+  // Simulate AI analysis
+  const analysis = {
+    id: Date.now().toString(),
+    documentId: id,
+    analysisType: analysisType || 'general',
+    results: {
+      summary: 'AI-generated summary of the document',
+      keyPoints: [
+        'Important finding 1',
+        'Important finding 2',
+        'Important finding 3'
+      ],
+      numbers: {
+        totalAmount: 225000,
+        items: 15,
+        efficiency: 92.5
+      }
+    },
+    insights: 'Based on the analysis, here are the key insights...',
+    alerts: [
+      { type: 'warning', message: 'Payment overdue by 5 days' },
+      { type: 'info', message: 'Efficiency below target by 2.5%' }
+    ],
+    confidence: 0.87,
+    createdAt: new Date()
+  }
+  
+  return c.json({
+    success: true,
+    analysis
+  })
+})
+
 // Error handling
 app.onError((err, c) => {
   console.error(`${err}`)

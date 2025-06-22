@@ -22,6 +22,7 @@ model User {
   // Relations
   farmerPayments PaymentTransaction[]
   weighbridgeEntries WeighbridgeTransaction[]
+  documents Document[]
 }
 
 // Farmer Management
@@ -218,4 +219,40 @@ model MaintenanceLog {
 
   // Relations
   equipment     Equipment @relation(fields: [equipmentId], references: [id])
+}
+
+// Document Management
+model Document {
+  id            String   @id @default(uuid())
+  fileName      String
+  fileType      String   // pdf, excel, word, image
+  fileSize      Int      // in bytes
+  fileUrl       String   // storage location
+  category      String   // invoice, report, purchase_order, delivery_note, quality_cert
+  division      String?  // sugar, power, ethanol, feed
+  content       String?  // extracted text content
+  metadata      String?  // JSON with document metadata
+  uploadedBy    String
+  processedAt   DateTime?
+  aiAnalysis    String?  // JSON with AI analysis results
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  uploader      User     @relation(fields: [uploadedBy], references: [id])
+  analyses      DocumentAnalysis[]
+}
+
+model DocumentAnalysis {
+  id            String   @id @default(uuid())
+  documentId    String
+  analysisType  String   // financial, compliance, quality, inventory
+  results       String   // JSON analysis results
+  insights      String   // AI generated insights
+  alerts        String?  // JSON alerts/warnings
+  confidence    Float    // AI confidence score
+  createdAt     DateTime @default(now())
+
+  // Relations
+  document      Document @relation(fields: [documentId], references: [id])
 }
