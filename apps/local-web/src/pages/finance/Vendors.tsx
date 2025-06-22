@@ -55,7 +55,7 @@ export default function Vendors() {
   }
 
   const getStatusBadge = (status: string) => {
-    const styles = {
+    const styles: Record<string, string> = {
       active: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
       inactive: 'bg-gray-100 text-gray-800',
