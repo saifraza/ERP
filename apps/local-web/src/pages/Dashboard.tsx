@@ -1,4 +1,6 @@
-import { BarChart3, Factory, Zap, Droplets, Package2 } from 'lucide-react'
+import { useState } from 'react'
+import { BarChart3, Factory, Zap, Droplets, Package2, Bot } from 'lucide-react'
+import AIChat from '../components/AIChat'
 
 const stats = [
   { name: 'Sugar Production', value: '2,450 MT', icon: Factory, color: 'bg-blue-500' },
@@ -8,8 +10,10 @@ const stats = [
 ]
 
 export default function Dashboard() {
+  const [showAIChat, setShowAIChat] = useState(false)
+
   return (
-    <div>
+    <div className="relative">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">Overview of all divisions</p>
@@ -77,6 +81,24 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* AI Assistant Button */}
+      <button
+        onClick={() => setShowAIChat(true)}
+        className="fixed bottom-6 right-6 bg-primary-600 hover:bg-primary-700 text-white rounded-full p-4 shadow-lg transition-colors duration-200 z-40"
+        title="AI Assistant"
+      >
+        <Bot className="h-6 w-6" />
+      </button>
+
+      {/* AI Chat Modal */}
+      {showAIChat && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-2xl">
+            <AIChat onClose={() => setShowAIChat(false)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -12,6 +12,7 @@
     "dev": "pnpm run --parallel dev",
     "dev:local": "pnpm run --filter local-* dev",
     "dev:cloud": "pnpm run --filter cloud-* dev",
+    "dev:mcp": "pnpm run --filter @erp/mcp-server dev",
     "build": "pnpm run -r build",
     "build:windows": "pnpm run build && pnpm run docker:build:windows",
     "test": "pnpm run -r test",
