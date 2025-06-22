@@ -53,6 +53,112 @@ app.get('/api/analytics/plants', (c) => {
   })
 })
 
+// Documents analytics
+app.get('/api/analytics/documents', (c) => {
+  return c.json({
+    summary: {
+      total: 1250,
+      pending: 45,
+      processed: 1205,
+      rejected: 12
+    },
+    byType: {
+      invoice: 450,
+      purchase_order: 320,
+      contract: 180,
+      offer: 150,
+      other: 150
+    },
+    recentActivity: [
+      {
+        id: '1',
+        action: 'processed',
+        document: 'Invoice-2025-001.pdf',
+        timestamp: new Date().toISOString()
+      }
+    ],
+    processingTime: {
+      average: 2.5, // minutes
+      min: 0.5,
+      max: 8.2
+    }
+  })
+})
+
+// Document storage endpoint for MCP server
+app.post('/api/documents', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { fileName, fileType, category, content, extractedData, metadata } = body
+    
+    // In production, this would save to database
+    // For now, we'll return a mock response
+    const document = {
+      id: `doc-${Date.now()}`,
+      fileName,
+      fileType,
+      category,
+      size: content ? content.length : 0,
+      extractedData,
+      metadata,
+      status: 'stored',
+      createdAt: new Date().toISOString(),
+      message: 'Document stored successfully'
+    }
+    
+    console.log(`Stored document: ${fileName} (${fileType})`)
+    
+    return c.json(document, 201)
+  } catch (error) {
+    console.error('Error storing document:', error)
+    return c.json({ error: 'Failed to store document' }, 500)
+  }
+})
+
+// Get document by ID
+app.get('/api/documents/:id', (c) => {
+  const id = c.req.param('id')
+  
+  // Mock response - in production would fetch from database
+  return c.json({
+    id,
+    fileName: 'Sample-Document.pdf',
+    fileType: 'invoice',
+    category: 'invoice',
+    status: 'processed',
+    extractedData: {
+      invoiceNumber: 'INV-2025-001',
+      totalAmount: '5000',
+      vendor: 'Sample Vendor'
+    },
+    createdAt: new Date().toISOString()
+  })
+})
+
+// List all documents
+app.get('/api/documents', (c) => {
+  // Mock response - in production would fetch from database
+  return c.json({
+    documents: [
+      {
+        id: 'doc-1',
+        fileName: 'Invoice-2025-001.pdf',
+        fileType: 'invoice',
+        status: 'processed',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'doc-2',
+        fileName: 'PO-2025-045.pdf',
+        fileType: 'purchase_order',
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      }
+    ],
+    total: 2
+  })
+})
+
 // Error handling
 app.onError((err, c) => {
   console.error(`${err}`)
