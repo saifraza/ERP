@@ -5,6 +5,8 @@ import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Documents from './pages/Documents'
+import FinanceDashboard from './pages/finance/FinanceDashboard'
+import Vendors from './pages/finance/Vendors'
 import { useAuthStore } from './stores/authStore'
 
 const queryClient = new QueryClient()
@@ -31,7 +33,14 @@ function App() {
                     <Route path="/feed/*" element={<div>Animal Feed Division</div>} />
                     <Route path="/farmers/*" element={<div>Farmer Management</div>} />
                     <Route path="/weighbridge/*" element={<div>Weighbridge</div>} />
-                    <Route path="/finance/*" element={<div>Finance</div>} />
+                    <Route path="/finance" element={<FinanceDashboard />} />
+                    <Route path="/finance/vendors" element={<Vendors />} />
+                    <Route path="/finance/vendors/:id" element={<div>Vendor Details</div>} />
+                    <Route path="/finance/indents" element={<div>Indents</div>} />
+                    <Route path="/finance/rfq" element={<div>RFQs</div>} />
+                    <Route path="/finance/purchase-orders" element={<div>Purchase Orders</div>} />
+                    <Route path="/finance/invoices" element={<div>Invoices</div>} />
+                    <Route path="/finance/payments" element={<div>Payments</div>} />
                     <Route path="/settings/*" element={<div>Settings</div>} />
                   </Routes>
                 </MainLayout>
