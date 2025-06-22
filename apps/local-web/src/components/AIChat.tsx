@@ -17,7 +17,7 @@ export default function AIChat({ onClose }: AIChatProps) {
     {
       id: '1',
       type: 'ai',
-      content: 'Hello! I\'m your ERP AI assistant. I can help you with:\n\n• Production status and metrics\n• Farmer information and payments\n• Efficiency analysis and optimization\n• Custom reports and insights\n• Predictive maintenance alerts\n\nWhat would you like to know about your factory operations?',
+      content: 'Hello! I\'m your ERP AI assistant. I can help you with:\n\n• Production status and metrics\n• Farmer information and payments\n• Efficiency analysis and optimization\n• Custom reports and insights\n• Predictive maintenance alerts\n• 📧 Gmail document processing\n• 📄 Invoice and PO analysis\n\nWhat would you like to know about your factory operations?',
       timestamp: new Date(),
     },
   ])
@@ -163,7 +163,7 @@ export default function AIChat({ onClose }: AIChatProps) {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask about production, farmers, efficiency, reports..."
+            placeholder="Ask about production, farmers, Gmail documents, invoices..."
             className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             rows={2}
             disabled={isLoading}
@@ -275,6 +275,94 @@ Breakdown repair cost: ₹2,50,000
 **Tomorrow's Forecast:** Good weather, expect normal operations`
   }
 
+  if (lowerInput.includes('gmail') || lowerInput.includes('email') || lowerInput.includes('mail')) {
+    return `📧 **Gmail Document Processing**
+
+I can access your Gmail through the MCP server to:
+
+• Search for emails with attachments
+• Extract invoices, purchase orders, and contracts
+• Analyze document contents using AI
+• Store documents in the ERP system
+
+**Recent Activity:**
+✅ 5 emails with attachments found
+📄 3 invoices processed
+📋 2 purchase orders pending approval
+
+What would you like me to do?
+• "Process all supplier emails"
+• "Extract invoices from Gmail"
+• "Show pending purchase orders"
+• "Check for new documents"`
+  }
+
+  if (lowerInput.includes('invoice') || lowerInput.includes('bill')) {
+    return `📄 **Invoice Processing via Gmail**
+
+**Recent Invoices Found:**
+• INV-2025-001: ₹50,000 from Engineering Solutions Ltd
+• INV-2025-002: ₹75,000 from Industrial Supplies Co
+• INV-2025-003: ₹25,000 from Tech Services Inc
+
+**Status:**
+✅ 2 invoices processed and stored
+⏳ 1 invoice pending approval
+
+**AI Analysis:**
+• Total pending: ₹1,50,000
+• Average payment terms: Net 30 days
+• Early payment discount available: 2%
+
+Shall I process the pending invoice?`
+  }
+
+  if (lowerInput.includes('purchase order') || lowerInput.includes('po')) {
+    return `📋 **Purchase Order Management**
+
+**Recent POs from Gmail:**
+• PO-2025-045: Equipment supply (₹1,25,000)
+• PO-2025-046: Raw materials (₹2,50,000)
+• PO-2025-047: Spare parts (₹45,000)
+
+**AI Insights:**
+✅ All within approved budget
+⚠️ PO-2025-046 has bulk discount opportunity
+📊 Total procurement this month: ₹8,75,000
+
+**Recommendations:**
+• Consolidate orders for 5% discount
+• Review delivery schedules
+• Verify vendor compliance
+
+Need me to process any specific PO?`
+  }
+
+  if (lowerInput.includes('document') || lowerInput.includes('attachment')) {
+    return `📊 **Document Management System**
+
+**Gmail Integration Status:**
+✅ Connected to your Gmail account
+📥 Auto-processing enabled for supplier emails
+
+**Recent Documents:**
+• 15 documents processed today
+• 8 invoices, 5 POs, 2 contracts
+• 98% extraction accuracy
+
+**Document Types I Can Process:**
+• Invoices (PDF, images)
+• Purchase orders
+• Contracts
+• Supplier offers
+• Delivery notes
+
+Would you like to:
+• "Check Gmail for new documents"
+• "View document analytics"
+• "Process pending attachments"`
+  }
+
   // Default response for general queries
   return `I understand you're asking about "${input}". 
 
@@ -285,10 +373,12 @@ I can help you with:
 ⚡ **Efficiency:** Analysis and optimization suggestions
 📊 **Reports:** Custom reports and analytics
 🔧 **Maintenance:** Predictive alerts and scheduling
+📧 **Gmail:** Process emails and extract documents
+📄 **Documents:** Analyze invoices, POs, and contracts
 
 Could you be more specific about what you'd like to know? For example:
 • "What's today's sugar production?"
 • "Show me farmers with pending payments"
-• "Any maintenance alerts?"
-• "Generate efficiency report"`
+• "Check Gmail for new invoices"
+• "Process supplier emails"`
 }
