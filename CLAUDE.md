@@ -128,9 +128,10 @@ ERP/
 - [x] Authentication system working
 - [x] MCP server implementation (AI features)
 - [x] AI chat interface in frontend
+- [x] MCP server Railway deployment ✅
 - [ ] Hardware integration implementation
 - [ ] Business logic implementation
-- [ ] MCP server Railway deployment
+- [ ] Connect MCP to web frontend (WebSocket)
 
 ## Phase 1: Foundation (Weeks 1-2) ✅ COMPLETED
 ### Completed Tasks
@@ -309,6 +310,7 @@ pnpm db:studio       # Open Prisma Studio
 ### Production Services (Railway)
 - **Frontend**: https://frontend-production-adfe.up.railway.app
 - **Backend API**: https://backend-api-production-5e68.up.railway.app
+- **MCP Server**: https://mcp-server-production-ac21.up.railway.app
 - **GitHub Repository**: https://github.com/SaifRaza/ERP
 
 ### Local Development
