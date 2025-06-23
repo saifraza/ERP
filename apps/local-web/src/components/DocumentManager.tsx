@@ -21,7 +21,7 @@ interface DocumentManagerProps {
 export default function DocumentManager({ onAnalyze }: DocumentManagerProps) {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(false)
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://backend-api-production-5e68.up.railway.app'
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://cloud-api-production-xxxx.up.railway.app'
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedDivision, setSelectedDivision] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')

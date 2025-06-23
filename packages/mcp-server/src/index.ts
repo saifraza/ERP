@@ -48,7 +48,7 @@ class GoogleWorkspaceServer {
     this.calendar = google.calendar({ version: 'v3', auth: this.auth });
     
     // Initialize document analyzer
-    const apiUrl = process.env.ERP_API_URL || 'https://backend-api-production-5e68.up.railway.app';
+    const apiUrl = process.env.ERP_API_URL || 'https://cloud-api-production.up.railway.app';
     this.documentAnalyzer = new DocumentAnalyzer(apiUrl);
 
     this.setupToolHandlers();

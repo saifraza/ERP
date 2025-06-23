@@ -2,7 +2,8 @@
 
 ## Production URLs
 - **Frontend**: https://frontend-production-adfe.up.railway.app
-- **Backend API**: https://backend-api-production-5e68.up.railway.app
+- **Cloud API**: https://cloud-api-production-xxxx.up.railway.app (replace xxxx with your actual URL)
+- **MCP Server**: https://mcp-server-production-ac21.up.railway.app  
 - **GitHub**: https://github.com/saifraza/ERP
 
 ## What's New
@@ -66,10 +67,10 @@ npx prisma migrate deploy
 
 ### Frontend (local-web)
 ```env
-VITE_API_URL=https://backend-api-production-5e68.up.railway.app
+VITE_API_URL=https://cloud-api-production-xxxx.up.railway.app
 ```
 
-### Backend (local-api)
+### Backend (cloud-api)
 ```env
 DATABASE_URL=your_database_url
 JWT_SECRET=your_jwt_secret
@@ -80,12 +81,12 @@ PORT=3001
 
 ### Check Deployment Status
 1. Go to Railway dashboard
-2. Check each service (frontend, backend-api, postgres)
+2. Check each service (frontend, cloud-api, postgres)
 3. View logs for any errors
 
 ### Health Check
 - Frontend: https://frontend-production-adfe.up.railway.app
-- Backend: https://backend-api-production-5e68.up.railway.app/health
+- Cloud API: https://cloud-api-production-xxxx.up.railway.app/health
 
 ## Troubleshooting
 

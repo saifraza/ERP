@@ -318,13 +318,13 @@ pnpm db:studio       # Open Prisma Studio
 
 ### Production Services (Railway)
 - **Frontend**: https://frontend-production-adfe.up.railway.app
-- **Backend API**: https://backend-api-production-5e68.up.railway.app
+- **Cloud API**: https://cloud-api-production-0f4d.up.railway.app (main API with database)
 - **MCP Server**: https://mcp-server-production-ac21.up.railway.app
-- **GitHub Repository**: https://github.com/SaifRaza/ERP
+- **GitHub Repository**: https://github.com/saifraza/ERP
 
 ### Local Development
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
+- **Cloud API**: http://localhost:3001 (when running locally)
 
 ### Login Credentials
 - **Admin**: admin@erp.com / admin123
@@ -364,7 +364,7 @@ DATABASE_URL="postgresql://postgres:qRvNDeDRjOOJQhdpNlYzGMhfJhzdAwVn@postgres.ra
 GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="your-client-secret"
 GOOGLE_REFRESH_TOKEN="your-refresh-token"
-ERP_API_URL="https://backend-api-production-5e68.up.railway.app"
+ERP_API_URL="https://cloud-api-production-xxxx.up.railway.app"
 ANTHROPIC_API_KEY="sk-..."
 
 # Hardware Integration
@@ -390,4 +390,4 @@ DCS_SERVER="192.168.1.100"
 
 ## Contact
 Solo Developer Project
-Last Updated: 2025-06-22
+Last Updated: 2025-06-23 - API Consolidated to cloud-api

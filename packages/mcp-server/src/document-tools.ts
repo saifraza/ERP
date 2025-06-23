@@ -13,7 +13,7 @@ export interface DocumentAnalysis {
 export class DocumentAnalyzer {
   private apiUrl: string;
 
-  constructor(apiUrl: string = 'https://backend-api-production-5e68.up.railway.app') {
+  constructor(apiUrl: string = 'https://cloud-api-production.up.railway.app') {
     this.apiUrl = apiUrl;
   }
 
