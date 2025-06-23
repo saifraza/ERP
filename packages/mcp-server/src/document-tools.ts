@@ -393,14 +393,19 @@ export class DocumentAnalyzer {
       if (this.prisma) {
         await this.prisma.document.create({
           data: {
-            fileName: documentData.fileName,
-            fileType: documentData.fileType,
-            category: documentData.category,
-            content: documentData.content,
-            aiAnalysis: documentData.aiAnalysis,
-            emailSource: documentData.emailSource,
-            division: documentData.division || 'COMMON',
-            companyId: process.env.DEFAULT_COMPANY_ID || '1ca3d045-b8ac-434a-bc9a-3e685bd10a94' // Use the seeded company ID
+            name: documentData.fileName,
+            type: documentData.fileType || 'other',
+            category: documentData.category || 'technical',
+            date: new Date(),
+            status: 'processed',
+            extractedData: documentData.aiAnalysis,
+            metadata: JSON.stringify({
+              emailSource: documentData.emailSource,
+              division: documentData.division || 'COMMON',
+              originalContent: documentData.content
+            }),
+            uploadedBy: 'c1beb0f7-73fa-4ae1-88d5-2a2fcccfbc6e', // Default user ID from seed
+            processedAt: new Date()
           }
         });
       } else {
