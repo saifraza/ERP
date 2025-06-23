@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { cn } from '../lib/utils'
+import CompanySelector from '../components/CompanySelector'
 
 interface ModernLayoutProps {
   children: React.ReactNode
@@ -210,13 +211,7 @@ function SidebarContent({
 
       {/* Company Selector */}
       <div className="px-6">
-        <button className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-          <div className="flex items-center gap-x-2">
-            <Building className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Ethanol Factory</span>
-          </div>
-          <ChevronDown className="h-4 w-4 text-gray-400" />
-        </button>
+        <CompanySelector />
       </div>
 
       {/* Navigation */}

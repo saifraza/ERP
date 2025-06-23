@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
+import { useEffect } from 'react'
 import MainLayout from './layouts/MainLayout'
 import ModernLayout from './layouts/ModernLayout'
 import Dashboard from './pages/Dashboard'
@@ -10,12 +11,16 @@ import Documents from './pages/Documents'
 import FinanceDashboard from './pages/finance/FinanceDashboard'
 import Vendors from './pages/finance/Vendors'
 import VendorsModern from './pages/finance/VendorsModern'
+import CompanySetup from './pages/setup/CompanySetup'
 import { useAuthStore } from './stores/authStore'
+import { useCompanyStore } from './stores/companyStore'
 
 const queryClient = new QueryClient()
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const { isSetupComplete, checkSetupStatus, isLoading } = useCompanyStore()
+  
   // Use modern UI by default - can be toggled via settings
   const useModernUI = true
 
@@ -23,19 +28,34 @@ function App() {
   const DashboardPage = useModernUI ? DashboardModern : Dashboard
   const VendorsPage = useModernUI ? VendorsModern : Vendors
 
+  // Check company setup status when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkSetupStatus()
+    }
+  }, [isAuthenticated, checkSetupStatus])
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
+          <Route path="/setup" element={isAuthenticated ? <CompanySetup /> : <Navigate to="/login" />} />
           <Route
             path="/*"
             element={
               isAuthenticated ? (
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route path="/documents" element={<Documents />} />
+                isLoading ? (
+                  <div className="flex items-center justify-center h-screen">
+                    <div className="text-lg text-gray-600">Loading...</div>
+                  </div>
+                ) : !isSetupComplete ? (
+                  <Navigate to="/setup" />
+                ) : (
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/documents" element={<Documents />} />
                     
                     {/* Store Module Routes */}
                     <Route path="/store/requisitions" element={<div>Material Requisitions</div>} />
@@ -66,6 +86,7 @@ function App() {
                     <Route path="/settings/*" element={<div>Settings</div>} />
                   </Routes>
                 </Layout>
+                )
               ) : (
                 <Navigate to="/login" />
               )

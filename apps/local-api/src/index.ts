@@ -8,6 +8,7 @@ import farmerRoutes from './routes/farmers'
 import weighbridgeRoutes from './routes/weighbridge'
 import documentsRoutes from './routes/documents'
 import financeRoutes from './routes/finance/index'
+import setupRoutes from './routes/setup/index'
 
 const app = new Hono()
 
@@ -31,6 +32,7 @@ app.route('/api/farmers', farmerRoutes)
 app.route('/api/weighbridge', weighbridgeRoutes)
 app.route('/api/documents', documentsRoutes)
 app.route('/api/finance', financeRoutes)
+app.route('/api/setup', setupRoutes)
 
 // Error handling
 app.onError((err, c) => {
