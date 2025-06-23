@@ -161,17 +161,19 @@ export const useCompanyStore = create<CompanyStore>()(
         const state = get()
         console.log('Checking setup status, current companies:', state.companies)
         
-        // First check if we already have companies
-        if (state.companies.length > 0) {
-          console.log('Companies already loaded, setup is complete')
-          return true
-        }
-        
-        // Otherwise try to load
+        // Always load fresh from API
         await state.loadCompanies()
         
-        const isComplete = get().isSetupComplete
+        // Get the latest state after loading
+        const latestState = get()
+        const isComplete = latestState.companies.length > 0
         console.log('Setup complete status after loading:', isComplete)
+        
+        // Update the state to match reality
+        if (latestState.isSetupComplete !== isComplete) {
+          set({ isSetupComplete: isComplete })
+        }
+        
         return isComplete
       },
 
@@ -187,7 +189,16 @@ export const useCompanyStore = create<CompanyStore>()(
       partialize: (state) => ({
         currentCompany: state.currentCompany,
         currentFactory: state.currentFactory
-      })
+        // Never persist isSetupComplete or companies - always fetch fresh
+      }),
+      version: 1, // Bump version to clear old persisted state
+      migrate: (persistedState: any) => {
+        // Clear any old state that might have isSetupComplete
+        return {
+          currentCompany: null,
+          currentFactory: null
+        }
+      }
     }
   )
 )
