@@ -67,12 +67,14 @@ app.get('/callback', async (c) => {
     const state = c.req.query('state')
     const error = c.req.query('error')
     
+    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
+    
     if (error) {
-      return c.redirect(`/settings/email?error=${error}`)
+      return c.redirect(`${frontendUrl}/settings/email?error=${error}`)
     }
     
     if (!code || !state) {
-      return c.redirect('/settings/email?error=missing_params')
+      return c.redirect(`${frontendUrl}/settings/email?error=missing_params`)
     }
     
     // Parse state
@@ -85,7 +87,7 @@ app.get('/callback', async (c) => {
     const { tokens } = await oauth2Client.getToken(code)
     
     if (!tokens.refresh_token) {
-      return c.redirect('/settings/email?error=no_refresh_token')
+      return c.redirect(`${frontendUrl}/settings/email?error=no_refresh_token`)
     }
     
     // Get user info to get email address
@@ -94,7 +96,7 @@ app.get('/callback', async (c) => {
     const { data: userInfo } = await oauth2.userinfo.get()
     
     if (!userInfo.email) {
-      return c.redirect('/settings/email?error=no_email')
+      return c.redirect(`${frontendUrl}/settings/email?error=no_email`)
     }
     
     // Store credentials
@@ -105,12 +107,14 @@ app.get('/callback', async (c) => {
       'google'
     )
     
-    // Redirect to success page
-    return c.redirect(`/settings/email?success=connected&email=${userInfo.email}`)
+    // Redirect to frontend success page
+    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
+    return c.redirect(`${frontendUrl}/settings/email?success=connected&email=${userInfo.email}`)
     
   } catch (error) {
     console.error('OAuth callback error:', error)
-    return c.redirect('/settings/email?error=oauth_failed')
+    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
+    return c.redirect(`${frontendUrl}/settings/email?error=oauth_failed`)
   }
 })
 
