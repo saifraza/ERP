@@ -26,6 +26,7 @@ model User {
   farmerPayments PaymentTransaction[]
   weighbridgeEntries WeighbridgeTransaction[]
   documents Document[]
+  emailCredentials EmailCredential[]
 }
 
 // Company and Factory Models (Referenced from schema-masters.prisma)
@@ -266,4 +267,27 @@ model DocumentAnalysis {
 
   // Relations
   document      Document @relation(fields: [documentId], references: [id])
+}
+
+// Email Integration - Multi-tenant support
+model EmailCredential {
+  id                    String    @id @default(uuid())
+  companyId            String?
+  userId               String?
+  emailAddress         String    @unique
+  googleRefreshToken   String?   @db.Text
+  microsoftRefreshToken String?   @db.Text
+  provider             String    @default("google") // google, microsoft, imap
+  isActive             Boolean   @default(true)
+  lastSynced           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  company              Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user                 User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@map("email_credentials")
 }

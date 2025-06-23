@@ -42,6 +42,7 @@ model Company {
   factories         Factory[]
   users             CompanyUser[]
   fiscalYears       FiscalYear[]
+  emailCredentials  EmailCredential[]
   
   @@index([code])
   @@index([gstNumber])

@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
 import { getGmailService } from '../services/gmail.js'
+import { multiTenantGmail } from '../services/multi-tenant-gmail.js'
 
 const app = new Hono()
 
@@ -15,7 +16,61 @@ const getMCPUrl = () => {
   return process.env.MCP_SERVER_URL || 'https://mcp-server-production-ac21.up.railway.app'
 }
 
-// Gmail API endpoints - Direct integration for robust ERP
+// Multi-tenant Gmail endpoints
+app.post('/company/:companyId/gmail/:action', async (c) => {
+  try {
+    const companyId = c.req.param('companyId')
+    const action = c.req.param('action')
+    const body = await c.req.json()
+    
+    switch (action) {
+      case 'list-emails': {
+        const { maxResults = 20, query = '' } = body
+        const emails = await multiTenantGmail.listEmails(companyId, maxResults, query)
+        return c.json({
+          success: true,
+          data: emails,
+          count: emails.length,
+          company: companyId
+        })
+      }
+      
+      case 'send-email': {
+        const { to, subject, body: emailBody, cc, bcc } = body
+        if (!to || !subject || !emailBody) {
+          return c.json({
+            success: false,
+            error: 'Missing required fields: to, subject, body'
+          }, 400)
+        }
+        
+        const result = await multiTenantGmail.sendEmail(
+          companyId,
+          to,
+          subject,
+          emailBody,
+          cc,
+          bcc
+        )
+        return c.json(result)
+      }
+      
+      default:
+        return c.json({
+          success: false,
+          error: `Unknown action: ${action}`
+        }, 400)
+    }
+  } catch (error: any) {
+    console.error('Multi-tenant Gmail error:', error)
+    return c.json({
+      success: false,
+      error: error?.message || 'Failed to process request'
+    }, 500)
+  }
+})
+
+// Gmail API endpoints - Direct integration for robust ERP (Legacy/Default)
 app.post('/gmail/:action', async (c) => {
   try {
     const action = c.req.param('action')
