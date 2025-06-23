@@ -16,6 +16,7 @@ import CompanySetup from './pages/setup/CompanySetup'
 import Companies from './pages/masters/Companies'
 import CompanyEdit from './pages/masters/CompanyEdit'
 import Mails from './pages/Mails'
+import EmailSettings from './pages/settings/EmailSettings'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -105,7 +106,8 @@ function App() {
                     
                     {/* Other Routes */}
                     <Route path="/reports" element={<div>Reports</div>} />
-                    <Route path="/settings/*" element={<div>Settings</div>} />
+                    <Route path="/settings" element={<div>Settings</div>} />
+                    <Route path="/settings/email" element={<EmailSettings />} />
                   </Routes>
                 </Layout>
                 )

@@ -54,7 +54,14 @@ const navigation = [
     ]
   },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  {
+    name: 'Settings',
+    icon: Settings,
+    children: [
+      { name: 'Email Integration', href: '/settings/email' },
+      { name: 'General', href: '/settings' },
+    ]
+  },
 ]
 
 export default function ModernLayout({ children }: ModernLayoutProps) {

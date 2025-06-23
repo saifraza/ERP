@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Mail, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
-import { useAuthStore } from '@/stores/authStore'
-import { useCompanyStore } from '@/stores/companyStore'
+import { Mail, Plus, Trash2, CheckCircle, AlertCircle } from 'lucide-react'
+import { useAuthStore } from '../../stores/authStore'
+import { useCompanyStore } from '../../stores/companyStore'
+import toast from 'react-hot-toast'
 
 interface EmailAccount {
   id: string
@@ -20,8 +18,6 @@ export function EmailSettings() {
   const [accounts, setAccounts] = useState<EmailAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     if (currentCompany) {
@@ -37,12 +33,12 @@ export function EmailSettings() {
     const email = params.get('email')
 
     if (successParam === 'connected' && email) {
-      setSuccess(`Successfully connected ${email}`)
+      toast.success(`Successfully connected ${email}`)
       loadAccounts()
       // Clear URL params
       window.history.replaceState({}, '', window.location.pathname)
     } else if (errorParam) {
-      setError(`Failed to connect email: ${errorParam}`)
+      toast.error(`Failed to connect email: ${errorParam}`)
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
@@ -66,6 +62,7 @@ export function EmailSettings() {
       setAccounts(data.accounts || [])
     } catch (err) {
       console.error('Failed to load email accounts:', err)
+      toast.error('Failed to load email accounts')
     } finally {
       setLoading(false)
     }
@@ -75,7 +72,6 @@ export function EmailSettings() {
     if (!currentCompany) return
 
     setConnecting(true)
-    setError(null)
 
     try {
       const response = await fetch(
@@ -94,7 +90,7 @@ export function EmailSettings() {
       // Redirect to Google OAuth
       window.location.href = data.authUrl
     } catch (err) {
-      setError('Failed to connect email account')
+      toast.error('Failed to connect email account')
       setConnecting(false)
     }
   }
@@ -115,17 +111,19 @@ export function EmailSettings() {
 
       if (!response.ok) throw new Error('Failed to remove account')
 
-      setSuccess(`Removed ${email}`)
+      toast.success(`Removed ${email}`)
       loadAccounts()
     } catch (err) {
-      setError('Failed to remove email account')
+      toast.error('Failed to remove email account')
     }
   }
 
-  const testConnection = async (companyId: string) => {
+  const testConnection = async () => {
+    if (!currentCompany) return
+
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth/test/${companyId}`,
+        `${import.meta.env.VITE_API_URL}/api/email-oauth/test/${currentCompany.id}`,
         {
           method: 'POST',
           headers: {
@@ -138,49 +136,48 @@ export function EmailSettings() {
       const data = await response.json()
       
       if (data.success) {
-        setSuccess(`Email connection working for ${data.account}`)
+        toast.success(`Email connection working for ${data.account}`)
       } else {
-        setError(data.error || 'Email connection failed')
+        toast.error(data.error || 'Email connection failed')
       }
     } catch (err) {
-      setError('Failed to test email connection')
+      toast.error('Failed to test email connection')
     }
   }
 
   if (!currentCompany) {
     return (
-      <Alert>
-        <AlertDescription>Please select a company first</AlertDescription>
-      </Alert>
+      <div className="rounded-md bg-yellow-50 p-4">
+        <div className="flex">
+          <AlertCircle className="h-5 w-5 text-yellow-400" />
+          <div className="ml-3">
+            <p className="text-sm font-medium text-yellow-800">
+              Please select a company first
+            </p>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Email Integration</CardTitle>
-          <CardDescription>
+      {/* Email Integration Card */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">
+            Email Integration
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
             Connect email accounts to automatically import invoices, purchase orders, and other documents
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert className="mb-4">
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
+          </p>
+        </div>
+        <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
           <div className="space-y-4">
             {loading ? (
-              <p>Loading email accounts...</p>
+              <div className="text-center py-4">
+                <p className="text-gray-500">Loading email accounts...</p>
+              </div>
             ) : accounts.length === 0 ? (
               <div className="text-center py-8">
                 <Mail className="mx-auto h-12 w-12 text-gray-400" />
@@ -192,12 +189,12 @@ export function EmailSettings() {
                 {accounts.map((account) => (
                   <div
                     key={account.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
                   >
                     <div className="flex items-center gap-3">
                       <Mail className="h-5 w-5 text-gray-500" />
                       <div>
-                        <p className="font-medium">{account.emailAddress}</p>
+                        <p className="font-medium text-gray-900">{account.emailAddress}</p>
                         <p className="text-sm text-gray-500">
                           {account.provider} •{' '}
                           {account.lastSynced
@@ -207,61 +204,62 @@ export function EmailSettings() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => testConnection(currentCompany.id)}
+                      <button
+                        onClick={testConnection}
+                        className="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
                         Test
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                      </button>
+                      <button
                         onClick={() => removeAccount(account.emailAddress)}
+                        className="p-1 text-gray-400 hover:text-red-600 focus:outline-none"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            <Button
+            <button
               onClick={connectEmail}
               disabled={connecting}
-              className="w-full"
+              className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="mr-2 h-4 w-4" />
               {connecting ? 'Connecting...' : 'Connect Email Account'}
-            </Button>
+            </button>
           </div>
 
           <div className="mt-6 text-sm text-gray-600">
             <p className="font-medium mb-2">Supported email providers:</p>
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-disc list-inside space-y-1 text-gray-500">
               <li>Gmail / Google Workspace</li>
               <li>Microsoft 365 / Outlook (coming soon)</li>
               <li>IMAP (coming soon)</li>
             </ul>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>How it works</CardTitle>
-        </CardHeader>
-        <CardContent className="prose prose-sm max-w-none">
-          <ol className="list-decimal list-inside space-y-2">
-            <li>Connect your company email account</li>
-            <li>ERP will automatically scan for invoices, POs, and other documents</li>
-            <li>AI analyzes attachments and extracts key information</li>
-            <li>Documents are filed in the appropriate modules</li>
-            <li>Get alerts for important deadlines and approvals</li>
-          </ol>
-        </CardContent>
-      </Card>
+      {/* How it works Card */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">
+            How it works
+          </h3>
+          <div className="mt-4">
+            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+              <li>Connect your company email account</li>
+              <li>ERP will automatically scan for invoices, POs, and other documents</li>
+              <li>AI analyzes attachments and extracts key information</li>
+              <li>Documents are filed in the appropriate modules</li>
+              <li>Get alerts for important deadlines and approvals</li>
+            </ol>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
