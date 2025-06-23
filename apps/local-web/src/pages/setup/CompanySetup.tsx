@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building, Factory, Database, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react'
+import { useCompanyStore } from '../../stores/companyStore'
 import CompanyInfo from './CompanyInfo'
 import FactorySetup from './FactorySetup'
 import MasterDataSetup from './MasterDataSetup'
@@ -79,19 +80,35 @@ export default function CompanySetup() {
   }
 
   const handleMasterDataSubmit = (template: string) => {
+    console.log('Master data template selected:', template)
     setMasterDataTemplate(template)
-    submitSetup()
+    // Call submitSetup with the template directly to ensure it's not lost
+    submitSetupWithTemplate(template)
   }
-
-  const submitSetup = async () => {
+  
+  const submitSetupWithTemplate = async (template: string) => {
     setIsSubmitting(true)
     try {
+      console.log('Starting setup submission...')
+      console.log('Company Data:', companyData)
+      console.log('Factories:', factories)
+      console.log('Master Data Template:', template)
+      
+      // Validate required data
+      if (!companyData) {
+        throw new Error('Company data is missing')
+      }
+      if (!factories || factories.length === 0) {
+        throw new Error('At least one factory is required')
+      }
+      
       // For development, save to localStorage
       const companyId = crypto.randomUUID()
       const company = {
         id: companyId,
         code: `COMP${Date.now().toString().slice(-6)}`,
         ...companyData,
+        masterDataTemplate: template,
         factories: factories.map((factory, index) => ({
           id: crypto.randomUUID(),
           code: `PLANT${String(index + 1).padStart(3, '0')}`,
@@ -99,10 +116,19 @@ export default function CompanySetup() {
         }))
       }
       
+      console.log('Prepared company object:', company)
+      
       // Save to localStorage
       const existingCompanies = JSON.parse(localStorage.getItem('erp-companies') || '[]')
       existingCompanies.push(company)
       localStorage.setItem('erp-companies', JSON.stringify(existingCompanies))
+      console.log('Saved to localStorage successfully')
+      
+      // Update the store immediately
+      const { setCompanies, setCurrentCompany } = useCompanyStore.getState()
+      setCompanies(existingCompanies)
+      setCurrentCompany(company)
+      console.log('Updated store successfully')
       
       // Also try API call but don't fail if it doesn't work
       try {
@@ -116,7 +142,7 @@ export default function CompanySetup() {
           body: JSON.stringify({
             company: companyData,
             factories: factories,
-            masterDataTemplate: masterDataTemplate
+            masterDataTemplate: template
           })
         })
         
@@ -129,12 +155,14 @@ export default function CompanySetup() {
       
       handleNext() // Go to complete step
     } catch (error) {
-      console.error('Setup error:', error)
-      alert('Failed to complete setup. Please try again.')
+      console.error('Setup error details:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Failed to complete setup: ${errorMessage}\n\nCheck console for details.`)
     } finally {
       setIsSubmitting(false)
     }
   }
+
 
   const renderStep = () => {
     switch (currentStep) {
@@ -168,7 +196,10 @@ export default function CompanySetup() {
           <SetupComplete
             companyName={companyData?.name || ''}
             factoryCount={factories.length}
-            onComplete={() => navigate('/')}
+            onComplete={() => {
+              // Navigate directly - the store should already be updated
+              navigate('/')
+            }}
           />
         )
       default:
@@ -188,37 +219,6 @@ export default function CompanySetup() {
                 Complete the setup to start using your ERP system
               </p>
             </div>
-            {/* Dev Mode Quick Setup */}
-            {process.env.NODE_ENV === 'development' && (
-              <button
-                onClick={() => {
-                  // Quick setup with demo data
-                  const demoCompany = {
-                    id: crypto.randomUUID(),
-                    code: 'COMP001',
-                    name: 'Demo Sugar Mills Pvt Ltd',
-                    legalName: 'Demo Sugar Mills Private Limited',
-                    gstNumber: '27AABCM1234D1ZH',
-                    panNumber: 'AABCM1234D',
-                    email: 'demo@sugarmill.com',
-                    phone: '9876543210',
-                    factories: [{
-                      id: crypto.randomUUID(),
-                      code: 'PLANT001',
-                      name: 'Main Sugar Plant',
-                      type: 'sugar',
-                      city: 'Pune',
-                      state: 'Maharashtra'
-                    }]
-                  }
-                  localStorage.setItem('erp-companies', JSON.stringify([demoCompany]))
-                  window.location.href = '/'
-                }}
-                className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
-              >
-                Skip Setup (Dev Mode)
-              </button>
-            )}
           </div>
         </div>
       </div>

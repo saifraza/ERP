@@ -12,6 +12,8 @@ import FinanceDashboard from './pages/finance/FinanceDashboard'
 import Vendors from './pages/finance/Vendors'
 import VendorsModern from './pages/finance/VendorsModern'
 import CompanySetup from './pages/setup/CompanySetup'
+import Companies from './pages/masters/Companies'
+import CompanyEdit from './pages/masters/CompanyEdit'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -19,7 +21,7 @@ const queryClient = new QueryClient()
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const { isSetupComplete, checkSetupStatus, isLoading } = useCompanyStore()
+  const { isSetupComplete, checkSetupStatus, isLoading, companies } = useCompanyStore()
   
   // Use modern UI by default - can be toggled via settings
   const useModernUI = true
@@ -35,6 +37,18 @@ function App() {
     }
   }, [isAuthenticated, checkSetupStatus])
 
+  // Development bypass - check if we have companies in localStorage
+  const hasCompaniesInStorage = () => {
+    try {
+      const stored = localStorage.getItem('erp-companies')
+      return stored && JSON.parse(stored).length > 0
+    } catch {
+      return false
+    }
+  }
+
+  const shouldShowSetup = isAuthenticated && !isLoading && !isSetupComplete && !hasCompaniesInStorage()
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -49,7 +63,7 @@ function App() {
                   <div className="flex items-center justify-center h-screen">
                     <div className="text-lg text-gray-600">Loading...</div>
                   </div>
-                ) : !isSetupComplete ? (
+                ) : shouldShowSetup ? (
                   <Navigate to="/setup" />
                 ) : (
                   <Layout>
@@ -75,7 +89,8 @@ function App() {
                     <Route path="/finance/gst" element={<div>GST Returns</div>} />
                     
                     {/* Masters Module Routes */}
-                    <Route path="/masters/companies" element={<div>Companies</div>} />
+                    <Route path="/masters/companies" element={<Companies />} />
+                    <Route path="/masters/companies/edit" element={<CompanyEdit />} />
                     <Route path="/masters/materials" element={<div>Materials</div>} />
                     <Route path="/masters/vendors" element={<div>Vendor Master</div>} />
                     <Route path="/masters/customers" element={<div>Customers</div>} />

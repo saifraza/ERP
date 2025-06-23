@@ -41,14 +41,41 @@ interface CompanyStore {
   clearSelection: () => void
 }
 
+// Initialize from localStorage immediately
+const getInitialState = () => {
+  try {
+    const localCompanies = localStorage.getItem('erp-companies')
+    if (localCompanies) {
+      const companies = JSON.parse(localCompanies)
+      console.log('Initial companies from localStorage:', companies)
+      return {
+        companies,
+        isSetupComplete: companies.length > 0,
+        currentCompany: companies[0] || null,
+        currentFactory: companies[0]?.factories?.[0] || null
+      }
+    }
+  } catch (error) {
+    console.error('Error loading initial state:', error)
+  }
+  return {
+    companies: [],
+    isSetupComplete: false,
+    currentCompany: null,
+    currentFactory: null
+  }
+}
+
+const initialState = getInitialState()
+
 export const useCompanyStore = create<CompanyStore>()(
   persist(
     (set, get) => ({
-      currentCompany: null,
-      currentFactory: null,
-      companies: [],
+      currentCompany: initialState.currentCompany,
+      currentFactory: initialState.currentFactory,
+      companies: initialState.companies,
       isLoading: false,
-      isSetupComplete: false,
+      isSetupComplete: initialState.isSetupComplete,
 
       setCurrentCompany: (company) => {
         set({ 
@@ -77,35 +104,40 @@ export const useCompanyStore = create<CompanyStore>()(
         try {
           // Check localStorage first for development
           const localCompanies = localStorage.getItem('erp-companies')
+          console.log('Loading companies from localStorage:', localCompanies)
+          
           if (localCompanies) {
             const companies = JSON.parse(localCompanies)
+            console.log('Parsed companies:', companies)
             get().setCompanies(companies)
-            set({ isSetupComplete: companies.length > 0 })
-            set({ isLoading: false })
+            set({ isSetupComplete: companies.length > 0, isLoading: false })
             return
           }
 
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-          const response = await fetch(`${apiUrl}/api/setup/companies`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
+          // Only try API if no local data
+          try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+            const response = await fetch(`${apiUrl}/api/setup/companies`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              }
+            })
+            
+            if (response.ok) {
+              const data = await response.json()
+              get().setCompanies(data.companies || [])
+              set({ isSetupComplete: data.companies.length > 0 })
+            } else {
+              // API failed, set empty state
+              set({ isSetupComplete: false })
             }
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            get().setCompanies(data.companies || [])
-            set({ isSetupComplete: data.companies.length > 0 })
+          } catch (apiError) {
+            console.log('API not available, continuing with local storage')
+            set({ isSetupComplete: false })
           }
         } catch (error) {
           console.error('Failed to load companies:', error)
-          // For development, check localStorage
-          const localCompanies = localStorage.getItem('erp-companies')
-          if (localCompanies) {
-            const companies = JSON.parse(localCompanies)
-            get().setCompanies(companies)
-            set({ isSetupComplete: companies.length > 0 })
-          }
+          set({ isSetupComplete: false })
         } finally {
           set({ isLoading: false })
         }
@@ -113,10 +145,20 @@ export const useCompanyStore = create<CompanyStore>()(
 
       checkSetupStatus: async () => {
         const state = get()
-        if (!state.companies.length) {
-          await state.loadCompanies()
+        console.log('Checking setup status, current companies:', state.companies)
+        
+        // First check if we already have companies
+        if (state.companies.length > 0) {
+          console.log('Companies already loaded, setup is complete')
+          return true
         }
-        return get().isSetupComplete
+        
+        // Otherwise try to load
+        await state.loadCompanies()
+        
+        const isComplete = get().isSetupComplete
+        console.log('Setup complete status after loading:', isComplete)
+        return isComplete
       },
 
       clearSelection: () => {
