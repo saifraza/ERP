@@ -76,46 +76,54 @@ export default function CompanySelector() {
                 <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   {company.name}
                 </div>
-                {company.factories.map((factory) => (
-                  <Listbox.Option
-                    key={factory.id}
-                    value={factory}
-                    className={({ active }) =>
-                      cn(
-                        'cursor-pointer select-none relative py-2 pl-10 pr-4',
-                        active ? 'bg-primary-50 text-primary-900' : 'text-gray-900'
-                      )
-                    }
-                  >
-                    {({ selected, active }) => (
-                      <>
-                        <div className="flex items-center">
-                          <Factory className={cn(
-                            'h-4 w-4 mr-2',
-                            active ? 'text-primary-600' : 'text-gray-400'
-                          )} />
-                          <span className={cn(
-                            'block truncate',
-                            selected ? 'font-medium' : 'font-normal'
-                          )}>
-                            {factory.name}
-                          </span>
-                          <span className="ml-2 text-xs text-gray-500">
-                            ({factory.type})
-                          </span>
-                        </div>
-                        {selected && (
-                          <span className={cn(
-                            'absolute inset-y-0 left-0 flex items-center pl-3',
-                            active ? 'text-primary-600' : 'text-primary-600'
-                          )}>
-                            <ChevronDown className="h-4 w-4 rotate-270" />
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Listbox.Option>
-                ))}
+                {company.factories && company.factories.length > 0 ? (
+                  company.factories.map((factory) => (
+                    <Listbox.Option
+                      key={factory.id}
+                      value={factory}
+                      onClick={() => {
+                        setCurrentCompany(company)
+                        setCurrentFactory(factory)
+                      }}
+                      className={({ active }) =>
+                        cn(
+                          'cursor-pointer select-none relative py-2 pl-10 pr-4',
+                          active ? 'bg-primary-50 text-primary-900' : 'text-gray-900'
+                        )
+                      }
+                    >
+                      {({ selected, active }) => (
+                        <>
+                          <div className="flex items-center">
+                            <Factory className={cn(
+                              'h-4 w-4 mr-2',
+                              active ? 'text-primary-600' : 'text-gray-400'
+                            )} />
+                            <span className={cn(
+                              'block truncate',
+                              currentFactory?.id === factory.id ? 'font-medium' : 'font-normal'
+                            )}>
+                              {factory.name}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({factory.type})
+                            </span>
+                          </div>
+                          {currentFactory?.id === factory.id && (
+                            <span className={cn(
+                              'absolute inset-y-0 left-0 flex items-center pl-3',
+                              active ? 'text-primary-600' : 'text-primary-600'
+                            )}>
+                              <ChevronDown className="h-4 w-4 rotate-270" />
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Listbox.Option>
+                  ))
+                ) : (
+                  <div className="px-10 py-2 text-sm text-gray-500">No factories added</div>
+                )}
               </div>
             ))}
             

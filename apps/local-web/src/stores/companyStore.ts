@@ -75,6 +75,16 @@ export const useCompanyStore = create<CompanyStore>()(
       loadCompanies: async () => {
         set({ isLoading: true })
         try {
+          // Check localStorage first for development
+          const localCompanies = localStorage.getItem('erp-companies')
+          if (localCompanies) {
+            const companies = JSON.parse(localCompanies)
+            get().setCompanies(companies)
+            set({ isSetupComplete: companies.length > 0 })
+            set({ isLoading: false })
+            return
+          }
+
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
           const response = await fetch(`${apiUrl}/api/setup/companies`, {
             headers: {
@@ -89,6 +99,13 @@ export const useCompanyStore = create<CompanyStore>()(
           }
         } catch (error) {
           console.error('Failed to load companies:', error)
+          // For development, check localStorage
+          const localCompanies = localStorage.getItem('erp-companies')
+          if (localCompanies) {
+            const companies = JSON.parse(localCompanies)
+            get().setCompanies(companies)
+            set({ isSetupComplete: companies.length > 0 })
+          }
         } finally {
           set({ isLoading: false })
         }
