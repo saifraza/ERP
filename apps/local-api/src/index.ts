@@ -9,6 +9,7 @@ import weighbridgeRoutes from './routes/weighbridge'
 import documentsRoutes from './routes/documents'
 import financeRoutes from './routes/finance/index'
 import setupRoutes from './routes/setup/index'
+import companiesRoutes from './routes/companies'
 
 const app = new Hono()
 
@@ -33,6 +34,7 @@ app.route('/api/weighbridge', weighbridgeRoutes)
 app.route('/api/documents', documentsRoutes)
 app.route('/api/finance', financeRoutes)
 app.route('/api/setup', setupRoutes)
+app.route('/api/companies', companiesRoutes)
 
 // Error handling
 app.onError((err, c) => {

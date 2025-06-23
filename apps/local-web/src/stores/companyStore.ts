@@ -102,37 +102,39 @@ export const useCompanyStore = create<CompanyStore>()(
       loadCompanies: async () => {
         set({ isLoading: true })
         try {
-          // Check localStorage first for development
-          const localCompanies = localStorage.getItem('erp-companies')
-          console.log('Loading companies from localStorage:', localCompanies)
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+          const token = localStorage.getItem('token')
           
-          if (localCompanies) {
-            const companies = JSON.parse(localCompanies)
-            console.log('Parsed companies:', companies)
-            get().setCompanies(companies)
-            set({ isSetupComplete: companies.length > 0, isLoading: false })
-            return
-          }
-
-          // Only try API if no local data
+          // Try API first
           try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-            const response = await fetch(`${apiUrl}/api/setup/companies`, {
+            const response = await fetch(`${apiUrl}/api/companies`, {
               headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${token}`
               }
             })
             
             if (response.ok) {
               const data = await response.json()
-              get().setCompanies(data.companies || [])
-              set({ isSetupComplete: data.companies.length > 0 })
-            } else {
-              // API failed, set empty state
-              set({ isSetupComplete: false })
+              const companies = data.companies || []
+              
+              // Update localStorage with API data
+              localStorage.setItem('erp-companies', JSON.stringify(companies))
+              
+              get().setCompanies(companies)
+              set({ isSetupComplete: companies.length > 0 })
+              return
             }
           } catch (apiError) {
-            console.log('API not available, continuing with local storage')
+            console.log('API not available, falling back to localStorage')
+          }
+          
+          // Fallback to localStorage
+          const localCompanies = localStorage.getItem('erp-companies')
+          if (localCompanies) {
+            const companies = JSON.parse(localCompanies)
+            get().setCompanies(companies)
+            set({ isSetupComplete: companies.length > 0 })
+          } else {
             set({ isSetupComplete: false })
           }
         } catch (error) {

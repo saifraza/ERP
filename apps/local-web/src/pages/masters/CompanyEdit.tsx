@@ -115,7 +115,18 @@ export default function CompanyEdit() {
           body: JSON.stringify(data)
         })
 
-        if (!response.ok) {
+        if (response.ok) {
+          const result = await response.json()
+          // Update with server response to ensure consistency
+          if (result.company) {
+            const serverUpdatedCompanies = companies.map(c => 
+              c.id === currentCompany.id ? result.company : c
+            )
+            localStorage.setItem('erp-companies', JSON.stringify(serverUpdatedCompanies))
+            setCompanies(serverUpdatedCompanies)
+            setCurrentCompany(result.company)
+          }
+        } else {
           console.warn('API update failed, but local storage updated')
         }
       } catch (apiError) {
