@@ -8,10 +8,10 @@ const app = new Hono()
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
-// Login schema
+// Login schema - accepts username or email
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6)
+  email: z.string().min(1), // Can be username or email
+  password: z.string().min(4) // Allow shorter passwords like '1234'
 })
 
 // Register schema
@@ -28,9 +28,14 @@ app.post('/login', async (c) => {
     const body = await c.req.json()
     const data = loginSchema.parse(body)
     
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: data.email }
+    // Find user by email or username
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.email },
+          { name: data.email } // Allow login with username
+        ]
+      }
     })
     
     if (!user || !user.isActive) {
