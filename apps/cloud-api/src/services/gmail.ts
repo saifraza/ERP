@@ -18,6 +18,14 @@ export class GmailService {
     this.oauth2Client = new google.auth.OAuth2(clientId, clientSecret)
     this.oauth2Client.setCredentials({ refresh_token: refreshToken })
 
+    // Set up automatic token refresh
+    this.oauth2Client.on('tokens', (tokens) => {
+      if (tokens.refresh_token) {
+        console.log('New refresh token received')
+      }
+      console.log('Access token refreshed')
+    })
+
     this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client })
     this.calendar = google.calendar({ version: 'v3', auth: this.oauth2Client })
   }
@@ -60,9 +68,24 @@ export class GmailService {
       )
 
       return emailDetails
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gmail list error:', error)
-      throw new Error('Failed to fetch emails')
+      console.error('Error details:', {
+        message: error?.message,
+        code: error?.code,
+        errors: error?.errors,
+        response: error?.response?.data
+      })
+      
+      // Provide more specific error messages
+      if (error?.code === 401 || error?.response?.status === 401) {
+        throw new Error('Gmail authentication failed. Refresh token may be invalid or expired.')
+      }
+      if (error?.code === 403 || error?.response?.status === 403) {
+        throw new Error('Gmail access denied. Check API permissions and scopes.')
+      }
+      
+      throw new Error(`Failed to fetch emails: ${error?.message || 'Unknown error'}`)
     }
   }
 

@@ -123,10 +123,26 @@ app.post('/gmail/:action', async (c) => {
 
 // Health check for MCP integration
 app.get('/health', async (c) => {
+  let gmailStatus = 'not_initialized'
+  let gmailError = null
+  
+  try {
+    const gmailService = getGmailService()
+    // Try to get user profile to test connection
+    const testResponse = await gmailService.gmail.users.getProfile({ userId: 'me' })
+    gmailStatus = 'connected'
+  } catch (error: any) {
+    gmailStatus = 'error'
+    gmailError = error?.message || 'Unknown error'
+  }
+  
   return c.json({
     status: 'ok',
     mcp_server: getMCPUrl(),
     integration: 'Gmail & Calendar',
+    gmail_status: gmailStatus,
+    gmail_error: gmailError,
+    oauth_configured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN),
     features: [
       'Email listing and search',
       'Email sending',
