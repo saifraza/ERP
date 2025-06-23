@@ -87,6 +87,12 @@ app.post('/api/run-migrations', async (c) => {
   try {
     const { execSync } = await import('child_process')
     
+    // First generate client to ensure types are available
+    execSync('npx prisma generate', {
+      cwd: process.cwd(),
+      encoding: 'utf8'
+    })
+    
     // Run migrations
     const migrationOutput = execSync('npx prisma migrate deploy', {
       cwd: process.cwd(),
