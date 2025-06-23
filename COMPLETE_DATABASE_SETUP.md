@@ -25,7 +25,7 @@ This guide will help you set up the complete database system for the ERP with al
 ### 1. Update Frontend Environment
 Create `.env` file in `apps/local-web`:
 ```env
-VITE_API_URL=https://backend-api-production-5e68.up.railway.app
+VITE_API_URL=https://cloud-api-production-0f4d.up.railway.app
 ```
 
 ### 2. Deploy to Railway
@@ -66,7 +66,7 @@ railway run npx prisma studio
 ```
 
 Or check via API:
-https://backend-api-production-5e68.up.railway.app/api/setup/db-status
+https://cloud-api-production-0f4d.up.railway.app/api/setup/db-status
 
 ### 4. Default Login Credentials
 
@@ -167,7 +167,7 @@ NODE_ENV=production
 
 ### frontend service:
 ```env
-VITE_API_URL=https://backend-api-production-5e68.up.railway.app
+VITE_API_URL=https://cloud-api-production-0f4d.up.railway.app
 ```
 
 ## Success Checklist
