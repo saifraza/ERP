@@ -69,7 +69,7 @@ export function EmailSettings() {
   }
 
   const connectEmail = () => {
-    if (!currentCompany) return
+    if (!currentCompany || !token) return
 
     setConnecting(true)
 
@@ -132,14 +132,14 @@ export function EmailSettings() {
     }
   }
 
-  if (!currentCompany) {
+  if (!currentCompany || !token) {
     return (
       <div className="rounded-md bg-yellow-50 p-4">
         <div className="flex">
           <AlertCircle className="h-5 w-5 text-yellow-400" />
           <div className="ml-3">
             <p className="text-sm font-medium text-yellow-800">
-              Please select a company first
+              {!currentCompany ? 'Please select a company first' : 'Please log in to continue'}
             </p>
           </div>
         </div>
