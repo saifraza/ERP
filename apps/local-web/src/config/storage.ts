@@ -1,22 +1,25 @@
+// Define storage paths
+const storagePaths = {
+  uploads: 'uploads',
+  documents: 'documents',
+  temp: 'temp',
+  cache: 'cache',
+  reports: 'reports',
+  invoices: 'invoices',
+  attachments: 'attachments'
+} as const
+
 // Storage configuration for persistent volume
 export const storageConfig = {
   // Base path for Railway volume (determined by API)
   volumePath: '/data',
   
   // Storage paths
-  paths: {
-    uploads: 'uploads',
-    documents: 'documents',
-    temp: 'temp',
-    cache: 'cache',
-    reports: 'reports',
-    invoices: 'invoices',
-    attachments: 'attachments'
-  } as const,
+  paths: storagePaths,
   
   // Get full path for a storage type
-  getPath: (type: keyof typeof storageConfig.paths) => {
-    return `${storageConfig.volumePath}/${storageConfig.paths[type]}`
+  getPath: (type: keyof typeof storagePaths) => {
+    return `${storageConfig.volumePath}/${storagePaths[type]}`
   },
   
   // File size limits
@@ -35,7 +38,7 @@ export const hasVolume = () => {
 // Storage utilities
 export const storage = {
   // Save file to volume (client-side)
-  async saveFile(file: File, type: keyof typeof storageConfig.paths): Promise<string> {
+  async saveFile(file: File, type: keyof typeof storagePaths): Promise<string> {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('type', type as string)
