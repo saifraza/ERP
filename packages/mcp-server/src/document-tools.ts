@@ -406,11 +406,11 @@ export class DocumentAnalyzer {
       if (this.useInternalUrl) {
         console.log('Document stored via internal network (fast)');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to store document:', error);
       
       // If internal URL fails, try public URL as fallback
-      if (this.useInternalUrl && error.code === 'ENOTFOUND') {
+      if (this.useInternalUrl && error?.code === 'ENOTFOUND') {
         try {
           const publicUrl = process.env.ERP_API_URL || 'https://cloud-api-production-0f4d.up.railway.app';
           await axios.post(`${publicUrl}/api/documents`, documentData);
