@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import axios from 'axios';
+import { PrismaClient } from '@prisma/client';
 
 export interface DocumentAnalysis {
   summary: string;
@@ -12,9 +13,23 @@ export interface DocumentAnalysis {
 
 export class DocumentAnalyzer {
   private apiUrl: string;
+  private prisma: PrismaClient | null = null;
+  private useInternalUrl: boolean;
 
-  constructor(apiUrl: string = 'https://cloud-api-production.up.railway.app') {
-    this.apiUrl = apiUrl;
+  constructor(apiUrl?: string, useDatabase: boolean = false) {
+    // Use internal URL when in Railway environment
+    this.useInternalUrl = process.env.RAILWAY_ENVIRONMENT === 'production';
+    
+    if (this.useInternalUrl && !apiUrl) {
+      this.apiUrl = 'http://cloud-api.railway.internal:3001';
+    } else {
+      this.apiUrl = apiUrl || 'https://cloud-api-production.up.railway.app';
+    }
+    
+    // Initialize direct database connection if requested
+    if (useDatabase && process.env.DATABASE_URL) {
+      this.prisma = new PrismaClient();
+    }
   }
 
   async analyzeDocument(content: string, documentType: string, analysisType: string = 'general'): Promise<DocumentAnalysis> {
@@ -374,9 +389,41 @@ export class DocumentAnalyzer {
 
   async storeDocument(documentData: any): Promise<void> {
     try {
-      await axios.post(`${this.apiUrl}/api/documents`, documentData);
+      // Use direct database connection if available
+      if (this.prisma) {
+        await this.prisma.document.create({
+          data: {
+            fileName: documentData.fileName,
+            fileType: documentData.fileType,
+            category: documentData.category,
+            content: documentData.content,
+            aiAnalysis: documentData.aiAnalysis,
+            emailSource: documentData.emailSource,
+            division: documentData.division || 'COMMON',
+            companyId: process.env.DEFAULT_COMPANY_ID || '1ca3d045-b8ac-434a-bc9a-3e685bd10a94' // Use the seeded company ID
+          }
+        });
+      } else {
+        // Fallback to API call
+        await axios.post(`${this.apiUrl}/api/documents`, documentData);
+      }
     } catch (error) {
       console.error('Failed to store document:', error);
+      // If direct DB fails, try API as fallback
+      if (this.prisma && !this.useInternalUrl) {
+        try {
+          await axios.post(`${this.apiUrl}/api/documents`, documentData);
+        } catch (apiError) {
+          console.error('API fallback also failed:', apiError);
+        }
+      }
+    }
+  }
+  
+  // Clean up database connection
+  async disconnect(): Promise<void> {
+    if (this.prisma) {
+      await this.prisma.$disconnect();
     }
   }
 }
