@@ -25,11 +25,13 @@ app.post('/gmail/:action', async (c) => {
     let gmailService
     try {
       gmailService = getGmailService()
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Gmail service initialization error:', error)
       return c.json({
         success: false,
         error: 'Gmail service not configured. Please check OAuth credentials.',
-        details: error.message
+        details: error?.message || 'Unknown error',
+        hint: 'Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN to environment variables'
       }, 500)
     }
     
@@ -109,11 +111,12 @@ app.post('/gmail/:action', async (c) => {
         }, 400)
     }
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('MCP proxy error:', error)
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to process MCP request'
+      error: error instanceof Error ? error.message : 'Failed to process MCP request',
+      details: error?.stack || error?.toString() || 'Unknown error'
     }, 500)
   }
 })
