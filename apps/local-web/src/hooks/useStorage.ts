@@ -26,7 +26,8 @@ export function useStorage() {
 
   const fetchStorageInfo = async () => {
     try {
-      const response = await fetch('/api/storage/info', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://cloud-api-production-0f4d.up.railway.app'
+      const response = await fetch(`${apiUrl}/api/storage/info`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

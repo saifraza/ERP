@@ -1,7 +1,7 @@
 // Storage configuration for persistent volume
 export const storageConfig = {
-  // Base path for Railway volume
-  volumePath: process.env.NODE_ENV === 'production' ? '/data' : './data',
+  // Base path for Railway volume (determined by API)
+  volumePath: '/data',
   
   // Storage paths
   paths: {
@@ -12,7 +12,7 @@ export const storageConfig = {
     reports: 'reports',
     invoices: 'invoices',
     attachments: 'attachments'
-  },
+  } as const,
   
   // Get full path for a storage type
   getPath: (type: keyof typeof storageConfig.paths) => {
@@ -28,8 +28,8 @@ export const storageConfig = {
 
 // Helper to check if running on Railway with volume
 export const hasVolume = () => {
-  if (typeof window === 'undefined') return false
-  return process.env.NODE_ENV === 'production'
+  // This will be determined by the API response
+  return true
 }
 
 // Storage utilities
@@ -38,9 +38,10 @@ export const storage = {
   async saveFile(file: File, type: keyof typeof storageConfig.paths): Promise<string> {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('type', type)
+    formData.append('type', type as string)
     
-    const response = await fetch('/api/storage/upload', {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://cloud-api-production-0f4d.up.railway.app'
+    const response = await fetch(`${apiUrl}/api/storage/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -58,12 +59,14 @@ export const storage = {
   
   // Get file URL
   getFileUrl(path: string): string {
-    return `/api/storage/file?path=${encodeURIComponent(path)}`
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://cloud-api-production-0f4d.up.railway.app'
+    return `${apiUrl}/api/storage/file?path=${encodeURIComponent(path)}`
   },
   
   // Delete file
   async deleteFile(path: string): Promise<void> {
-    const response = await fetch('/api/storage/delete', {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://cloud-api-production-0f4d.up.railway.app'
+    const response = await fetch(`${apiUrl}/api/storage/delete`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
