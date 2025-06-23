@@ -37,6 +37,7 @@ model User {
   createdJournals        Journal[]           @relation("CreatedByUser")
   approvedJournals       Journal[]           @relation("ApprovedByUser")
   maintenanceRecords     Maintenance[]       @relation("CreatedByUser")
+  emailCredentials       EmailCredential[]
   
   @@index([email])
   @@index([role])
@@ -88,6 +89,7 @@ model Company {
   hsnCodes       HSNCode[]
   uoms           UOM[]
   approvalMatrix ApprovalMatrix[]
+  emailCredentials EmailCredential[]
 }
 
 model CompanyUser {
@@ -1293,6 +1295,28 @@ model DashboardConfig {
   updatedAt DateTime @updatedAt
   
   @@index([userId])
+}
+
+// Email Credential Management
+model EmailCredential {
+  id                    String    @id @default(uuid())
+  companyId             String
+  userId                String?
+  emailAddress          String    @unique
+  provider              String    @default("google") // google, microsoft
+  googleRefreshToken    String?
+  microsoftRefreshToken String?
+  isActive              Boolean   @default(true)
+  lastSynced            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  company               Company   @relation(fields: [companyId], references: [id])
+  user                  User?     @relation(fields: [userId], references: [id])
+  
+  @@index([companyId])
+  @@index([userId])
+  @@index([provider])
 }
 
 // Document Management (existing)
