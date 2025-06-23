@@ -8,7 +8,22 @@ interface Company {
   legalName: string
   gstNumber: string
   panNumber: string
+  tanNumber?: string
+  cinNumber?: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  pincode: string
+  email: string
+  phone: string
+  website?: string
+  fyStartMonth: number
+  currentFY: string
   factories: Factory[]
+  isActive?: boolean
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 interface Factory {
@@ -16,8 +31,17 @@ interface Factory {
   code: string
   name: string
   type: string
+  addressLine1?: string
+  addressLine2?: string
   city: string
   state: string
+  pincode?: string
+  crushingCapacity?: number
+  powerCapacity?: number
+  ethanolCapacity?: number
+  gstNumber?: string
+  factoryLicense?: string
+  pollutionLicense?: string
 }
 
 interface CompanyStore {
