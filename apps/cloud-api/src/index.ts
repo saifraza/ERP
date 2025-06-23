@@ -171,6 +171,63 @@ app.post('/api/run-migrations', async (c) => {
   }
 })
 
+// Create EmailCredential table (temporary)
+app.post('/api/create-email-credential-table', async (c) => {
+  try {
+    const { prisma } = await import('./lib/prisma.js')
+    
+    // Create the EmailCredential table
+    await prisma.$executeRaw`
+      CREATE TABLE IF NOT EXISTS "EmailCredential" (
+        "id" TEXT NOT NULL,
+        "companyId" TEXT NOT NULL,
+        "userId" TEXT,
+        "emailAddress" TEXT NOT NULL,
+        "provider" TEXT NOT NULL DEFAULT 'google',
+        "googleRefreshToken" TEXT,
+        "microsoftRefreshToken" TEXT,
+        "isActive" BOOLEAN NOT NULL DEFAULT true,
+        "lastSynced" TIMESTAMP(3),
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL,
+        CONSTRAINT "EmailCredential_pkey" PRIMARY KEY ("id")
+      )
+    `
+    
+    // Create indexes
+    await prisma.$executeRaw`CREATE UNIQUE INDEX IF NOT EXISTS "EmailCredential_emailAddress_key" ON "EmailCredential"("emailAddress")`
+    await prisma.$executeRaw`CREATE INDEX IF NOT EXISTS "EmailCredential_companyId_idx" ON "EmailCredential"("companyId")`
+    await prisma.$executeRaw`CREATE INDEX IF NOT EXISTS "EmailCredential_userId_idx" ON "EmailCredential"("userId")`
+    await prisma.$executeRaw`CREATE INDEX IF NOT EXISTS "EmailCredential_provider_idx" ON "EmailCredential"("provider")`
+    
+    // Add foreign keys
+    await prisma.$executeRaw`
+      ALTER TABLE "EmailCredential" 
+      ADD CONSTRAINT "EmailCredential_companyId_fkey" 
+      FOREIGN KEY ("companyId") REFERENCES "Company"("id") 
+      ON DELETE RESTRICT ON UPDATE CASCADE
+    `
+    
+    await prisma.$executeRaw`
+      ALTER TABLE "EmailCredential" 
+      ADD CONSTRAINT "EmailCredential_userId_fkey" 
+      FOREIGN KEY ("userId") REFERENCES "User"("id") 
+      ON DELETE SET NULL ON UPDATE CASCADE
+    `
+    
+    return c.json({
+      status: 'success',
+      message: 'EmailCredential table created successfully'
+    })
+  } catch (error) {
+    console.error('Create table error:', error)
+    return c.json({
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
+  }
+})
+
 // Error handling
 app.onError((err, c) => {
   console.error(`${err}`)
