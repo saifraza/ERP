@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { useCompanyStore } from '../stores/companyStore'
-import { Mail, RefreshCw, Send, Search, Paperclip, Calendar, AlertCircle, User, Bot, Clock, Filter, Download, Eye, MessageSquare, Sparkles } from 'lucide-react'
+import { Mail, RefreshCw, Send, Search, Paperclip, Calendar, AlertCircle, User, Bot, Clock, Filter, Download, Eye, MessageSquare, Sparkles, LogOut, Settings } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 
 interface Email {
   id: string
@@ -31,8 +32,9 @@ interface CalendarEvent {
 }
 
 export default function Mails() {
-  const { user, token } = useAuthStore()
+  const { user, token, logout } = useAuthStore()
   const { currentCompany } = useCompanyStore()
+  const navigate = useNavigate()
   const [emails, setEmails] = useState<Email[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(false)
@@ -98,6 +100,8 @@ export default function Mails() {
         ? `${apiUrl}/api/mcp/company/${currentCompany.id}/gmail/${action}`
         : `${apiUrl}/api/mcp/gmail/${action}`
       
+      console.log(`Calling MCP endpoint: ${endpoint}`)
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -107,23 +111,36 @@ export default function Mails() {
         body: JSON.stringify(args)
       })
 
-      if (!response.ok) throw new Error('Failed to call MCP')
-      
       const data = await response.json()
+      console.log('MCP Response:', data)
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to call MCP')
+      }
       
       // Parse response based on tool
       if (data.success && data.data) {
         if (tool === 'list_emails') {
           setEmails(data.data)
+          toast.success(`Loaded ${data.data.length} emails`)
         } else if (tool === 'list_events') {
           setEvents(data.data)
+          toast.success(`Loaded ${data.data.length} calendar events`)
         }
+      } else if (data.success && tool === 'send_email') {
+        toast.success('Email sent successfully')
       }
-      
-      toast.success(`${tool.replace('_', ' ')} executed successfully`)
     } catch (error: any) {
       console.error('MCP Error:', error)
-      toast.error('Failed to connect to email server')
+      const errorMessage = error.message || 'Failed to connect to email server'
+      toast.error(errorMessage)
+      
+      // Provide helpful error messages
+      if (errorMessage.includes('calendar')) {
+        toast.error('Calendar access might not be enabled. Check your OAuth permissions.', {
+          duration: 5000
+        })
+      }
     } finally {
       setLoading(false)
     }
@@ -133,8 +150,17 @@ export default function Mails() {
     callMCP('list_emails', { maxResults: 20, query: searchQuery })
   }
 
-  const fetchCalendarEvents = () => {
-    callMCP('list_events', { maxResults: 10 })
+  const fetchCalendarEvents = async () => {
+    try {
+      setLoading(true)
+      console.log('Fetching calendar events...')
+      await callMCP('list_events', { maxResults: 10 })
+    } catch (error) {
+      console.error('Calendar fetch error:', error)
+      toast.error('Failed to fetch calendar events. Make sure calendar access is enabled.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const sendTestEmail = () => {
@@ -199,11 +225,40 @@ export default function Mails() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <Mail className="h-7 w-7 text-indigo-600" />
-            Email & Calendar Hub
-          </h1>
-          <p className="text-gray-600 mt-1">Manage emails, calendar events, and use AI assistant</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <Mail className="h-7 w-7 text-indigo-600" />
+                Email & Calendar Hub
+              </h1>
+              <p className="text-gray-600 mt-1">Manage emails, calendar events, and use AI assistant</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate('/settings/email')}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                  title="Settings"
+                >
+                  <Settings className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    logout()
+                    navigate('/login')
+                  }}
+                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -239,16 +294,41 @@ export default function Mails() {
 
         {/* No accounts message */}
         {emailAccounts.length === 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
-            <AlertCircle className="h-12 w-12 text-yellow-600 mx-auto mb-3" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Email Accounts Connected</h3>
-            <p className="text-gray-600 mb-4">Connect your company email accounts to start managing emails and calendar events.</p>
-            <a 
-              href="/settings/email" 
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-            >
-              Connect Email Account
-            </a>
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-8 mb-6">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <Mail className="h-16 w-16 text-indigo-600" />
+                  <Bot className="h-8 w-8 text-purple-600 absolute -bottom-1 -right-1" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Welcome to Email & Calendar Hub!</h3>
+              <p className="text-gray-600 mb-6 text-lg">Connect your work email to unlock powerful features:</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-left">
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <Mail className="h-6 w-6 text-indigo-600 mb-2" />
+                  <h4 className="font-medium text-gray-900">Email Management</h4>
+                  <p className="text-sm text-gray-600 mt-1">Search, filter, and manage all your business emails</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <Calendar className="h-6 w-6 text-purple-600 mb-2" />
+                  <h4 className="font-medium text-gray-900">Calendar Integration</h4>
+                  <p className="text-sm text-gray-600 mt-1">View meetings and schedule events seamlessly</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <Sparkles className="h-6 w-6 text-green-600 mb-2" />
+                  <h4 className="font-medium text-gray-900">AI Assistant</h4>
+                  <p className="text-sm text-gray-600 mt-1">Get intelligent help with emails and documents</p>
+                </div>
+              </div>
+              <a 
+                href="/settings/email" 
+                className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium shadow-sm"
+              >
+                <Mail className="h-5 w-5 mr-2" />
+                Connect Your Work Email
+              </a>
+            </div>
           </div>
         )}
 
@@ -279,7 +359,7 @@ export default function Mails() {
             </button>
             <button
               onClick={() => setActiveTab('assistant')}
-              className={`flex-1 px-6 py-3 font-medium transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 px-6 py-3 font-medium transition-colors flex items-center justify-center gap-2 relative ${
                 activeTab === 'assistant'
                   ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -287,6 +367,10 @@ export default function Mails() {
             >
               <Bot className="h-4 w-4" />
               AI Assistant
+              <span className="absolute top-2 right-2 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
             </button>
           </div>
         </div>

@@ -32,6 +32,13 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('token')
         localStorage.removeItem('erp-companies')
         localStorage.removeItem('company-storage')
+        localStorage.removeItem('auth-storage')
+        // Clear all localStorage items that might contain auth data
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('auth') || key.includes('token') || key.includes('user')) {
+            localStorage.removeItem(key)
+          }
+        })
         set({ user: null, token: null, isAuthenticated: false })
       },
     }),
