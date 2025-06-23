@@ -47,6 +47,30 @@ app.post('/gmail/:action', async (c) => {
         })
       }
       
+      case 'list-message-ids': {
+        // Simple endpoint that just returns message IDs
+        const { maxResults = 20, query = '' } = body
+        try {
+          const response = await gmailService.gmail.users.messages.list({
+            userId: 'me',
+            maxResults,
+            q: query || ''
+          })
+          
+          return c.json({
+            success: true,
+            data: response.data.messages || [],
+            resultSizeEstimate: response.data.resultSizeEstimate,
+            nextPageToken: response.data.nextPageToken
+          })
+        } catch (error: any) {
+          return c.json({
+            success: false,
+            error: error?.message || 'Failed to list message IDs'
+          }, 500)
+        }
+      }
+      
       case 'send-email': {
         const { to, subject, body: emailBody, cc, bcc } = body
         if (!to || !subject || !emailBody) {
@@ -103,6 +127,7 @@ app.post('/gmail/:action', async (c) => {
           error: `Unknown action: ${action}`,
           availableActions: [
             'list-emails',
+            'list-message-ids',
             'send-email',
             'list-events',
             'search-suppliers',
@@ -165,6 +190,36 @@ app.get('/health', async (c) => {
       'Attachment extraction'
     ]
   })
+})
+
+// Check OAuth scopes
+app.get('/check-scopes', authMiddleware, async (c) => {
+  try {
+    const gmailService = getGmailService()
+    
+    // Get access token
+    const tokenInfo = await gmailService.oauth2Client.getAccessToken()
+    
+    if (!tokenInfo.token) {
+      return c.json({ error: 'No access token available' }, 500)
+    }
+    
+    // Make a request to tokeninfo endpoint
+    const tokenInfoResponse = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${tokenInfo.token}`)
+    const tokenData = await tokenInfoResponse.json()
+    
+    return c.json({
+      email: tokenData.email,
+      scopes: tokenData.scope ? tokenData.scope.split(' ') : [],
+      expires_in: tokenData.expires_in,
+      token_type: 'Bearer'
+    })
+  } catch (error: any) {
+    return c.json({
+      error: 'Failed to check scopes',
+      details: error?.message
+    }, 500)
+  }
 })
 
 // OAuth test endpoint for debugging

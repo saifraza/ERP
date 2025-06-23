@@ -70,29 +70,47 @@ export class GmailService {
 
       const messages = response.data.messages || []
       
-      // Get full details for each message
+      // If no messages, return empty array
+      if (messages.length === 0) {
+        console.log('No messages found')
+        return []
+      }
+      
+      // Try to get full details, but handle 403 errors gracefully
       const emailDetails = await Promise.all(
         messages.map(async (msg: any) => {
-          const detail = await this.gmail.users.messages.get({
-            userId: 'me',
-            id: msg.id
-          })
-          
-          const headers = detail.data.payload?.headers || []
-          const subject = headers.find((h: any) => h.name === 'Subject')?.value || '(No Subject)'
-          const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown'
-          const date = headers.find((h: any) => h.name === 'Date')?.value || ''
-          
-          // Check for attachments
-          const hasAttachments = this.checkForAttachments(detail.data.payload)
-          
-          return {
-            id: msg.id,
-            subject,
-            from,
-            date,
-            hasAttachments,
-            snippet: detail.data.snippet
+          try {
+            const detail = await this.gmail.users.messages.get({
+              userId: 'me',
+              id: msg.id,
+              format: 'metadata',
+              metadataHeaders: ['From', 'Subject', 'Date']
+            })
+            
+            const headers = detail.data.payload?.headers || []
+            const subject = headers.find((h: any) => h.name === 'Subject')?.value || '(No Subject)'
+            const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown'
+            const date = headers.find((h: any) => h.name === 'Date')?.value || ''
+            
+            return {
+              id: msg.id,
+              threadId: msg.threadId,
+              subject,
+              from,
+              date,
+              snippet: detail.data.snippet || ''
+            }
+          } catch (detailError: any) {
+            console.error(`Failed to get details for message ${msg.id}:`, detailError?.message)
+            // Return basic info if detail fetch fails
+            return {
+              id: msg.id,
+              threadId: msg.threadId,
+              subject: '(Unable to load)',
+              from: 'Unknown',
+              date: '',
+              snippet: ''
+            }
           }
         })
       )
