@@ -5,7 +5,7 @@ import {
   Home, Package, DollarSign, Users, FileText, Settings,
   ChevronDown, Menu, X, LogOut, Bell, Search, 
   ShoppingCart, Warehouse, CreditCard, BarChart3,
-  Building, ChevronRight, Layers, Grid
+  Building, ChevronRight, Layers, Grid, Mail
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { cn } from '../lib/utils'
@@ -19,6 +19,7 @@ interface ModernLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Documents', href: '/documents', icon: FileText },
+  { name: 'Mails', href: '/mails', icon: Mail },
   {
     name: 'Store',
     icon: Warehouse,

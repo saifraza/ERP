@@ -8,6 +8,7 @@ import { serve } from '@hono/node-server'
 import authRoutes from './routes/auth.js'
 import companiesRoutes from './routes/companies.js'
 import setupRoutes from './routes/setup.js'
+import mcpRoutes from './routes/mcp.js'
 
 const app = new Hono()
 
@@ -36,6 +37,7 @@ app.get('/health', (c) => {
 app.route('/api/auth', authRoutes)
 app.route('/api/companies', companiesRoutes)
 app.route('/api/setup', setupRoutes)
+app.route('/api/mcp', mcpRoutes)
 
 // Database status endpoint
 app.get('/api/db-status', async (c) => {

@@ -14,6 +14,7 @@ import VendorsModern from './pages/finance/VendorsModern'
 import CompanySetup from './pages/setup/CompanySetup'
 import Companies from './pages/masters/Companies'
 import CompanyEdit from './pages/masters/CompanyEdit'
+import Mails from './pages/Mails'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -70,6 +71,7 @@ function App() {
                     <Routes>
                       <Route path="/" element={<DashboardPage />} />
                       <Route path="/documents" element={<Documents />} />
+                      <Route path="/mails" element={<Mails />} />
                     
                     {/* Store Module Routes */}
                     <Route path="/store/requisitions" element={<div>Material Requisitions</div>} />
