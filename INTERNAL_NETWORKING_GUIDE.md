@@ -13,8 +13,7 @@ Frontend → Internet → Cloud API (150ms)
 
 ### After (Internal URLs):
 ```
-MCP Server → Direct Database Connection (5ms)
-MCP Server → Internal Network → Cloud API (10ms)
+MCP Server → Internal Network → Cloud API (10ms) → Database
 Frontend → Internet → Cloud API (150ms) - unchanged
 ```
 
@@ -27,9 +26,6 @@ Frontend → Internet → Cloud API (150ms) - unchanged
 Go to your MCP Server service in Railway and add these environment variables:
 
 ```env
-# Database for direct connection (FASTEST!)
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@postgres.railway.internal:5432/railway
-
 # Leave empty to use internal URL automatically
 ERP_API_URL=
 
@@ -40,41 +36,24 @@ RAILWAY_ENVIRONMENT=production
 DEFAULT_COMPANY_ID=1ca3d045-b8ac-434a-bc9a-3e685bd10a94
 ```
 
-### 2. Get Your Database URL
+### 2. How It Works
 
-1. Go to Railway Dashboard
-2. Click on your Postgres service
-3. Go to "Connect" tab
-4. Copy the "Private Connection String"
-5. It should look like: `postgresql://postgres:xxxx@postgres.railway.internal:5432/railway`
-
-### 3. Update Cloud API (Optional)
-
-For even better performance, update cloud-api to accept internal connections:
-
-In Railway, set for cloud-api:
-```env
-# Allow internal connections
-NODE_ENV=production
-RAILWAY_ENVIRONMENT=production
-```
+When `RAILWAY_ENVIRONMENT=production` is set:
+- MCP Server automatically uses `cloud-api.railway.internal:3001`
+- This stays within Railway's private network
+- No internet round-trip = much faster!
+- Automatic fallback to public URL if internal fails
 
 ## How It Works
 
-### 1. Direct Database Access
-- MCP Server connects directly to PostgreSQL
-- No API overhead for document storage
-- Instant writes and reads
-
-### 2. Internal API Calls
+### Internal API Calls
 - When MCP needs complex business logic, it uses `cloud-api.railway.internal`
 - Stays within Railway's private network
 - No internet latency
 
-### 3. Automatic Fallback
-- If direct DB fails, falls back to API
+### Automatic Fallback
 - If internal URL fails, falls back to public URL
-- Always works, just faster with optimizations
+- Always works, just faster with internal networking
 
 ## Performance Comparison
 

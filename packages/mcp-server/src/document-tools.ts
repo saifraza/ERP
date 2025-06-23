@@ -1,6 +1,5 @@
 import { google } from 'googleapis';
 import axios from 'axios';
-import { PrismaClient } from '@prisma/client';
 
 export interface DocumentAnalysis {
   summary: string;
@@ -13,22 +12,18 @@ export interface DocumentAnalysis {
 
 export class DocumentAnalyzer {
   private apiUrl: string;
-  private prisma: PrismaClient | null = null;
   private useInternalUrl: boolean;
 
-  constructor(apiUrl?: string, useDatabase: boolean = false) {
+  constructor(apiUrl?: string) {
     // Use internal URL when in Railway environment
     this.useInternalUrl = process.env.RAILWAY_ENVIRONMENT === 'production';
     
     if (this.useInternalUrl && !apiUrl) {
+      // Use Railway internal URL for much faster communication
       this.apiUrl = 'http://cloud-api.railway.internal:3001';
+      console.log('Using Railway internal URL for optimal performance');
     } else {
-      this.apiUrl = apiUrl || 'https://cloud-api-production.up.railway.app';
-    }
-    
-    // Initialize direct database connection if requested
-    if (useDatabase && process.env.DATABASE_URL) {
-      this.prisma = new PrismaClient();
+      this.apiUrl = apiUrl || 'https://cloud-api-production-0f4d.up.railway.app';
     }
   }
 
@@ -389,46 +384,41 @@ export class DocumentAnalyzer {
 
   async storeDocument(documentData: any): Promise<void> {
     try {
-      // Use direct database connection if available
-      if (this.prisma) {
-        await this.prisma.document.create({
-          data: {
-            name: documentData.fileName,
-            type: documentData.fileType || 'other',
-            category: documentData.category || 'technical',
-            date: new Date(),
-            status: 'processed',
-            extractedData: documentData.aiAnalysis,
-            metadata: JSON.stringify({
-              emailSource: documentData.emailSource,
-              division: documentData.division || 'COMMON',
-              originalContent: documentData.content
-            }),
-            uploadedBy: 'c1beb0f7-73fa-4ae1-88d5-2a2fcccfbc6e', // Default user ID from seed
-            processedAt: new Date()
-          }
-        });
-      } else {
-        // Fallback to API call
-        await axios.post(`${this.apiUrl}/api/documents`, documentData);
+      // Transform data to match Document model schema
+      const transformedData = {
+        name: documentData.fileName,
+        type: documentData.fileType || 'other',
+        category: documentData.category || 'technical',
+        date: new Date().toISOString(),
+        status: 'processed',
+        extractedData: documentData.aiAnalysis,
+        metadata: JSON.stringify({
+          emailSource: documentData.emailSource,
+          division: documentData.division || 'COMMON',
+          originalContent: documentData.content
+        }),
+        uploadedBy: 'c1beb0f7-73fa-4ae1-88d5-2a2fcccfbc6e', // Default user ID
+        processedAt: new Date().toISOString()
+      };
+      
+      await axios.post(`${this.apiUrl}/api/documents`, transformedData);
+      
+      if (this.useInternalUrl) {
+        console.log('Document stored via internal network (fast)');
       }
     } catch (error) {
       console.error('Failed to store document:', error);
-      // If direct DB fails, try API as fallback
-      if (this.prisma && !this.useInternalUrl) {
+      
+      // If internal URL fails, try public URL as fallback
+      if (this.useInternalUrl && error.code === 'ENOTFOUND') {
         try {
-          await axios.post(`${this.apiUrl}/api/documents`, documentData);
-        } catch (apiError) {
-          console.error('API fallback also failed:', apiError);
+          const publicUrl = process.env.ERP_API_URL || 'https://cloud-api-production-0f4d.up.railway.app';
+          await axios.post(`${publicUrl}/api/documents`, documentData);
+          console.log('Fallback to public URL succeeded');
+        } catch (fallbackError) {
+          console.error('Public URL fallback also failed:', fallbackError);
         }
       }
-    }
-  }
-  
-  // Clean up database connection
-  async disconnect(): Promise<void> {
-    if (this.prisma) {
-      await this.prisma.$disconnect();
     }
   }
 }

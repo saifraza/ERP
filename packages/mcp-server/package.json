@@ -11,18 +11,16 @@
     "build"
   ],
   "scripts": {
-    "build": "npx prisma generate && tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
-    "postinstall": "npx prisma generate || true"
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
     "@modelcontextprotocol/sdk": "0.6.0",
     "googleapis": "^144.0.0",
-    "axios": "^1.7.9",
-    "@prisma/client": "^6.0.1"
+    "axios": "^1.7.9"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

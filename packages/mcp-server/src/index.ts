@@ -47,17 +47,15 @@ class GoogleWorkspaceServer {
     this.gmail = google.gmail({ version: 'v1', auth: this.auth });
     this.calendar = google.calendar({ version: 'v3', auth: this.auth });
     
-    // Initialize document analyzer with database connection
-    const useDatabase = !!process.env.DATABASE_URL;
+    // Initialize document analyzer with optimized networking
     const apiUrl = process.env.ERP_API_URL; // Let DocumentAnalyzer handle internal URL logic
-    this.documentAnalyzer = new DocumentAnalyzer(apiUrl, useDatabase);
+    this.documentAnalyzer = new DocumentAnalyzer(apiUrl);
 
     this.setupToolHandlers();
     
     // Error handling
     this.server.onerror = (error) => console.error('[MCP Error]', error);
     process.on('SIGINT', async () => {
-      await this.documentAnalyzer.disconnect();
       await this.server.close();
       process.exit(0);
     });
@@ -949,14 +947,12 @@ class GoogleWorkspaceServer {
     await this.server.connect(transport);
     
     // Log connection mode
-    if (process.env.DATABASE_URL) {
-      console.error('MCP server running with direct database connection (fast mode)');
-    } else {
-      console.error('MCP server running with API connection');
-    }
+    console.error('Google Workspace MCP server running on stdio');
     
     if (process.env.RAILWAY_ENVIRONMENT === 'production') {
-      console.error('Using Railway internal networking');
+      console.error('Using Railway internal networking for optimal performance');
+    } else {
+      console.error('Using public API endpoints');
     }
   }
 }
