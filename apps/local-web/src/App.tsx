@@ -39,17 +39,7 @@ function App() {
     }
   }, [isAuthenticated, checkSetupStatus])
 
-  // Development bypass - check if we have companies in localStorage
-  const hasCompaniesInStorage = () => {
-    try {
-      const stored = localStorage.getItem('erp-companies')
-      return stored && JSON.parse(stored).length > 0
-    } catch {
-      return false
-    }
-  }
-
-  const shouldShowSetup = isAuthenticated && !isLoading && !isSetupComplete && !hasCompaniesInStorage()
+  const shouldShowSetup = isAuthenticated && !isLoading && !isSetupComplete
 
   return (
     <QueryClientProvider client={queryClient}>

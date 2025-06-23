@@ -28,7 +28,10 @@ export const useAuthStore = create<AuthState>()(
         set({ user, token, isAuthenticated: true })
       },
       logout: () => {
+        // Clear all auth-related data
         localStorage.removeItem('token')
+        localStorage.removeItem('erp-companies')
+        localStorage.removeItem('company-storage')
         set({ user: null, token: null, isAuthenticated: false })
       },
     }),

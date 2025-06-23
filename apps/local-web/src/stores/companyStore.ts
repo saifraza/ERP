@@ -65,23 +65,9 @@ interface CompanyStore {
   clearSelection: () => void
 }
 
-// Initialize from localStorage immediately
+// Initialize with empty state - data will be loaded from API
 const getInitialState = () => {
-  try {
-    const localCompanies = localStorage.getItem('erp-companies')
-    if (localCompanies) {
-      const companies = JSON.parse(localCompanies)
-      console.log('Initial companies from localStorage:', companies)
-      return {
-        companies,
-        isSetupComplete: companies.length > 0,
-        currentCompany: companies[0] || null,
-        currentFactory: companies[0]?.factories?.[0] || null
-      }
-    }
-  } catch (error) {
-    console.error('Error loading initial state:', error)
-  }
+  // Don't load from localStorage on init - always fetch fresh from API
   return {
     companies: [],
     isSetupComplete: false,
@@ -129,41 +115,43 @@ export const useCompanyStore = create<CompanyStore>()(
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
           const token = localStorage.getItem('token')
           
-          // Try API first
-          try {
-            const response = await fetch(`${apiUrl}/api/companies`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            })
-            
-            if (response.ok) {
-              const data = await response.json()
-              const companies = data.companies || []
-              
-              // Update localStorage with API data
-              localStorage.setItem('erp-companies', JSON.stringify(companies))
-              
-              get().setCompanies(companies)
-              set({ isSetupComplete: companies.length > 0 })
-              return
-            }
-          } catch (apiError) {
-            console.log('API not available, falling back to localStorage')
+          if (!token) {
+            console.log('No token found, cannot load companies')
+            set({ isSetupComplete: false, companies: [] })
+            return
           }
           
-          // Fallback to localStorage
-          const localCompanies = localStorage.getItem('erp-companies')
-          if (localCompanies) {
-            const companies = JSON.parse(localCompanies)
+          // Always try API first - no fallback to stale localStorage
+          const response = await fetch(`${apiUrl}/api/companies`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            const companies = data.companies || []
+            
+            // Update localStorage with fresh API data
+            localStorage.setItem('erp-companies', JSON.stringify(companies))
+            
             get().setCompanies(companies)
             set({ isSetupComplete: companies.length > 0 })
+          } else if (response.status === 401) {
+            // Token expired or invalid
+            console.log('Token invalid, clearing auth')
+            localStorage.removeItem('token')
+            localStorage.removeItem('auth-storage')
+            set({ isSetupComplete: false, companies: [] })
           } else {
-            set({ isSetupComplete: false })
+            // Other error - don't use stale data
+            console.error('Failed to fetch companies:', response.status)
+            set({ isSetupComplete: false, companies: [] })
           }
         } catch (error) {
           console.error('Failed to load companies:', error)
-          set({ isSetupComplete: false })
+          // Network error - don't use stale data
+          set({ isSetupComplete: false, companies: [] })
         } finally {
           set({ isLoading: false })
         }
