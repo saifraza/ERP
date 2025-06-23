@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js'
 import companiesRoutes from './routes/companies.js'
 import setupRoutes from './routes/setup.js'
 import mcpRoutes from './routes/mcp.js'
+import fixDataRoutes from './routes/fix-data.js'
 
 const app = new Hono()
 
@@ -65,6 +66,24 @@ app.route('/api/auth', authRoutes)
 app.route('/api/companies', companiesRoutes)
 app.route('/api/setup', setupRoutes)
 app.route('/api/mcp', mcpRoutes)
+app.route('/api/fix-data', fixDataRoutes)
+
+// Debug endpoint to check users (remove in production)
+app.get('/api/debug/users', async (c) => {
+  try {
+    const { prisma } = await import('./lib/prisma.js')
+    const users = await prisma.user.findMany({
+      select: {
+        email: true,
+        name: true,
+        role: true
+      }
+    })
+    return c.json({ users })
+  } catch (error) {
+    return c.json({ error: error.message }, 500)
+  }
+})
 
 // Database status endpoint
 app.get('/api/db-status', async (c) => {

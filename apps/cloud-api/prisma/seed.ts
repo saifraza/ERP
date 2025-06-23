@@ -6,6 +6,24 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting database seed...')
 
+  // First, check if any users exist
+  const existingUsers = await prisma.user.findMany()
+  console.log(`Found ${existingUsers.length} existing users`)
+
+  // If saif@erp.com exists, update the password to match
+  const saifUser = await prisma.user.findUnique({
+    where: { email: 'saif@erp.com' }
+  })
+  
+  if (saifUser) {
+    const newPassword = await bcrypt.hash('1234', 10)
+    await prisma.user.update({
+      where: { email: 'saif@erp.com' },
+      data: { password: newPassword }
+    })
+    console.log('✅ Updated password for saif@erp.com')
+  }
+
   // Create default users
   const adminPassword = await bcrypt.hash('admin123', 10)
   const managerPassword = await bcrypt.hash('manager123', 10)
