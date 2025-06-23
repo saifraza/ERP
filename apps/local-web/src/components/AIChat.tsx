@@ -276,25 +276,28 @@ Breakdown repair cost: ₹2,50,000
   }
 
   if (lowerInput.includes('gmail') || lowerInput.includes('email') || lowerInput.includes('mail')) {
-    return `📧 **Gmail Document Processing**
+    return `📧 **Gmail Integration (MCP Server)**
 
-I can access your Gmail through the MCP server to:
+I can help you with Gmail operations through our MCP server:
 
-• Search for emails with attachments
-• Extract invoices, purchase orders, and contracts
-• Analyze document contents using AI
-• Store documents in the ERP system
+**Available Commands:**
+• 📥 "List my emails" - Show recent emails
+• 📤 "Send test email" - Send a test message
+• 📅 "Show calendar events" - View upcoming events
+• 📎 "Extract attachments from emails" - Process documents
+• 🔍 "Search emails from suppliers" - Find specific emails
 
-**Recent Activity:**
-✅ 5 emails with attachments found
-📄 3 invoices processed
-📋 2 purchase orders pending approval
+**MCP Server Status:**
+✅ OAuth configured
+✅ Railway deployment active
+✅ Internal networking enabled
 
-What would you like me to do?
-• "Process all supplier emails"
-• "Extract invoices from Gmail"
-• "Show pending purchase orders"
-• "Check for new documents"`
+**Quick Actions:**
+1. Go to **Mails** page in the menu to see the Gmail interface
+2. Click "Fetch Emails" to load your messages
+3. Use "Send Test" to verify email sending
+
+Would you like me to help you with any specific Gmail operation?`
   }
 
   if (lowerInput.includes('invoice') || lowerInput.includes('bill')) {
