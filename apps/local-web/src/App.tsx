@@ -53,7 +53,13 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
-          <Route path="/setup" element={isAuthenticated ? <CompanySetup /> : <Navigate to="/login" />} />
+          <Route path="/setup" element={
+            isAuthenticated ? (
+              isSetupComplete ? <Navigate to="/" /> : <CompanySetup />
+            ) : (
+              <Navigate to="/login" />
+            )
+          } />
           <Route
             path="/*"
             element={
