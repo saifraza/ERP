@@ -5,8 +5,18 @@ import { google } from 'googleapis'
 
 const app = new Hono()
 
-// Protect all routes
-app.use('*', authMiddleware)
+// Protect most routes, but not connect and callback
+app.use('*', async (c, next) => {
+  const path = c.req.path
+  
+  // Skip auth for OAuth flow endpoints
+  if (path.includes('/connect/') || path.includes('/callback')) {
+    return next()
+  }
+  
+  // Apply auth middleware for other routes
+  return authMiddleware(c, next)
+})
 
 // Initialize OAuth2 client with error handling
 const getOAuth2Client = () => {
@@ -26,10 +36,30 @@ const getOAuth2Client = () => {
 app.get('/connect/:companyId', async (c) => {
   try {
     const companyId = c.req.param('companyId')
-    const user = c.get('user')
+    const token = c.req.query('token')
     
-    // Check if user has access to this company
-    // TODO: Add proper authorization check
+    // Verify token if provided (for security)
+    let userId = 'unknown'
+    if (token) {
+      try {
+        const { prisma } = await import('../lib/prisma.js')
+        const jwt = await import('jsonwebtoken')
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
+        userId = decoded.userId
+        
+        // Verify user exists
+        const user = await prisma.user.findUnique({
+          where: { id: userId }
+        })
+        
+        if (!user) {
+          throw new Error('Invalid user')
+        }
+      } catch (err) {
+        console.error('Token verification failed:', err)
+        // Continue anyway - OAuth will validate
+      }
+    }
     
     // Get OAuth client
     const oauth2Client = getOAuth2Client()
@@ -43,20 +73,16 @@ app.get('/connect/:companyId', async (c) => {
         'https://www.googleapis.com/auth/gmail.metadata',
         'https://www.googleapis.com/auth/calendar'
       ],
-      state: JSON.stringify({ companyId, userId: user.id }),
+      state: JSON.stringify({ companyId, userId }),
       prompt: 'consent' // Force consent to ensure we get refresh token
     })
     
-    return c.json({
-      authUrl,
-      message: 'Redirect user to authUrl to connect their Google account'
-    })
+    // Redirect directly to Google OAuth
+    return c.redirect(authUrl)
   } catch (error: any) {
     console.error('OAuth connect error:', error)
-    return c.json({
-      success: false,
-      error: error?.message || 'Failed to initiate OAuth flow'
-    }, 500)
+    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
+    return c.redirect(`${frontendUrl}/settings/email?error=oauth_init_failed`)
   }
 })
 

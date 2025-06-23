@@ -68,31 +68,18 @@ export function EmailSettings() {
     }
   }
 
-  const connectEmail = async () => {
+  const connectEmail = () => {
     if (!currentCompany) return
 
     setConnecting(true)
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth/connect/${currentCompany.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      if (!response.ok) throw new Error('Failed to initiate OAuth')
-
-      const data = await response.json()
-      
-      // Redirect to Google OAuth
-      window.location.href = data.authUrl
-    } catch (err) {
-      toast.error('Failed to connect email account')
-      setConnecting(false)
-    }
+    // Store current state in sessionStorage for after OAuth redirect
+    sessionStorage.setItem('oauth_company_id', currentCompany.id)
+    sessionStorage.setItem('oauth_token', token)
+    
+    // Redirect to OAuth connect endpoint
+    // This endpoint doesn't require auth headers since we're redirecting
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/email-oauth/connect/${currentCompany.id}?token=${encodeURIComponent(token)}`
   }
 
   const removeAccount = async (email: string) => {
