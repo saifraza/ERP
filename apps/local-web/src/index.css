@@ -33,6 +33,49 @@
     --ring: 199 89% 48%;
     
     --radius: 0.5rem;
+
+    /* Modern color palette */
+    --primary-50: 239 246 255;
+    --primary-100: 219 234 254;
+    --primary-200: 191 219 254;
+    --primary-300: 147 197 253;
+    --primary-400: 96 165 250;
+    --primary-500: 59 130 246;
+    --primary-600: 37 99 235;
+    --primary-700: 29 78 216;
+    --primary-800: 30 64 175;
+    --primary-900: 30 58 138;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
@@ -44,5 +87,131 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Modern scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) rgb(241 245 249);
+  }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: rgb(51 65 85) rgb(30 41 59);
+  }
+
+  /* Custom scrollbar for webkit browsers */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/50;
+  }
+
+  /* Gradient backgrounds */
+  .gradient-primary {
+    @apply bg-gradient-to-br from-primary-500 to-purple-600;
+  }
+
+  .gradient-success {
+    @apply bg-gradient-to-br from-green-500 to-emerald-600;
+  }
+
+  .gradient-danger {
+    @apply bg-gradient-to-br from-red-500 to-pink-600;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    @apply hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200;
+  }
+
+  /* Modern button styles */
+  .btn-modern {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 
+           hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn-modern bg-primary-600 text-white hover:bg-primary-700 
+           dark:bg-primary-500 dark:hover:bg-primary-600;
+  }
+
+  .btn-secondary {
+    @apply btn-modern bg-gray-100 text-gray-700 hover:bg-gray-200 
+           dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700;
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Text selection */
+  .text-selection {
+    @apply selection:bg-primary-200 selection:text-primary-900 
+           dark:selection:bg-primary-800 dark:selection:text-primary-100;
   }
 }

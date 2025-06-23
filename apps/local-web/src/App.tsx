@@ -4,8 +4,10 @@ import { Toaster } from 'react-hot-toast'
 import { useEffect } from 'react'
 import MainLayout from './layouts/MainLayout'
 import ModernLayout from './layouts/ModernLayout'
+import UltraModernLayout from './layouts/UltraModernLayout'
 import Dashboard from './pages/Dashboard'
 import DashboardModern from './pages/DashboardModern'
+import DashboardUltra from './pages/DashboardUltra'
 import Login from './pages/Login'
 import Documents from './pages/Documents'
 import Storage from './pages/Storage'
@@ -26,11 +28,12 @@ function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const { isSetupComplete, checkSetupStatus, isLoading, companies } = useCompanyStore()
   
-  // Use modern UI by default - can be toggled via settings
-  const useModernUI = true
+  // Use ultra-modern UI by default - can be toggled via settings
+  const useUltraModernUI = true
+  const useModernUI = false
 
-  const Layout = useModernUI ? ModernLayout : MainLayout
-  const DashboardPage = useModernUI ? DashboardModern : Dashboard
+  const Layout = useUltraModernUI ? UltraModernLayout : (useModernUI ? ModernLayout : MainLayout)
+  const DashboardPage = useUltraModernUI ? DashboardUltra : (useModernUI ? DashboardModern : Dashboard)
   const VendorsPage = useModernUI ? VendorsModern : Vendors
 
   // Check company setup status when authenticated
