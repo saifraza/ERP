@@ -228,8 +228,8 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
   useEffect(() => {
     const path = location.pathname
     const activeSection = navigation.flatMap(section => 
-      section.items.filter(item => 
-        item.children?.some(child => child.href === path)
+      section.items.filter((item: any) => 
+        item.children?.some((child: any) => child.href === path)
       )
     )
     if (activeSection.length > 0) {
