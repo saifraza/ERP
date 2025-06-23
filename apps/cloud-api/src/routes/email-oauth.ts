@@ -88,12 +88,12 @@ app.get('/connect/:companyId', async (c) => {
 
 // OAuth callback
 app.get('/callback', async (c) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
+  
   try {
     const code = c.req.query('code')
     const state = c.req.query('state')
     const error = c.req.query('error')
-    
-    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
     
     if (error) {
       return c.redirect(`${frontendUrl}/settings/email?error=${error}`)
@@ -134,12 +134,10 @@ app.get('/callback', async (c) => {
     )
     
     // Redirect to frontend success page
-    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
     return c.redirect(`${frontendUrl}/settings/email?success=connected&email=${userInfo.email}`)
     
   } catch (error) {
     console.error('OAuth callback error:', error)
-    const frontendUrl = process.env.FRONTEND_URL || 'https://frontend-production-adfe.up.railway.app'
     return c.redirect(`${frontendUrl}/settings/email?error=oauth_failed`)
   }
 })
