@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '../stores/authStore'
-import { Mail, RefreshCw, Send, Search, Paperclip, Calendar, AlertCircle } from 'lucide-react'
+import { useCompanyStore } from '../stores/companyStore'
+import { Mail, RefreshCw, Send, Search, Paperclip, Calendar, AlertCircle, User } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 interface Email {
@@ -8,6 +9,13 @@ interface Email {
   subject: string
   from: string
   date: string
+  account?: string // Which email account this came from
+}
+
+interface EmailAccount {
+  id: string
+  emailAddress: string
+  provider: string
 }
 
 interface CalendarEvent {
@@ -19,16 +27,48 @@ interface CalendarEvent {
 }
 
 export default function Mails() {
-  const { user } = useAuthStore()
+  const { user, token } = useAuthStore()
+  const { currentCompany } = useCompanyStore()
   const [emails, setEmails] = useState<Email[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'emails' | 'calendar'>('emails')
+  const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([])
+  const [selectedAccount, setSelectedAccount] = useState<string>('all')
   
   // For MCP testing
   const [mcpResponse, setMcpResponse] = useState<any>(null)
   const [mcpError, setMcpError] = useState<string>('')
+
+  // Load email accounts on mount
+  useEffect(() => {
+    if (currentCompany) {
+      loadEmailAccounts()
+    }
+  }, [currentCompany])
+
+  const loadEmailAccounts = async () => {
+    if (!currentCompany) return
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/email-oauth/accounts/${currentCompany.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to load email accounts')
+
+      const data = await response.json()
+      setEmailAccounts(data.accounts || [])
+    } catch (err) {
+      console.error('Failed to load email accounts:', err)
+    }
+  }
 
   // This will connect to your MCP server through the API
   const callMCP = async (tool: string, args: any) => {
@@ -46,7 +86,12 @@ export default function Mails() {
       const action = actionMap[tool] || tool
       const apiUrl = import.meta.env.VITE_API_URL || 'https://cloud-api-production-0f4d.up.railway.app'
       
-      const response = await fetch(`${apiUrl}/api/mcp/gmail/${action}`, {
+      // Use multi-tenant endpoint if company is selected
+      const endpoint = currentCompany 
+        ? `${apiUrl}/api/mcp/company/${currentCompany.id}/gmail/${action}`
+        : `${apiUrl}/api/mcp/gmail/${action}`
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,6 +194,37 @@ export default function Mails() {
 
       {activeTab === 'emails' && (
         <div>
+          {/* Account Selector */}
+          {emailAccounts.length > 0 ? (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Email Account
+              </label>
+              <select
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="all">All Connected Accounts ({emailAccounts.length})</option>
+                {emailAccounts.map((account) => (
+                  <option key={account.id} value={account.emailAddress}>
+                    {account.emailAddress}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-800">
+                No email accounts connected. 
+                <a href="/settings/email" className="ml-1 font-medium underline">
+                  Connect an email account
+                </a>
+                {' '}to start viewing emails.
+              </p>
+            </div>
+          )}
+
           {/* Email Controls */}
           <div className="flex gap-3 mb-6">
             <div className="flex-1 relative">
@@ -196,6 +272,12 @@ export default function Mails() {
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{email.subject || '(No Subject)'}</h4>
                         <p className="text-sm text-gray-600 mt-1">{email.from}</p>
+                        {email.account && (
+                          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {email.account}
+                          </p>
+                        )}
                       </div>
                       <span className="text-xs text-gray-500">{email.date}</span>
                     </div>
