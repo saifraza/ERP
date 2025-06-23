@@ -16,11 +16,38 @@ const app = new Hono()
 app.use('*', logger())
 app.use('*', prettyJSON())
 app.use('*', cors({
-  origin: ['http://localhost:3000', 'https://frontend-production-adfe.up.railway.app'],
+  origin: (origin) => {
+    // Allow requests from Railway domains and localhost
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://frontend-production-adfe.up.railway.app',
+      'https://erp-frontend.up.railway.app'
+    ]
+    
+    // Allow if origin is in the list or if no origin (same-origin requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return origin || '*'
+    }
+    
+    // Also allow any Railway subdomain
+    if (origin?.includes('.up.railway.app')) {
+      return origin
+    }
+    
+    return null
+  },
   credentials: true,
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization']
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposeHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 3600
 }))
+
+// Handle OPTIONS requests for CORS preflight
+app.options('*', (c) => {
+  return c.text('', 204)
+})
 
 // Health check
 app.get('/health', (c) => {
