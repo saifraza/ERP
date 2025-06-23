@@ -8,37 +8,56 @@ const app = new Hono()
 // Protect all routes
 app.use('*', authMiddleware)
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  `${process.env.API_URL || 'https://cloud-api-production-0f4d.up.railway.app'}/api/email-oauth/callback`
-)
+// Initialize OAuth2 client with error handling
+const getOAuth2Client = () => {
+  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+  const redirectUri = `${process.env.API_URL || 'https://cloud-api-production-0f4d.up.railway.app'}/api/email-oauth/callback`
+  
+  if (!clientId || !clientSecret) {
+    console.error('Google OAuth credentials not configured')
+    throw new Error('Google OAuth credentials not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.')
+  }
+  
+  return new google.auth.OAuth2(clientId, clientSecret, redirectUri)
+}
 
 // Initiate OAuth flow for a company
 app.get('/connect/:companyId', async (c) => {
-  const companyId = c.req.param('companyId')
-  const user = c.get('user')
-  
-  // Check if user has access to this company
-  // TODO: Add proper authorization check
-  
-  // Generate OAuth URL
-  const authUrl = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: [
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.send',
-      'https://www.googleapis.com/auth/gmail.metadata',
-      'https://www.googleapis.com/auth/calendar'
-    ],
-    state: JSON.stringify({ companyId, userId: user.id }),
-    prompt: 'consent' // Force consent to ensure we get refresh token
-  })
-  
-  return c.json({
-    authUrl,
-    message: 'Redirect user to authUrl to connect their Google account'
-  })
+  try {
+    const companyId = c.req.param('companyId')
+    const user = c.get('user')
+    
+    // Check if user has access to this company
+    // TODO: Add proper authorization check
+    
+    // Get OAuth client
+    const oauth2Client = getOAuth2Client()
+    
+    // Generate OAuth URL
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.metadata',
+        'https://www.googleapis.com/auth/calendar'
+      ],
+      state: JSON.stringify({ companyId, userId: user.id }),
+      prompt: 'consent' // Force consent to ensure we get refresh token
+    })
+    
+    return c.json({
+      authUrl,
+      message: 'Redirect user to authUrl to connect their Google account'
+    })
+  } catch (error: any) {
+    console.error('OAuth connect error:', error)
+    return c.json({
+      success: false,
+      error: error?.message || 'Failed to initiate OAuth flow'
+    }, 500)
+  }
 })
 
 // OAuth callback
@@ -58,6 +77,9 @@ app.get('/callback', async (c) => {
     
     // Parse state
     const { companyId, userId } = JSON.parse(state)
+    
+    // Get OAuth client
+    const oauth2Client = getOAuth2Client()
     
     // Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code)
@@ -149,6 +171,23 @@ app.post('/test/:companyId', async (c) => {
       error: error?.message || 'Email connection failed'
     }, 500)
   }
+})
+
+// Debug endpoint to check OAuth configuration
+app.get('/debug', async (c) => {
+  const hasClientId = !!process.env.GOOGLE_CLIENT_ID
+  const hasClientSecret = !!process.env.GOOGLE_CLIENT_SECRET
+  const clientIdLength = process.env.GOOGLE_CLIENT_ID?.length || 0
+  const clientIdFormat = process.env.GOOGLE_CLIENT_ID?.includes('.apps.googleusercontent.com') || false
+  
+  return c.json({
+    configured: hasClientId && hasClientSecret,
+    hasClientId,
+    hasClientSecret,
+    clientIdLength,
+    clientIdFormat,
+    redirectUri: `${process.env.API_URL || 'https://cloud-api-production-0f4d.up.railway.app'}/api/email-oauth/callback`
+  })
 })
 
 export default app
