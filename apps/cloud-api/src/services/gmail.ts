@@ -2,8 +2,8 @@ import { google } from 'googleapis'
 import { OAuth2Client } from 'google-auth-library'
 
 export class GmailService {
-  private oauth2Client: OAuth2Client
-  private gmail: any
+  public oauth2Client: OAuth2Client
+  public gmail: any
   private calendar: any
 
   constructor() {
@@ -14,6 +14,15 @@ export class GmailService {
     if (!clientId || !clientSecret || !refreshToken) {
       throw new Error('Gmail OAuth credentials not configured')
     }
+    
+    // Log credential format for debugging (not the actual values)
+    console.log('Gmail OAuth config:', {
+      clientId: clientId.substring(0, 10) + '...',
+      clientSecret: clientSecret.substring(0, 10) + '...',
+      refreshToken: refreshToken.substring(0, 10) + '...',
+      clientIdLength: clientId.length,
+      hasValidFormat: clientId.includes('.apps.googleusercontent.com')
+    })
 
     this.oauth2Client = new google.auth.OAuth2(clientId, clientSecret)
     this.oauth2Client.setCredentials({ refresh_token: refreshToken })
@@ -25,6 +34,9 @@ export class GmailService {
       }
       console.log('Access token refreshed')
     })
+    
+    // Log the scopes to verify they're correct
+    this.verifyScopes()
 
     this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client })
     this.calendar = google.calendar({ version: 'v3', auth: this.oauth2Client })
@@ -32,6 +44,24 @@ export class GmailService {
 
   async listEmails(maxResults: number = 10, query?: string) {
     try {
+      // First, verify we have proper access
+      console.log('Attempting to list emails with query:', query || '(no query)')
+      
+      // Test access with a simple profile check
+      try {
+        const profile = await this.gmail.users.getProfile({ userId: 'me' })
+        console.log('Gmail profile verified:', {
+          email: profile.data.emailAddress,
+          messagesTotal: profile.data.messagesTotal
+        })
+      } catch (profileError: any) {
+        console.error('Profile access failed:', {
+          error: profileError?.message,
+          code: profileError?.code,
+          errors: profileError?.errors
+        })
+      }
+      
       const response = await this.gmail.users.messages.list({
         userId: 'me',
         maxResults,
@@ -222,6 +252,35 @@ export class GmailService {
     )
     
     return uniqueResults
+  }
+  
+  private async verifyScopes() {
+    try {
+      // Get the access token to check scopes
+      const tokenInfo = await this.oauth2Client.getAccessToken()
+      if (tokenInfo.token) {
+        // Decode the JWT to see the scopes
+        const payload = tokenInfo.token.split('.')[1]
+        const decoded = JSON.parse(Buffer.from(payload, 'base64').toString())
+        console.log('OAuth token scopes:', decoded.scope)
+        
+        // Check if we have the required scopes
+        const requiredScopes = [
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/gmail.send'
+        ]
+        
+        const hasScopes = decoded.scope ? decoded.scope.split(' ') : []
+        const missingScopes = requiredScopes.filter(scope => !hasScopes.includes(scope))
+        
+        if (missingScopes.length > 0) {
+          console.warn('Missing required Gmail scopes:', missingScopes)
+          console.warn('Current scopes:', hasScopes)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to verify OAuth scopes:', error)
+    }
   }
 }
 

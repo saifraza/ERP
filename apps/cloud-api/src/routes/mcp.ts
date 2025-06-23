@@ -125,15 +125,28 @@ app.post('/gmail/:action', async (c) => {
 app.get('/health', async (c) => {
   let gmailStatus = 'not_initialized'
   let gmailError = null
+  let gmailDetails = null
   
   try {
     const gmailService = getGmailService()
     // Try to get user profile to test connection
     const testResponse = await gmailService.gmail.users.getProfile({ userId: 'me' })
     gmailStatus = 'connected'
+    gmailDetails = {
+      email: testResponse.data.emailAddress,
+      messagesTotal: testResponse.data.messagesTotal,
+      threadsTotal: testResponse.data.threadsTotal
+    }
+    console.log('Gmail profile test successful:', testResponse.data.emailAddress)
   } catch (error: any) {
     gmailStatus = 'error'
     gmailError = error?.message || 'Unknown error'
+    console.error('Gmail health check error:', {
+      message: error?.message,
+      code: error?.code,
+      errors: error?.errors,
+      response: error?.response?.data
+    })
   }
   
   return c.json({
@@ -142,6 +155,7 @@ app.get('/health', async (c) => {
     integration: 'Gmail & Calendar',
     gmail_status: gmailStatus,
     gmail_error: gmailError,
+    gmail_details: gmailDetails,
     oauth_configured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN),
     features: [
       'Email listing and search',
@@ -151,6 +165,89 @@ app.get('/health', async (c) => {
       'Attachment extraction'
     ]
   })
+})
+
+// OAuth test endpoint for debugging
+app.get('/oauth-test', authMiddleware, async (c) => {
+  try {
+    const gmailService = getGmailService()
+    
+    // Test 1: Get access token
+    const tokenInfo = await gmailService.oauth2Client.getAccessToken()
+    
+    // Test 2: Get user profile
+    let profileTest = null
+    try {
+      const profile = await gmailService.gmail.users.getProfile({ userId: 'me' })
+      profileTest = {
+        success: true,
+        email: profile.data.emailAddress,
+        messagesTotal: profile.data.messagesTotal
+      }
+    } catch (error: any) {
+      profileTest = {
+        success: false,
+        error: error?.message,
+        code: error?.code
+      }
+    }
+    
+    // Test 3: List labels (simple permission test)
+    let labelsTest = null
+    try {
+      const labels = await gmailService.gmail.users.labels.list({ userId: 'me' })
+      labelsTest = {
+        success: true,
+        count: labels.data.labels?.length || 0
+      }
+    } catch (error: any) {
+      labelsTest = {
+        success: false,
+        error: error?.message,
+        code: error?.code
+      }
+    }
+    
+    // Test 4: Try to list one message
+    let messageTest = null
+    try {
+      const messages = await gmailService.gmail.users.messages.list({
+        userId: 'me',
+        maxResults: 1
+      })
+      messageTest = {
+        success: true,
+        hasMessages: (messages.data.messages?.length || 0) > 0
+      }
+    } catch (error: any) {
+      messageTest = {
+        success: false,
+        error: error?.message,
+        code: error?.code,
+        details: error?.response?.data
+      }
+    }
+    
+    return c.json({
+      oauth_status: 'testing',
+      token: {
+        hasToken: !!tokenInfo.token,
+        type: tokenInfo.res?.data?.token_type,
+        expiresIn: tokenInfo.res?.data?.expires_in
+      },
+      tests: {
+        profile: profileTest,
+        labels: labelsTest,
+        messages: messageTest
+      }
+    })
+  } catch (error: any) {
+    return c.json({
+      oauth_status: 'error',
+      error: error?.message || 'OAuth test failed',
+      details: error?.stack
+    }, 500)
+  }
 })
 
 export default app
