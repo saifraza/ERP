@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== CORE MODELS ====================
+
 // User and Authentication
 model User {
   id            String    @id @default(uuid())
@@ -21,8 +23,23 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Relations
-  companies     CompanyUser[]
-  documents     Document[]
+  companies               CompanyUser[]
+  documents              Document[]
+  createdRequisitions    Requisition[]      @relation("CreatedByUser")
+  approvedRequisitions   Requisition[]      @relation("ApprovedByUser")
+  createdPurchaseOrders  PurchaseOrder[]    @relation("CreatedByUser")
+  approvedPurchaseOrders PurchaseOrder[]    @relation("ApprovedByUser")
+  createdGoodsReceipts   GoodsReceipt[]     @relation("CreatedByUser")
+  createdInvoices        Invoice[]           @relation("CreatedByUser")
+  approvedInvoices       Invoice[]           @relation("ApprovedByUser")
+  createdPayments        Payment[]           @relation("CreatedByUser")
+  approvedPayments       Payment[]           @relation("ApprovedByUser")
+  createdJournals        Journal[]           @relation("CreatedByUser")
+  approvedJournals       Journal[]           @relation("ApprovedByUser")
+  maintenanceRecords     Maintenance[]       @relation("CreatedByUser")
+  
+  @@index([email])
+  @@index([role])
 }
 
 enum UserRole {
@@ -30,6 +47,9 @@ enum UserRole {
   MANAGER
   OPERATOR
   VIEWER
+  ACCOUNTANT
+  STORE_KEEPER
+  PURCHASE_MANAGER
 }
 
 // Company and Factory Management
@@ -38,8 +58,8 @@ model Company {
   code          String    @unique
   name          String
   legalName     String
-  gstNumber     String
-  panNumber     String
+  gstNumber     String    @unique
+  panNumber     String    @unique
   tanNumber     String?
   cinNumber     String?
   addressLine1  String
@@ -52,13 +72,22 @@ model Company {
   website       String?
   fyStartMonth  Int       @default(4)
   currentFY     String
+  logo          String?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
   // Relations
-  users         CompanyUser[]
-  factories     Factory[]
+  users          CompanyUser[]
+  factories      Factory[]
+  vendors        Vendor[]
+  customers      Customer[]
+  accounts       Account[]
+  materials      Material[]
+  taxRates       TaxRate[]
+  hsnCodes       HSNCode[]
+  uoms           UOM[]
+  approvalMatrix ApprovalMatrix[]
 }
 
 model CompanyUser {
@@ -67,13 +96,16 @@ model CompanyUser {
   userId      String
   role        String    @default("USER")
   isDefault   Boolean   @default(false)
+  permissions String?   // JSON array of permissions
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   
   company     Company   @relation(fields: [companyId], references: [id])
   user        User      @relation(fields: [userId], references: [id])
   
   @@unique([companyId, userId])
   @@index([userId])
+  @@index([companyId])
 }
 
 model Factory {
@@ -90,26 +122,1132 @@ model Factory {
   gstNumber         String?
   factoryLicense    String?
   pollutionLicense  String?
-  crushingCapacity  Float?    // TPD
-  powerCapacity     Float?    // MW
-  ethanolCapacity   Float?    // KLPD
+  crushingCapacity  Float?    // TPD (Tons Per Day)
+  powerCapacity     Float?    // MW (Megawatts)
+  ethanolCapacity   Float?    // KLPD (Kilo Liters Per Day)
+  feedCapacity      Float?    // TPD
   isActive          Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
-  company           Company   @relation(fields: [companyId], references: [id])
+  company              Company              @relation(fields: [companyId], references: [id])
+  weighbridgeEntries   WeighbridgeEntry[]
+  equipment            Equipment[]
+  inventory            Inventory[]
+  requisitions         Requisition[]
+  purchaseOrders       PurchaseOrder[]
+  goodsReceipts        GoodsReceipt[]
+  stockTransfers       StockTransfer[]
+  farmers              Farmer[]
+  caneDeliveries       CaneDelivery[]
+  sugarProduction      SugarProduction[]
+  powerGeneration      PowerGeneration[]
+  ethanolProduction    EthanolProduction[]
+  feedProduction       FeedProduction[]
   
   @@index([companyId])
 }
 
 enum FactoryType {
-  sugar
-  ethanol
-  integrated
-  feed
+  SUGAR
+  ETHANOL
+  INTEGRATED
+  FEED
+  POWER
 }
 
-// Analytics and Dashboard Models
+// ==================== MASTER DATA ====================
+
+// Vendor Management
+model Vendor {
+  id                String    @id @default(uuid())
+  companyId         String
+  code              String
+  name              String
+  legalName         String?
+  type              VendorType
+  gstNumber         String?
+  panNumber         String?
+  addressLine1      String
+  addressLine2      String?
+  city              String
+  state             String
+  pincode           String
+  email             String?
+  phone             String
+  contactPerson     String?
+  bankName          String?
+  bankAccount       String?
+  bankIFSC          String?
+  creditDays        Int       @default(30)
+  creditLimit       Float     @default(0)
+  isActive          Boolean   @default(true)
+  isMSME            Boolean   @default(false)
+  msmeNumber        String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  company           Company         @relation(fields: [companyId], references: [id])
+  purchaseOrders    PurchaseOrder[]
+  invoices          Invoice[]
+  payments          Payment[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([type])
+}
+
+enum VendorType {
+  MATERIAL
+  SERVICE
+  TRANSPORTER
+  CONTRACTOR
+  OTHER
+}
+
+// Customer Management
+model Customer {
+  id            String    @id @default(uuid())
+  companyId     String
+  code          String
+  name          String
+  legalName     String?
+  type          CustomerType
+  gstNumber     String?
+  panNumber     String?
+  addressLine1  String
+  addressLine2  String?
+  city          String
+  state         String
+  pincode       String
+  email         String?
+  phone         String
+  contactPerson String?
+  bankName      String?
+  bankAccount   String?
+  bankIFSC      String?
+  creditDays    Int       @default(30)
+  creditLimit   Float     @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  company       Company   @relation(fields: [companyId], references: [id])
+  invoices      Invoice[]
+  receipts      Receipt[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([type])
+}
+
+enum CustomerType {
+  SUGAR
+  ETHANOL
+  POWER
+  FEED
+  OTHER
+}
+
+// Material Master
+model Material {
+  id                String    @id @default(uuid())
+  companyId         String
+  code              String
+  name              String
+  description       String?
+  category          MaterialCategory
+  type              MaterialType
+  uomId             String
+  hsnCodeId         String?
+  reorderLevel      Float     @default(0)
+  reorderQty        Float     @default(0)
+  minStockLevel     Float     @default(0)
+  maxStockLevel     Float?
+  leadTimeDays      Int       @default(0)
+  isActive          Boolean   @default(true)
+  isCritical        Boolean   @default(false)
+  specifications    String?   // JSON
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  company           Company              @relation(fields: [companyId], references: [id])
+  uom               UOM                  @relation(fields: [uomId], references: [id])
+  hsnCode           HSNCode?             @relation(fields: [hsnCodeId], references: [id])
+  inventory         Inventory[]
+  requisitionItems  RequisitionItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  goodsReceiptItems GoodsReceiptItem[]
+  stockTransferItems StockTransferItem[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([category])
+  @@index([type])
+}
+
+enum MaterialCategory {
+  RAW_MATERIAL
+  CONSUMABLE
+  SPARE_PART
+  PACKING_MATERIAL
+  CHEMICAL
+  FUEL
+  FINISHED_GOODS
+  SEMI_FINISHED
+  OTHER
+}
+
+enum MaterialType {
+  STOCK
+  NON_STOCK
+  SERVICE
+}
+
+// Chart of Accounts
+model Account {
+  id            String    @id @default(uuid())
+  companyId     String
+  code          String
+  name          String
+  type          AccountType
+  nature        AccountNature
+  parentId      String?
+  isGroup       Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  isBankAccount Boolean   @default(false)
+  bankName      String?
+  bankAccount   String?
+  bankIFSC      String?
+  openingBalance Float    @default(0)
+  openingDate   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  company       Company   @relation(fields: [companyId], references: [id])
+  parent        Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children      Account[] @relation("AccountHierarchy")
+  journalEntries JournalEntry[]
+  bankingEntries Banking[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([type])
+  @@index([parentId])
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum AccountNature {
+  DEBIT
+  CREDIT
+}
+
+// ==================== STORE MODULE ====================
+
+// Requisition Management
+model Requisition {
+  id               String    @id @default(uuid())
+  factoryId        String
+  requisitionNo    String
+  requisitionDate  DateTime
+  department       String
+  priority         Priority  @default(NORMAL)
+  purpose          String?
+  status           RequisitionStatus @default(DRAFT)
+  requestedBy      String
+  approvedBy       String?
+  approvedDate     DateTime?
+  remarks          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  factory          Factory             @relation(fields: [factoryId], references: [id])
+  requestedByUser  User                @relation("CreatedByUser", fields: [requestedBy], references: [id])
+  approvedByUser   User?               @relation("ApprovedByUser", fields: [approvedBy], references: [id])
+  items            RequisitionItem[]
+  purchaseOrders   PurchaseOrder[]
+  
+  @@unique([factoryId, requisitionNo])
+  @@index([factoryId])
+  @@index([status])
+  @@index([requisitionDate])
+}
+
+model RequisitionItem {
+  id              String    @id @default(uuid())
+  requisitionId   String
+  materialId      String
+  quantity        Float
+  requiredDate    DateTime
+  specification   String?
+  remarks         String?
+  
+  requisition     Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  material        Material    @relation(fields: [materialId], references: [id])
+  
+  @@index([requisitionId])
+  @@index([materialId])
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum RequisitionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIALLY_ORDERED
+  ORDERED
+  CANCELLED
+}
+
+// Purchase Order Management
+model PurchaseOrder {
+  id                String    @id @default(uuid())
+  factoryId         String
+  poNumber          String
+  poDate            DateTime
+  vendorId          String
+  requisitionId     String?
+  deliveryDate      DateTime
+  paymentTerms      String
+  deliveryTerms     String?
+  status            POStatus  @default(DRAFT)
+  taxAmount         Float     @default(0)
+  discountAmount    Float     @default(0)
+  totalAmount       Float
+  currency          String    @default("INR")
+  createdBy         String
+  approvedBy        String?
+  approvedDate      DateTime?
+  remarks           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  factory           Factory             @relation(fields: [factoryId], references: [id])
+  vendor            Vendor              @relation(fields: [vendorId], references: [id])
+  requisition       Requisition?        @relation(fields: [requisitionId], references: [id])
+  createdByUser     User                @relation("CreatedByUser", fields: [createdBy], references: [id])
+  approvedByUser    User?               @relation("ApprovedByUser", fields: [approvedBy], references: [id])
+  items             PurchaseOrderItem[]
+  goodsReceipts     GoodsReceipt[]
+  
+  @@unique([factoryId, poNumber])
+  @@index([factoryId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([poDate])
+}
+
+model PurchaseOrderItem {
+  id              String    @id @default(uuid())
+  purchaseOrderId String
+  materialId      String
+  quantity        Float
+  rate            Float
+  taxRate         Float     @default(0)
+  discountPercent Float     @default(0)
+  amount          Float
+  deliveryDate    DateTime
+  receivedQty     Float     @default(0)
+  specification   String?
+  
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  material        Material      @relation(fields: [materialId], references: [id])
+  
+  @@index([purchaseOrderId])
+  @@index([materialId])
+}
+
+enum POStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+  CLOSED
+}
+
+// Goods Receipt Management
+model GoodsReceipt {
+  id               String    @id @default(uuid())
+  factoryId        String
+  grnNumber        String
+  grnDate          DateTime
+  purchaseOrderId  String
+  invoiceNumber    String?
+  invoiceDate      DateTime?
+  vehicleNumber    String?
+  ewayBillNumber   String?
+  status           GRNStatus @default(PENDING)
+  qualityChecked   Boolean   @default(false)
+  qualityRemarks   String?
+  createdBy        String
+  receivedBy       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  factory          Factory             @relation(fields: [factoryId], references: [id])
+  purchaseOrder    PurchaseOrder       @relation(fields: [purchaseOrderId], references: [id])
+  createdByUser    User                @relation("CreatedByUser", fields: [createdBy], references: [id])
+  items            GoodsReceiptItem[]
+  
+  @@unique([factoryId, grnNumber])
+  @@index([factoryId])
+  @@index([purchaseOrderId])
+  @@index([grnDate])
+}
+
+model GoodsReceiptItem {
+  id              String    @id @default(uuid())
+  goodsReceiptId  String
+  materialId      String
+  orderedQty      Float
+  receivedQty     Float
+  acceptedQty     Float
+  rejectedQty     Float     @default(0)
+  rejectionReason String?
+  batchNumber     String?
+  expiryDate      DateTime?
+  remarks         String?
+  
+  goodsReceipt    GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  material        Material     @relation(fields: [materialId], references: [id])
+  
+  @@index([goodsReceiptId])
+  @@index([materialId])
+}
+
+enum GRNStatus {
+  PENDING
+  PARTIALLY_RECEIVED
+  RECEIVED
+  QUALITY_CHECK_PENDING
+  QUALITY_APPROVED
+  QUALITY_REJECTED
+}
+
+// Inventory Management
+model Inventory {
+  id              String    @id @default(uuid())
+  factoryId       String
+  materialId      String
+  batchNumber     String?
+  quantity        Float
+  rate            Float
+  value           Float
+  location        String?
+  expiryDate      DateTime?
+  lastUpdated     DateTime  @default(now())
+  
+  factory         Factory   @relation(fields: [factoryId], references: [id])
+  material        Material  @relation(fields: [materialId], references: [id])
+  
+  @@unique([factoryId, materialId, batchNumber])
+  @@index([factoryId])
+  @@index([materialId])
+}
+
+// Stock Transfer
+model StockTransfer {
+  id              String    @id @default(uuid())
+  transferNumber  String
+  transferDate    DateTime
+  fromFactoryId   String
+  toFactoryId     String
+  status          TransferStatus @default(DRAFT)
+  vehicleNumber   String?
+  driverName      String?
+  remarks         String?
+  createdBy       String
+  approvedBy      String?
+  approvedDate    DateTime?
+  receivedBy      String?
+  receivedDate    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  fromFactory     Factory             @relation(fields: [fromFactoryId], references: [id])
+  items           StockTransferItem[]
+  
+  @@unique([transferNumber])
+  @@index([fromFactoryId])
+  @@index([toFactoryId])
+  @@index([transferDate])
+}
+
+model StockTransferItem {
+  id              String    @id @default(uuid())
+  stockTransferId String
+  materialId      String
+  quantity        Float
+  batchNumber     String?
+  remarks         String?
+  
+  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  material        Material      @relation(fields: [materialId], references: [id])
+  
+  @@index([stockTransferId])
+  @@index([materialId])
+}
+
+enum TransferStatus {
+  DRAFT
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+// ==================== FINANCE MODULE ====================
+
+// Invoice Management
+model Invoice {
+  id              String    @id @default(uuid())
+  invoiceNumber   String
+  invoiceDate     DateTime
+  type            InvoiceType
+  vendorId        String?
+  customerId      String?
+  poNumber        String?
+  grnNumber       String?
+  taxableAmount   Float
+  cgstAmount      Float     @default(0)
+  sgstAmount      Float     @default(0)
+  igstAmount      Float     @default(0)
+  tdsAmount       Float     @default(0)
+  discountAmount  Float     @default(0)
+  totalAmount     Float
+  status          InvoiceStatus @default(DRAFT)
+  dueDate         DateTime
+  paidAmount      Float     @default(0)
+  createdBy       String
+  approvedBy      String?
+  approvedDate    DateTime?
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  vendor          Vendor?   @relation(fields: [vendorId], references: [id])
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  createdByUser   User      @relation("CreatedByUser", fields: [createdBy], references: [id])
+  approvedByUser  User?     @relation("ApprovedByUser", fields: [approvedBy], references: [id])
+  payments        Payment[]
+  receipts        Receipt[]
+  
+  @@unique([invoiceNumber])
+  @@index([vendorId])
+  @@index([customerId])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([dueDate])
+}
+
+enum InvoiceType {
+  PURCHASE
+  SALES
+  DEBIT_NOTE
+  CREDIT_NOTE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+// Payment Management
+model Payment {
+  id              String    @id @default(uuid())
+  paymentNumber   String
+  paymentDate     DateTime
+  vendorId        String
+  paymentMode     PaymentMode
+  bankAccountId   String?
+  chequeNumber    String?
+  chequeDate      DateTime?
+  utrNumber       String?
+  amount          Float
+  tdsAmount       Float     @default(0)
+  status          PaymentStatus @default(DRAFT)
+  createdBy       String
+  approvedBy      String?
+  approvedDate    DateTime?
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  vendor          Vendor    @relation(fields: [vendorId], references: [id])
+  createdByUser   User      @relation("CreatedByUser", fields: [createdBy], references: [id])
+  approvedByUser  User?     @relation("ApprovedByUser", fields: [approvedBy], references: [id])
+  invoices        Invoice[]
+  
+  @@unique([paymentNumber])
+  @@index([vendorId])
+  @@index([paymentDate])
+  @@index([status])
+}
+
+// Receipt Management
+model Receipt {
+  id              String    @id @default(uuid())
+  receiptNumber   String
+  receiptDate     DateTime
+  customerId      String
+  receiptMode     PaymentMode
+  bankAccountId   String?
+  chequeNumber    String?
+  chequeDate      DateTime?
+  utrNumber       String?
+  amount          Float
+  status          PaymentStatus @default(DRAFT)
+  createdBy       String
+  approvedBy      String?
+  approvedDate    DateTime?
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  customer        Customer  @relation(fields: [customerId], references: [id])
+  invoices        Invoice[]
+  
+  @@unique([receiptNumber])
+  @@index([customerId])
+  @@index([receiptDate])
+  @@index([status])
+}
+
+enum PaymentMode {
+  CASH
+  CHEQUE
+  BANK_TRANSFER
+  UPI
+  DEMAND_DRAFT
+  LETTER_OF_CREDIT
+}
+
+enum PaymentStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PROCESSED
+  CANCELLED
+  BOUNCED
+}
+
+// Banking
+model Banking {
+  id              String    @id @default(uuid())
+  transactionDate DateTime
+  accountId       String
+  transactionType BankingType
+  referenceNumber String?
+  amount          Float
+  balance         Float
+  narration       String?
+  reconciled      Boolean   @default(false)
+  reconciledDate  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  account         Account   @relation(fields: [accountId], references: [id])
+  
+  @@index([accountId])
+  @@index([transactionDate])
+  @@index([reconciled])
+}
+
+enum BankingType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+  CHARGES
+  INTEREST
+}
+
+// Journal Entries
+model Journal {
+  id              String    @id @default(uuid())
+  journalNumber   String
+  journalDate     DateTime
+  type            JournalType
+  narration       String
+  totalAmount     Float
+  status          JournalStatus @default(DRAFT)
+  createdBy       String
+  approvedBy      String?
+  approvedDate    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  createdByUser   User          @relation("CreatedByUser", fields: [createdBy], references: [id])
+  approvedByUser  User?         @relation("ApprovedByUser", fields: [approvedBy], references: [id])
+  entries         JournalEntry[]
+  
+  @@unique([journalNumber])
+  @@index([journalDate])
+  @@index([status])
+}
+
+model JournalEntry {
+  id              String    @id @default(uuid())
+  journalId       String
+  accountId       String
+  type            EntryType
+  amount          Float
+  costCenter      String?
+  narration       String?
+  
+  journal         Journal   @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  account         Account   @relation(fields: [accountId], references: [id])
+  
+  @@index([journalId])
+  @@index([accountId])
+}
+
+enum JournalType {
+  GENERAL
+  PAYMENT
+  RECEIPT
+  CONTRA
+  SALES
+  PURCHASE
+}
+
+enum JournalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  POSTED
+  CANCELLED
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+// ==================== FARMER MANAGEMENT ====================
+
+model Farmer {
+  id              String    @id @default(uuid())
+  factoryId       String
+  farmerCode      String
+  name            String
+  fatherName      String?
+  village         String
+  tehsil          String?
+  district        String
+  state           String
+  pincode         String?
+  phone           String
+  alternatePhone  String?
+  aadharNumber    String?   @unique
+  panNumber       String?
+  bankName        String?
+  bankAccount     String?
+  bankIFSC        String?
+  totalArea       Float     // In hectares
+  cultivableArea  Float?
+  isActive        Boolean   @default(true)
+  registrationDate DateTime @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory           @relation(fields: [factoryId], references: [id])
+  caneDeliveries  CaneDelivery[]
+  payments        FarmerPayment[]
+  
+  @@unique([factoryId, farmerCode])
+  @@index([factoryId])
+  @@index([village])
+  @@index([aadharNumber])
+}
+
+// Cane Delivery
+model CaneDelivery {
+  id              String    @id @default(uuid())
+  factoryId       String
+  farmerId        String
+  tokenNumber     String
+  tokenDate       DateTime
+  vehicleNumber   String
+  grossWeight     Float
+  tareWeight      Float
+  netWeight       Float
+  deductions      Float     @default(0)
+  payableWeight   Float
+  variety         String?
+  harvestDate     DateTime?
+  brix            Float?
+  pol             Float?
+  purity          Float?
+  recovery        Float?
+  rate            Float
+  basicAmount     Float
+  qualityIncentive Float    @default(0)
+  transportCharges Float    @default(0)
+  totalAmount     Float
+  status          DeliveryStatus @default(PENDING)
+  weighbridgeId   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory           @relation(fields: [factoryId], references: [id])
+  farmer          Farmer            @relation(fields: [farmerId], references: [id])
+  weighbridge     WeighbridgeEntry? @relation(fields: [weighbridgeId], references: [id])
+  
+  @@unique([factoryId, tokenNumber])
+  @@index([factoryId])
+  @@index([farmerId])
+  @@index([tokenDate])
+  @@index([status])
+}
+
+enum DeliveryStatus {
+  PENDING
+  WEIGHED
+  QUALITY_TESTED
+  APPROVED
+  PAYMENT_DUE
+  PAID
+}
+
+// Farmer Payment
+model FarmerPayment {
+  id              String    @id @default(uuid())
+  farmerId        String
+  paymentNumber   String
+  paymentDate     DateTime
+  fromDate        DateTime
+  toDate          DateTime
+  caneAmount      Float
+  advanceAdjusted Float     @default(0)
+  deductions      Float     @default(0)
+  netAmount       Float
+  paymentMode     PaymentMode
+  bankReference   String?
+  status          PaymentStatus @default(DRAFT)
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  farmer          Farmer    @relation(fields: [farmerId], references: [id])
+  
+  @@unique([paymentNumber])
+  @@index([farmerId])
+  @@index([paymentDate])
+  @@index([status])
+}
+
+// ==================== PRODUCTION MODULES ====================
+
+// Sugar Production
+model SugarProduction {
+  id              String    @id @default(uuid())
+  factoryId       String
+  productionDate  DateTime
+  shiftNumber     Int
+  caneCrushed     Float     // Tons
+  sugarProduced   Float     // Tons
+  recovery        Float     // Percentage
+  molassesProduced Float    // Tons
+  bagasseProduced Float     // Tons
+  mudProduced     Float     // Tons
+  steamConsumed   Float     // Tons
+  powerConsumed   Float     // Units
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory   @relation(fields: [factoryId], references: [id])
+  
+  @@unique([factoryId, productionDate, shiftNumber])
+  @@index([factoryId])
+  @@index([productionDate])
+}
+
+// Power Generation
+model PowerGeneration {
+  id              String    @id @default(uuid())
+  factoryId       String
+  generationDate  DateTime
+  shiftNumber     Int
+  bagasseConsumed Float     // Tons
+  coalConsumed    Float     @default(0) // Tons
+  steamGenerated  Float     // Tons
+  powerGenerated  Float     // MW
+  powerExported   Float     // MW
+  auxConsumption  Float     // MW
+  frequency       Float?    // Hz
+  plantLoadFactor Float?    // Percentage
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory   @relation(fields: [factoryId], references: [id])
+  
+  @@unique([factoryId, generationDate, shiftNumber])
+  @@index([factoryId])
+  @@index([generationDate])
+}
+
+// Ethanol Production
+model EthanolProduction {
+  id              String    @id @default(uuid())
+  factoryId       String
+  productionDate  DateTime
+  batchNumber     String
+  molassesUsed    Float     // Tons
+  ethanolProduced Float     // KL
+  ethanolStrength Float     // Percentage
+  slopsGenerated  Float     // KL
+  co2Generated    Float?    // Tons
+  yieldEfficiency Float     // Percentage
+  fermentationHours Float
+  distillationHours Float
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory   @relation(fields: [factoryId], references: [id])
+  
+  @@unique([factoryId, batchNumber])
+  @@index([factoryId])
+  @@index([productionDate])
+}
+
+// Feed Production
+model FeedProduction {
+  id              String    @id @default(uuid())
+  factoryId       String
+  productionDate  DateTime
+  batchNumber     String
+  productType     String
+  bagasseUsed     Float     // Tons
+  molassesUsed    Float     @default(0) // Tons
+  additivesUsed   String?   // JSON
+  feedProduced    Float     // Tons
+  moistureContent Float     // Percentage
+  proteinContent  Float?    // Percentage
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory   @relation(fields: [factoryId], references: [id])
+  
+  @@unique([factoryId, batchNumber])
+  @@index([factoryId])
+  @@index([productionDate])
+}
+
+// ==================== COMMON MODULES ====================
+
+// Weighbridge Management
+model WeighbridgeEntry {
+  id              String    @id @default(uuid())
+  factoryId       String
+  ticketNumber    String
+  weighmentDate   DateTime
+  vehicleNumber   String
+  vehicleType     String
+  party           String
+  material        String
+  grossWeight     Float?
+  grossTime       DateTime?
+  tareWeight      Float?
+  tareTime        DateTime?
+  netWeight       Float?
+  challanNumber   String?
+  remarks         String?
+  status          WeighmentStatus @default(IN_PROGRESS)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory         @relation(fields: [factoryId], references: [id])
+  caneDeliveries  CaneDelivery[]
+  
+  @@unique([factoryId, ticketNumber])
+  @@index([factoryId])
+  @@index([vehicleNumber])
+  @@index([weighmentDate])
+  @@index([status])
+}
+
+enum WeighmentStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Equipment Management
+model Equipment {
+  id              String    @id @default(uuid())
+  factoryId       String
+  equipmentCode   String
+  name            String
+  category        String
+  department      String
+  manufacturer    String?
+  model           String?
+  serialNumber    String?
+  purchaseDate    DateTime?
+  warrantyExpiry  DateTime?
+  specifications  String?   // JSON
+  criticalSpares  String?   // JSON
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  factory         Factory         @relation(fields: [factoryId], references: [id])
+  maintenance     Maintenance[]
+  
+  @@unique([factoryId, equipmentCode])
+  @@index([factoryId])
+  @@index([category])
+  @@index([department])
+}
+
+// Maintenance
+model Maintenance {
+  id              String    @id @default(uuid())
+  equipmentId     String
+  maintenanceType MaintenanceType
+  scheduledDate   DateTime
+  actualDate      DateTime?
+  description     String
+  sparesUsed      String?   // JSON
+  labourHours     Float?
+  cost            Float?
+  performedBy     String?
+  status          MaintenanceStatus @default(SCHEDULED)
+  nextDueDate     DateTime?
+  remarks         String?
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  equipment       Equipment @relation(fields: [equipmentId], references: [id])
+  createdByUser   User      @relation("CreatedByUser", fields: [createdBy], references: [id])
+  
+  @@index([equipmentId])
+  @@index([maintenanceType])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  BREAKDOWN
+  PREDICTIVE
+  CONDITION_BASED
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+// ==================== SETTINGS & CONFIGURATION ====================
+
+// Tax Rates
+model TaxRate {
+  id              String    @id @default(uuid())
+  companyId       String
+  name            String
+  cgstRate        Float
+  sgstRate        Float
+  igstRate        Float
+  cessRate        Float     @default(0)
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  company         Company   @relation(fields: [companyId], references: [id])
+  
+  @@index([companyId])
+  @@index([effectiveFrom])
+}
+
+// HSN Codes
+model HSNCode {
+  id              String    @id @default(uuid())
+  companyId       String
+  code            String
+  description     String
+  gstRate         Float
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  company         Company   @relation(fields: [companyId], references: [id])
+  materials       Material[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+// Units of Measurement
+model UOM {
+  id              String    @id @default(uuid())
+  companyId       String
+  code            String
+  name            String
+  conversionFactor Float    @default(1)
+  baseUOM         String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  company         Company   @relation(fields: [companyId], references: [id])
+  materials       Material[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+// Approval Matrix
+model ApprovalMatrix {
+  id              String    @id @default(uuid())
+  companyId       String
+  module          String    // REQUISITION, PURCHASE_ORDER, INVOICE, PAYMENT
+  documentType    String?
+  minAmount       Float
+  maxAmount       Float
+  approverRole    String
+  approvalLevel   Int
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  company         Company   @relation(fields: [companyId], references: [id])
+  
+  @@index([companyId])
+  @@index([module])
+}
+
+// ==================== ANALYTICS & REPORTING ====================
+
+// Plant Metrics (existing)
 model PlantMetrics {
   id           String   @id @default(uuid())
   plantId      String
@@ -121,8 +1259,13 @@ model PlantMetrics {
   quality      Float?
   alerts       String   // JSON string
   createdAt    DateTime @default(now())
+  
+  @@index([plantId])
+  @@index([division])
+  @@index([timestamp])
 }
 
+// Alert Log (existing)
 model AlertLog {
   id        String   @id @default(uuid())
   plantId   String
@@ -132,8 +1275,14 @@ model AlertLog {
   resolved  Boolean  @default(false)
   createdAt DateTime @default(now())
   resolvedAt DateTime?
+  
+  @@index([plantId])
+  @@index([division])
+  @@index([type])
+  @@index([createdAt])
 }
 
+// Dashboard Config (existing)
 model DashboardConfig {
   id       String @id @default(uuid())
   userId   String
@@ -142,9 +1291,11 @@ model DashboardConfig {
   isDefault Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@index([userId])
 }
 
-// Document Management Models
+// Document Management (existing)
 model Document {
   id           String   @id @default(uuid())
   name         String
@@ -185,6 +1336,8 @@ model DocumentActivity {
   userId     String
   comment    String?
   createdAt  DateTime @default(now())
+  
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   
   @@index([documentId])
 }

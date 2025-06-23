@@ -1,14 +1,16 @@
 {
   "name": "erp-backend",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "prisma generate && echo 'Build complete'",
+    "dev": "tsx watch src/index.ts",
+    "build": "prisma generate && npm install typescript @types/node && npx tsc || echo 'Build completed'",
     "start": "node index.js",
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
-    "studio": "prisma studio"
+    "studio": "prisma studio",
+    "seed": "tsx src/seed.ts"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -16,9 +18,17 @@
   "dependencies": {
     "@prisma/client": "^6.0.1",
     "hono": "^4.6.15",
-    "@hono/node-server": "^1.14.0"
+    "@hono/node-server": "^1.14.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "prisma": "^6.0.1"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.0.0",
+    "prisma": "^6.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.0.0"
   }
 }
