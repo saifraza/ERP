@@ -55,10 +55,22 @@ app.post('/company/:companyId/gmail/:action', async (c) => {
         return c.json(result)
       }
       
+      case 'list-events': {
+        const { maxResults = 10 } = body
+        const events = await multiTenantGmail.listCalendarEvents(companyId, maxResults)
+        return c.json({
+          success: true,
+          data: events,
+          count: events.length,
+          company: companyId
+        })
+      }
+      
       default:
         return c.json({
           success: false,
-          error: `Unknown action: ${action}`
+          error: `Unknown action: ${action}`,
+          availableActions: ['list-emails', 'send-email', 'list-events']
         }, 400)
     }
   } catch (error: any) {

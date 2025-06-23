@@ -264,6 +264,44 @@ export class MultiTenantGmailService {
       }
     })
   }
+  
+  /**
+   * List calendar events for a specific company account
+   */
+  async listCalendarEvents(
+    companyId: string | undefined,
+    maxResults: number = 10
+  ) {
+    const { client, email } = await this.getClient(companyId)
+    const calendar = google.calendar({ version: 'v3', auth: client })
+    
+    console.log(`Listing calendar events for ${email} (company: ${companyId || 'default'})`)
+    
+    try {
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: new Date().toISOString(),
+        maxResults,
+        singleEvents: true,
+        orderBy: 'startTime'
+      })
+      
+      const events = (response.data.items || []).map((event: any) => ({
+        id: event.id,
+        summary: event.summary || '(No Title)',
+        start: event.start,
+        end: event.end,
+        location: event.location,
+        description: event.description,
+        account: email // Include which account this came from
+      }))
+      
+      return events
+    } catch (error: any) {
+      console.error(`Calendar list error for ${email}:`, error)
+      throw new Error(`Failed to list calendar events for ${email}: ${error?.message}`)
+    }
+  }
 }
 
 // Export singleton instance
