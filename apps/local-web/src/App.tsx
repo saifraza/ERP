@@ -35,6 +35,13 @@ function App() {
   // Check company setup status when authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      // Force clear any stale state and reload
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No token found after authentication')
+        useAuthStore.getState().logout()
+        return
+      }
       checkSetupStatus()
     }
   }, [isAuthenticated, checkSetupStatus])

@@ -67,7 +67,24 @@ interface CompanyStore {
 
 // Initialize with empty state - data will be loaded from API
 const getInitialState = () => {
-  // Don't load from localStorage on init - always fetch fresh from API
+  // Clear any corrupted state on init
+  if (typeof window !== 'undefined') {
+    // Remove old corrupted company storage
+    const stored = localStorage.getItem('company-storage')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        // If version is not 1, it's old corrupted data
+        if (!parsed.version || parsed.version !== 1) {
+          localStorage.removeItem('company-storage')
+          console.log('Cleared old company storage')
+        }
+      } catch {
+        localStorage.removeItem('company-storage')
+      }
+    }
+  }
+  
   return {
     companies: [],
     isSetupComplete: false,
@@ -160,6 +177,7 @@ export const useCompanyStore = create<CompanyStore>()(
       checkSetupStatus: async () => {
         const state = get()
         console.log('Checking setup status, current companies:', state.companies)
+        console.log('Current isSetupComplete state:', state.isSetupComplete)
         
         // Always load fresh from API
         await state.loadCompanies()
@@ -167,12 +185,12 @@ export const useCompanyStore = create<CompanyStore>()(
         // Get the latest state after loading
         const latestState = get()
         const isComplete = latestState.companies.length > 0
+        console.log('Companies after loading:', latestState.companies.length)
         console.log('Setup complete status after loading:', isComplete)
+        console.log('Current isSetupComplete in state:', latestState.isSetupComplete)
         
-        // Update the state to match reality
-        if (latestState.isSetupComplete !== isComplete) {
-          set({ isSetupComplete: isComplete })
-        }
+        // Force update the state to match reality
+        set({ isSetupComplete: isComplete })
         
         return isComplete
       },
