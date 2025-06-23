@@ -33,6 +33,8 @@ Solo-developed complete ERP system for ethanol and sugar factory operations with
 ### AI Integration
 - **MCP Server**: Google Workspace MCP with Gmail integration
 - **LLM**: Claude 3.5 Sonnet
+- **OAuth Provider**: mspil.in (Mahakaushal Sugar and Power Industries Ltd.)
+- **OAuth Type**: Internal (Google Workspace)
 - **Features**: 
   - Natural language queries, predictive analytics, optimization suggestions
   - Gmail integration (read/send emails, calendar management)
@@ -379,9 +381,9 @@ DATABASE_URL="sqlserver://localhost:1433;database=erp_local"
 DATABASE_URL="postgresql://postgres:qRvNDeDRjOOJQhdpNlYzGMhfJhzdAwVn@postgres.railway.internal:5432/railway"
 
 # MCP Server (Gmail Integration)
-GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="your-client-secret"
-GOOGLE_REFRESH_TOKEN="your-refresh-token"
+GOOGLE_CLIENT_ID="186452386240-ljqss2cslug8q5adqlplj159ccpe1hje.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"  # Get from Google Cloud Console
+GOOGLE_REFRESH_TOKEN="your-refresh-token"  # Generated after OAuth flow
 RAILWAY_ENVIRONMENT="production"  # Enables internal networking
 DEFAULT_COMPANY_ID="1ca3d045-b8ac-434a-bc9a-3e685bd10a94"
 
@@ -407,11 +409,22 @@ DCS_SERVER="192.168.1.100"
 - Multi-language support
 - Offline-first architecture improvements
 
+## OAuth Configuration
+### Google Workspace OAuth (mspil.in)
+- **Client ID**: 186452386240-ljqss2cslug8q5adqlplj159ccpe1hje.apps.googleusercontent.com
+- **Project**: ERP mspil
+- **Organization**: Mahakaushal Sugar and Power Industries Ltd.
+- **Domain**: mspil.in
+- **OAuth Type**: Internal (Google Workspace)
+- **Authorized Users**: All @mspil.in email addresses
+- **Setup Guide**: See `/packages/mcp-server/OAUTH_SETUP_GUIDE.md`
+
 ## Resources
 - [Railway Documentation](https://docs.railway.app)
 - [Vite Documentation](https://vitejs.dev)
 - [Bun Documentation](https://bun.sh)
 - [MCP SDK](https://github.com/anthropics/mcp)
+- [Google Cloud Console](https://console.cloud.google.com)
 
 ## Contact
 Solo Developer Project
