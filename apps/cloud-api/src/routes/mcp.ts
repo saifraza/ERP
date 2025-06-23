@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import axios from 'axios'
 import { authMiddleware } from '../middleware/auth.js'
+import { getGmailService } from '../services/gmail.js'
 
 const app = new Hono()
 
@@ -15,93 +15,99 @@ const getMCPUrl = () => {
   return process.env.MCP_SERVER_URL || 'https://mcp-server-production-ac21.up.railway.app'
 }
 
-// Proxy requests to MCP server
+// Gmail API endpoints - Direct integration for robust ERP
 app.post('/gmail/:action', async (c) => {
   try {
     const action = c.req.param('action')
     const body = await c.req.json()
     
-    // Map frontend actions to MCP tools
-    const toolMap: Record<string, string> = {
-      'list-emails': 'list_emails',
-      'send-email': 'send_email',
-      'search-emails': 'search_emails',
-      'list-events': 'list_events',
-      'create-event': 'create_event',
-      'extract-attachments': 'extract_attachments',
-      'analyze-document': 'analyze_document'
+    // Initialize Gmail service with OAuth
+    let gmailService
+    try {
+      gmailService = getGmailService()
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: 'Gmail service not configured. Please check OAuth credentials.',
+        details: error.message
+      }, 500)
     }
     
-    const tool = toolMap[action] || action
-    
-    // For now, return mock data since MCP server needs special protocol
-    // In production, this would communicate with MCP via proper channels
-    
-    if (tool === 'list_emails') {
-      return c.json({
-        success: true,
-        data: [
-          {
-            id: '1',
-            subject: 'Purchase Order #PO-2024-001',
-            from: 'supplier@example.com',
-            date: new Date().toISOString()
-          },
-          {
-            id: '2',
-            subject: 'Invoice for Sugar Bags - December 2024',
-            from: 'vendor@packagingsupplier.com',
-            date: new Date(Date.now() - 86400000).toISOString()
-          },
-          {
-            id: '3',
-            subject: 'Ethanol Production Report - Week 51',
-            from: 'production@factory.com',
-            date: new Date(Date.now() - 172800000).toISOString()
-          }
-        ]
-      })
-    }
-    
-    if (tool === 'list_events') {
-      return c.json({
-        success: true,
-        data: [
-          {
-            id: '1',
-            summary: 'Production Review Meeting',
-            start: { dateTime: new Date(Date.now() + 86400000).toISOString() },
-            end: { dateTime: new Date(Date.now() + 90000000).toISOString() },
-            location: 'Conference Room A'
-          },
-          {
-            id: '2',
-            summary: 'Vendor Payment Review',
-            start: { dateTime: new Date(Date.now() + 172800000).toISOString() },
-            end: { dateTime: new Date(Date.now() + 176400000).toISOString() }
-          }
-        ]
-      })
-    }
-    
-    if (tool === 'send_email') {
-      return c.json({
-        success: true,
-        message: 'Email sent successfully',
-        data: {
-          id: 'msg_' + Date.now(),
-          ...body
+    // Handle different Gmail actions
+    switch (action) {
+      case 'list-emails': {
+        const { maxResults = 20, query = '' } = body
+        const emails = await gmailService.listEmails(maxResults, query)
+        return c.json({
+          success: true,
+          data: emails,
+          count: emails.length
+        })
+      }
+      
+      case 'send-email': {
+        const { to, subject, body: emailBody, cc, bcc } = body
+        if (!to || !subject || !emailBody) {
+          return c.json({
+            success: false,
+            error: 'Missing required fields: to, subject, body'
+          }, 400)
         }
-      })
+        
+        const result = await gmailService.sendEmail(to, subject, emailBody, cc, bcc)
+        return c.json(result)
+      }
+      
+      case 'list-events': {
+        const { maxResults = 10 } = body
+        const events = await gmailService.listCalendarEvents(maxResults)
+        return c.json({
+          success: true,
+          data: events,
+          count: events.length
+        })
+      }
+      
+      case 'search-suppliers': {
+        const emails = await gmailService.searchSupplierEmails()
+        return c.json({
+          success: true,
+          data: emails,
+          count: emails.length,
+          message: 'Found supplier emails with potential documents'
+        })
+      }
+      
+      case 'extract-attachments': {
+        const { messageId } = body
+        if (!messageId) {
+          return c.json({
+            success: false,
+            error: 'Message ID required'
+          }, 400)
+        }
+        
+        const attachments = await gmailService.extractAttachments(messageId)
+        return c.json({
+          success: true,
+          data: attachments,
+          count: attachments.length
+        })
+      }
+      
+      default:
+        return c.json({
+          success: false,
+          error: `Unknown action: ${action}`,
+          availableActions: [
+            'list-emails',
+            'send-email',
+            'list-events',
+            'search-suppliers',
+            'extract-attachments'
+          ]
+        }, 400)
     }
-    
-    // Default response
-    return c.json({
-      success: true,
-      message: `MCP action ${action} processed`,
-      tool,
-      data: body
-    })
     
   } catch (error) {
     console.error('MCP proxy error:', error)
