@@ -75,9 +75,9 @@ async function main() {
   // Link user to company
   await prisma.companyUser.upsert({
     where: {
-      userId_companyId: {
-        userId: user.id,
-        companyId: company.id
+      companyId_userId: {
+        companyId: company.id,
+        userId: user.id
       }
     },
     update: {},
@@ -85,7 +85,8 @@ async function main() {
       userId: user.id,
       companyId: company.id,
       role: 'ADMIN',
-      permissions: ['ALL']
+      permissions: JSON.stringify(['ALL']),
+      isDefault: true
     }
   })
 
