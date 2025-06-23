@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import DashboardModern from './pages/DashboardModern'
 import Login from './pages/Login'
 import Documents from './pages/Documents'
+import Storage from './pages/Storage'
 import FinanceDashboard from './pages/finance/FinanceDashboard'
 import Vendors from './pages/finance/Vendors'
 import VendorsModern from './pages/finance/VendorsModern'
@@ -72,6 +73,7 @@ function App() {
                       <Route path="/" element={<DashboardPage />} />
                       <Route path="/documents" element={<Documents />} />
                       <Route path="/mails" element={<Mails />} />
+                      <Route path="/storage" element={<Storage />} />
                     
                     {/* Store Module Routes */}
                     <Route path="/store/requisitions" element={<div>Material Requisitions</div>} />

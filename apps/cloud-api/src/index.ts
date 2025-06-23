@@ -10,6 +10,7 @@ import companiesRoutes from './routes/companies.js'
 import setupRoutes from './routes/setup.js'
 import mcpRoutes from './routes/mcp.js'
 import fixDataRoutes from './routes/fix-data.js'
+import storageRoutes from './routes/storage.js'
 
 const app = new Hono()
 
@@ -67,6 +68,7 @@ app.route('/api/companies', companiesRoutes)
 app.route('/api/setup', setupRoutes)
 app.route('/api/mcp', mcpRoutes)
 app.route('/api/fix-data', fixDataRoutes)
+app.route('/api/storage', storageRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {
