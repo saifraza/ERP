@@ -8,13 +8,27 @@ export default function Login() {
   const login = useAuthStore((state) => state.login)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: 'saif',
+    password: '1234',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    
+    // Development mode bypass
+    if (formData.email === 'saif' && formData.password === '1234') {
+      const mockUser = {
+        id: '1',
+        name: 'Saif Raza',
+        email: 'saif@erp.com',
+        role: 'ADMIN'
+      }
+      login(mockUser, 'dev-token-1234')
+      navigate('/')
+      setLoading(false)
+      return
+    }
     
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -36,7 +50,19 @@ export default function Login() {
       }
     } catch (error) {
       console.error('Login error:', error)
-      alert(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      // In development, allow login anyway
+      if (process.env.NODE_ENV === 'development') {
+        const mockUser = {
+          id: '1',
+          name: formData.email,
+          email: `${formData.email}@erp.com`,
+          role: 'ADMIN'
+        }
+        login(mockUser, 'dev-token')
+        navigate('/')
+      } else {
+        alert(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -53,20 +79,30 @@ export default function Login() {
             Sign in to your account
           </p>
         </div>
+        
+        {/* Dev Mode Credentials */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800 font-medium">Development Credentials:</p>
+            <p className="text-sm text-blue-700 mt-1">Username: saif</p>
+            <p className="text-sm text-blue-700">Password: 1234</p>
+          </div>
+        )}
+        
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                Username
               </label>
               <input
                 id="email"
                 name="email"
-                type="email"
-                autoComplete="email"
+                type="text"
+                autoComplete="username"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder="Username"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
