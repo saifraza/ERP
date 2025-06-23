@@ -136,12 +136,14 @@ ERP/
 - [x] Finance module schema (Invoices, Payments, Banking)
 
 ### ✅ AI & MCP Features
-- [x] Gmail integration with OAuth2
+- [x] Gmail integration with OAuth2 (Working!)
 - [x] Document AI analysis (invoices, POs, contracts)
 - [x] Email attachment extraction and processing
 - [x] AI chat interface in frontend
 - [x] Railway internal networking optimization (20x faster)
 - [x] Natural language queries support
+- [x] Gmail OAuth fixed - can list/send emails
+- [x] Email metadata access working
 
 ### 🚀 Ready for Phase 2
 - [ ] Business logic implementation
