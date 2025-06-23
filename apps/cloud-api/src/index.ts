@@ -38,28 +38,74 @@ app.route('/api/companies', companiesRoutes)
 app.route('/api/setup', setupRoutes)
 
 // Database status endpoint
-app.get('/api/setup/db-status', async (c) => {
+app.get('/api/db-status', async (c) => {
   try {
     const { prisma } = await import('./lib/prisma.js')
     
     // Try to query the database
     await prisma.$queryRaw`SELECT 1`
     
-    // Get table counts
-    const userCount = await prisma.user.count()
-    const companyCount = await prisma.company.count()
-    const factoryCount = await prisma.factory.count()
+    // Check if tables exist
+    const tables = await prisma.$queryRaw`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_type = 'BASE TABLE'
+    ` as any[]
+    
+    let userCount = 0
+    let companyCount = 0
+    
+    try {
+      userCount = await prisma.user.count()
+      companyCount = await prisma.company.count()
+    } catch (e) {
+      // Tables might not exist yet
+    }
     
     return c.json({
       status: 'connected',
-      tables: {
+      tableCount: tables.length,
+      tables: tables.map((t: any) => t.table_name),
+      data: {
         users: userCount,
-        companies: companyCount,
-        factories: factoryCount
-      }
+        companies: companyCount
+      },
+      needsMigration: tables.length === 0
     })
   } catch (error) {
     console.error('Database connection error:', error)
+    return c.json({
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
+  }
+})
+
+// Run migrations endpoint (temporary for setup)
+app.post('/api/run-migrations', async (c) => {
+  try {
+    const { execSync } = await import('child_process')
+    
+    // Run migrations
+    const migrationOutput = execSync('npx prisma migrate deploy', {
+      cwd: process.cwd(),
+      encoding: 'utf8'
+    })
+    
+    // Run seed
+    const seedOutput = execSync('npm run seed', {
+      cwd: process.cwd(),
+      encoding: 'utf8'
+    })
+    
+    return c.json({
+      status: 'success',
+      migration: migrationOutput,
+      seed: seedOutput
+    })
+  } catch (error) {
+    console.error('Migration error:', error)
     return c.json({
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error'
