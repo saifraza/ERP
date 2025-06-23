@@ -56,18 +56,17 @@ async function main() {
       name: 'Pune Sugar & Ethanol Plant',
       companyId: company.id,
       type: 'INTEGRATED',
-      capacity: 5000,
-      capacityUnit: 'TCD',
+      crushingCapacity: 5000,  // TPD
+      powerCapacity: 30,       // MW
+      ethanolCapacity: 60,     // KLPD
+      feedCapacity: 100,       // TPD
       addressLine1: 'Plot No. 123, MIDC',
       city: 'Pune',
       state: 'Maharashtra',
       pincode: '411001',
-      phone: '+91 20 12345679',
-      commissioningDate: new Date('2010-01-01'),
-      hasSugarDivision: true,
-      hasEthanolDivision: true,
-      hasPowerDivision: true,
-      hasFeedDivision: true
+      gstNumber: '27AAACM1234A1Z5',
+      factoryLicense: 'FL/2024/001',
+      pollutionLicense: 'PCB/2024/001'
     }
   })
 
