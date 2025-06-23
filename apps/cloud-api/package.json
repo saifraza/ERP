@@ -4,14 +4,21 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "echo 'Build complete'",
-    "start": "node index.js"
+    "build": "prisma generate && echo 'Build complete'",
+    "start": "node index.js",
+    "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
+    "studio": "prisma studio"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@prisma/client": "^6.0.1",
     "hono": "^4.6.15",
     "@hono/node-server": "^1.14.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.0.1"
   }
 }

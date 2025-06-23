@@ -7,6 +7,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User and Authentication
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String?   @unique
+  password      String
+  name          String
+  role          UserRole  @default(OPERATOR)
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  companies     CompanyUser[]
+  documents     Document[]
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+// Company and Factory Management
+model Company {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  name          String
+  legalName     String
+  gstNumber     String
+  panNumber     String
+  tanNumber     String?
+  cinNumber     String?
+  addressLine1  String
+  addressLine2  String?
+  city          String
+  state         String
+  pincode       String
+  email         String
+  phone         String
+  website       String?
+  fyStartMonth  Int       @default(4)
+  currentFY     String
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  users         CompanyUser[]
+  factories     Factory[]
+}
+
+model CompanyUser {
+  id          String    @id @default(uuid())
+  companyId   String
+  userId      String
+  role        String    @default("USER")
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  
+  company     Company   @relation(fields: [companyId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  
+  @@unique([companyId, userId])
+  @@index([userId])
+}
+
+model Factory {
+  id                String    @id @default(uuid())
+  companyId         String
+  code              String    @unique
+  name              String
+  type              FactoryType
+  addressLine1      String
+  addressLine2      String?
+  city              String
+  state             String
+  pincode           String
+  gstNumber         String?
+  factoryLicense    String?
+  pollutionLicense  String?
+  crushingCapacity  Float?    // TPD
+  powerCapacity     Float?    // MW
+  ethanolCapacity   Float?    // KLPD
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  company           Company   @relation(fields: [companyId], references: [id])
+  
+  @@index([companyId])
+}
+
+enum FactoryType {
+  sugar
+  ethanol
+  integrated
+  feed
+}
+
 // Analytics and Dashboard Models
 model PlantMetrics {
   id           String   @id @default(uuid())
@@ -65,6 +167,10 @@ model Document {
   approvedAt   DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  
+  // Relations
+  uploadedByUser User @relation(fields: [uploadedBy], references: [id])
+  activities DocumentActivity[]
   
   @@index([type, status])
   @@index([date])

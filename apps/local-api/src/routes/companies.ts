@@ -1,6 +1,17 @@
 import { Hono } from 'hono'
-import { prisma } from '../lib/prisma'
 import { authMiddleware } from '../middleware/auth'
+
+// Mock prisma for now - will be replaced with actual Prisma client
+const prisma = {
+  company: {
+    findMany: async () => [],
+    findFirst: async () => null,
+    update: async () => null
+  },
+  user: {
+    findUnique: async () => null
+  }
+}
 
 const app = new Hono()
 
