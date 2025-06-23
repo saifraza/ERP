@@ -5,12 +5,12 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && npm install typescript @types/node && npx tsc || echo 'Build completed'",
-    "start": "node index.js",
+    "build": "npx tsx build.js",
+    "start": "npx tsx src/index.ts",
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "studio": "prisma studio",
-    "seed": "tsx src/seed.ts"
+    "seed": "npx tsx src/seed.ts"
   },
   "engines": {
     "node": ">=18.0.0"
