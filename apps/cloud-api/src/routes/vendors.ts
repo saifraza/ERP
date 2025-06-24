@@ -1,14 +1,12 @@
 import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
-import { companyAuthMiddleware } from '../middleware/company-auth.js'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
 
 const app = new Hono()
 
-// Apply both auth middlewares to all routes
+// Apply auth middleware to all routes
 app.use('*', authMiddleware)
-app.use('*', companyAuthMiddleware)
 
 // Vendor creation schema
 const vendorSchema = z.object({
@@ -34,16 +32,29 @@ const vendorSchema = z.object({
 
 // Get all vendors for a company
 app.get('/', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const { isActive, type, search } = c.req.query()
   
-  if (!user.companyId) {
-    return c.json({ success: true, vendors: [] })
-  }
-  
   try {
+    // Get user's company
+    const userWithCompany = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        companyUsers: {
+          select: { companyId: true },
+          take: 1
+        }
+      }
+    })
+    
+    const companyId = userWithCompany?.companyUsers[0]?.companyId
+    
+    if (!companyId) {
+      return c.json({ success: true, vendors: [] })
+    }
+    
     const where: any = {
-      companyId: user.companyId
+      companyId: companyId
     }
     
     if (isActive !== undefined) where.isActive = isActive === 'true'
@@ -79,14 +90,13 @@ app.get('/', async (c) => {
 
 // Get single vendor
 app.get('/:id', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const vendorId = c.req.param('id')
   
   try {
     const vendor = await prisma.vendor.findFirst({
       where: {
-        id: vendorId,
-        companyId: user.companyId
+        id: vendorId
       },
       include: {
         purchaseOrders: {
@@ -123,14 +133,13 @@ app.get('/:id', async (c) => {
     const stats = await prisma.$transaction([
       // Total business
       prisma.purchaseOrder.aggregate({
-        where: { vendorId, companyId: user.companyId },
+        where: { vendorId },
         _sum: { totalAmount: true }
       }),
       // Pending payments
       prisma.vendorInvoice.aggregate({
         where: { 
-          vendorId, 
-          companyId: user.companyId,
+          vendorId,
           status: { in: ['received', 'verified', 'approved'] }
         },
         _sum: { 
@@ -161,16 +170,29 @@ app.get('/:id', async (c) => {
 
 // Create new vendor
 app.post('/', async (c) => {
-  const user = c.get('user')
-  
-  if (!user.companyId) {
-    return c.json({ 
-      success: false, 
-      error: 'User is not associated with a company' 
-    }, 400)
-  }
+  const userId = c.get('userId')
   
   try {
+    // Get user's company
+    const userWithCompany = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        companyUsers: {
+          select: { companyId: true },
+          take: 1
+        }
+      }
+    })
+    
+    const companyId = userWithCompany?.companyUsers[0]?.companyId
+    
+    if (!companyId) {
+      return c.json({ 
+        success: false, 
+        error: 'User is not associated with a company' 
+      }, 400)
+    }
+    
     const body = await c.req.json()
     const validated = vendorSchema.parse(body)
     
@@ -186,7 +208,7 @@ app.post('/', async (c) => {
     // Get the count of vendors for this company and type
     const vendorCount = await prisma.vendor.count({
       where: {
-        companyId: user.companyId,
+        companyId: companyId,
         type: validated.type
       }
     })
@@ -199,7 +221,7 @@ app.post('/', async (c) => {
       data: {
         ...validated,
         code: vendorCode,
-        companyId: user.companyId
+        companyId: companyId
       }
     })
     
@@ -220,7 +242,7 @@ app.post('/', async (c) => {
 
 // Update vendor
 app.put('/:id', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const vendorId = c.req.param('id')
   
   try {
@@ -229,8 +251,7 @@ app.put('/:id', async (c) => {
     // Check if vendor exists and belongs to company
     const existing = await prisma.vendor.findFirst({
       where: {
-        id: vendorId,
-        companyId: user.companyId
+        id: vendorId
       }
     })
     
@@ -253,9 +274,29 @@ app.put('/:id', async (c) => {
 
 // Import vendors from email/CSV
 app.post('/import', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   
   try {
+    // Get user's company
+    const userWithCompany = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        companyUsers: {
+          select: { companyId: true },
+          take: 1
+        }
+      }
+    })
+    
+    const companyId = userWithCompany?.companyUsers[0]?.companyId
+    
+    if (!companyId) {
+      return c.json({ 
+        success: false, 
+        error: 'User is not associated with a company' 
+      }, 400)
+    }
+    
     const { vendors } = await c.req.json()
     
     if (!Array.isArray(vendors)) {
@@ -278,10 +319,10 @@ app.post('/import', async (c) => {
         // Check if vendor already exists
         const existing = await prisma.vendor.findFirst({
           where: {
-            companyId: user.companyId,
+            companyId: companyId,
             OR: [
-              { code: validated.code },
-              { email: validated.email }
+              { email: validated.email },
+              { name: validated.name }
             ]
           }
         })
@@ -306,7 +347,7 @@ app.post('/import', async (c) => {
         
         const importVendorCount = await prisma.vendor.count({
           where: {
-            companyId: user.companyId,
+            companyId: companyId,
             type: validated.type
           }
         })
@@ -318,7 +359,7 @@ app.post('/import', async (c) => {
           data: {
             ...validated,
             code: importVendorCode,
-            companyId: user.companyId
+            companyId: companyId
           }
         })
         
@@ -326,7 +367,7 @@ app.post('/import', async (c) => {
       } catch (error: any) {
         results.failed++
         results.errors.push({
-          vendor: vendorData.code || vendorData.name,
+          vendor: vendorData.name || 'Unknown',
           error: error.message
         })
       }
