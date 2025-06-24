@@ -111,8 +111,8 @@ export default function EmailAutomation() {
           },
           body: JSON.stringify({
             companyId: currentCompany?.id || null,
-            maxResults: 10,
-            query: 'is:unread' // Remove vendor filter to process all unread emails
+            maxResults: 10
+            // Removed query due to Gmail scope limitations
           })
         }
       )

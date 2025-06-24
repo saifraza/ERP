@@ -89,12 +89,16 @@ export class MultiTenantGmailService {
     const gmail = google.gmail({ version: 'v1', auth: client })
     
     console.log(`Listing emails for ${email} (company: ${companyId || 'default'})`)
+    console.log(`Query: ${query}, MaxResults: ${maxResults}`)
     
     try {
+      // For now, let's not use query parameter due to scope limitations
+      // We'll fetch all messages and filter client-side if needed
       const response = await gmail.users.messages.list({
         userId: 'me',
-        maxResults,
-        q: query || ''
+        maxResults: maxResults || 10,
+        // Don't use query parameter to avoid scope issues
+        // q: query || ''
       })
       
       const messages = response.data.messages || []

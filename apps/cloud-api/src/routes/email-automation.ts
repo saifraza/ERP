@@ -80,7 +80,7 @@ app.post('/debug/list-emails', authMiddleware, async (c) => {
     
     console.log('Debug list emails - companyId:', companyId)
     
-    const emails = await multiTenantGmail.listEmails(companyId, maxResults, 'is:unread')
+    const emails = await multiTenantGmail.listEmails(companyId, maxResults) // Remove query due to scope limitations
     
     return c.json({
       success: true,
