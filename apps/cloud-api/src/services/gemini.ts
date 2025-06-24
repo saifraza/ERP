@@ -70,26 +70,163 @@ export class GeminiService {
    * Extract data from documents (invoices, POs, etc)
    */
   async extractDocumentData(documentText: string, documentType: string = 'invoice') {
-    const prompt = `Extract structured data from this ${documentType}:
+    let prompt = ''
     
-    ${documentText}
-    
-    Extract the following information (if available):
-    - Document number
-    - Date
-    - Vendor/Customer name
-    - Items/Services with quantities and prices
-    - Total amount
-    - Payment terms
-    - Any other relevant details
-    
-    Provide response in JSON format.`
+    switch (documentType) {
+      case 'invoice':
+        prompt = `Extract structured data from this invoice document:
+        
+        ${documentText}
+        
+        Extract ALL of the following information (use null if not found):
+        {
+          "documentType": "invoice",
+          "invoiceNumber": "string",
+          "invoiceDate": "YYYY-MM-DD format",
+          "dueDate": "YYYY-MM-DD format",
+          "vendorName": "string",
+          "vendorAddress": "string",
+          "vendorGST": "string",
+          "vendorPAN": "string",
+          "customerName": "string",
+          "customerAddress": "string",
+          "items": [
+            {
+              "description": "string",
+              "hsn": "string",
+              "quantity": number,
+              "unit": "string",
+              "rate": number,
+              "amount": number,
+              "gst": number,
+              "total": number
+            }
+          ],
+          "subtotal": number,
+          "cgst": number,
+          "sgst": number,
+          "igst": number,
+          "totalTax": number,
+          "totalAmount": number,
+          "amountInWords": "string",
+          "paymentTerms": "string",
+          "bankDetails": {
+            "bankName": "string",
+            "accountNumber": "string",
+            "ifsc": "string"
+          }
+        }
+        
+        IMPORTANT: Return ONLY valid JSON, no explanations.`
+        break
+        
+      case 'purchase_order':
+        prompt = `Extract structured data from this purchase order:
+        
+        ${documentText}
+        
+        Extract ALL of the following information (use null if not found):
+        {
+          "documentType": "purchase_order",
+          "poNumber": "string",
+          "poDate": "YYYY-MM-DD format",
+          "deliveryDate": "YYYY-MM-DD format",
+          "customerName": "string",
+          "customerAddress": "string",
+          "customerGST": "string",
+          "deliveryAddress": "string",
+          "items": [
+            {
+              "itemCode": "string",
+              "description": "string",
+              "specification": "string",
+              "quantity": number,
+              "unit": "string",
+              "rate": number,
+              "amount": number,
+              "deliverySchedule": "string"
+            }
+          ],
+          "subtotal": number,
+          "taxes": number,
+          "totalAmount": number,
+          "paymentTerms": "string",
+          "deliveryTerms": "string",
+          "specialInstructions": "string"
+        }
+        
+        IMPORTANT: Return ONLY valid JSON, no explanations.`
+        break
+        
+      case 'quotation':
+        prompt = `Extract structured data from this quotation:
+        
+        ${documentText}
+        
+        Extract ALL of the following information (use null if not found):
+        {
+          "documentType": "quotation",
+          "quotationNumber": "string",
+          "quotationDate": "YYYY-MM-DD format",
+          "validUntil": "YYYY-MM-DD format",
+          "vendorName": "string",
+          "customerName": "string",
+          "customerReference": "string",
+          "items": [
+            {
+              "description": "string",
+              "specification": "string",
+              "quantity": number,
+              "unit": "string",
+              "unitPrice": number,
+              "discount": number,
+              "amount": number
+            }
+          ],
+          "subtotal": number,
+          "discount": number,
+          "taxes": number,
+          "totalAmount": number,
+          "deliveryTime": "string",
+          "paymentTerms": "string",
+          "validity": "string",
+          "termsAndConditions": ["string"]
+        }
+        
+        IMPORTANT: Return ONLY valid JSON, no explanations.`
+        break
+        
+      default:
+        prompt = `Extract structured business data from this document:
+        
+        ${documentText}
+        
+        Identify the document type and extract relevant information such as:
+        - Document type (invoice/purchase_order/quotation/contract/other)
+        - Document number/reference
+        - Date
+        - Parties involved (names, addresses)
+        - Items/services with amounts
+        - Total amounts
+        - Terms and conditions
+        - Any other relevant business data
+        
+        Return as properly structured JSON.`
+    }
 
     const response = await this.generateResponse(prompt)
     try {
-      return JSON.parse(response)
+      const parsed = JSON.parse(response)
+      // Add confidence score based on how many fields were extracted
+      const fields = Object.keys(parsed).filter(k => parsed[k] !== null)
+      parsed.confidenceScore = fields.length > 10 ? 0.9 : fields.length > 5 ? 0.7 : 0.5
+      return parsed
     } catch {
-      return { extractedData: response }
+      return { 
+        extractedData: response,
+        confidenceScore: 0.3,
+        error: 'Failed to parse as JSON'
+      }
     }
   }
 
@@ -135,12 +272,16 @@ export class GeminiService {
    * Function calling for workspace operations
    */
   async determineWorkspaceAction(userQuery: string) {
-    const prompt = `Determine the appropriate Google Workspace action for this user query:
+    const prompt = `Determine the appropriate action for this business automation query:
     "${userQuery}"
     
     Available actions:
     - search_emails: Search for specific emails
     - send_email: Send a new email
+    - process_vendor_emails: Automatically process and extract data from vendor emails
+    - extract_invoice_data: Extract structured data from invoice emails
+    - auto_approve_invoices: Auto-approve invoices based on rules
+    - send_payment_confirmations: Send payment confirmations to vendors
     - create_calendar_event: Create a calendar event
     - search_drive: Search files in Google Drive
     - analyze_sheet: Analyze data from Google Sheets

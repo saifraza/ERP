@@ -28,6 +28,7 @@ const navigation = [
     items: [
       { name: 'Dashboard', href: '/', icon: Home },
       { name: 'Email & AI', href: '/mails', icon: Sparkles, badge: 'NEW', badgeColor: 'green' },
+      { name: 'Email Automation', href: '/email-automation', icon: Mail, badge: 'AUTO', badgeColor: 'green' },
       { name: 'Gmail Test', href: '/gmail-test', icon: Mail, badge: 'TEST' },
       { name: 'Documents', href: '/documents', icon: FileText },
       { name: 'Storage', href: '/storage', icon: Database },

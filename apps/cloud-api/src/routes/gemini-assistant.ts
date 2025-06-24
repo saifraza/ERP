@@ -68,6 +68,48 @@ app.post('/chat', async (c) => {
           }
           break
           
+        case 'process_vendor_emails':
+          // Process unread vendor emails
+          const { emailAutomation } = await import('../services/email-automation.js')
+          const vendorEmails = await multiTenantGmail.listEmails(
+            companyId,
+            10,
+            'is:unread from:vendor'
+          )
+          
+          const results = []
+          for (const email of vendorEmails.slice(0, 3)) { // Process first 3
+            try {
+              const result = await emailAutomation.processVendorEmail(email.id, companyId)
+              results.push({ emailId: email.id, ...result })
+            } catch (error) {
+              results.push({ emailId: email.id, success: false, error: error.message })
+            }
+          }
+          
+          actionResult = {
+            type: 'automation_results',
+            data: results,
+            count: results.length
+          }
+          break
+          
+        case 'extract_invoice_data':
+          // Extract data from latest invoice emails
+          const invoiceEmails = await multiTenantGmail.listEmails(
+            companyId,
+            5,
+            'subject:invoice is:unread'
+          )
+          
+          actionResult = {
+            type: 'invoice_extraction',
+            data: invoiceEmails,
+            count: invoiceEmails.length,
+            message: 'Found invoice emails. Use email automation to process them.'
+          }
+          break
+          
         // Add more actions as we implement them
       }
       

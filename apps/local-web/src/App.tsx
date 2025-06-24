@@ -20,6 +20,7 @@ import CompanyEdit from './pages/masters/CompanyEdit'
 import Mails from './pages/Mails'
 import EmailSettings from './pages/settings/EmailSettings'
 import GmailTest from './pages/GmailTest'
+import EmailAutomation from './pages/EmailAutomation'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -81,6 +82,7 @@ function App() {
                       <Route path="/" element={<DashboardPage />} />
                       <Route path="/documents" element={<Documents />} />
                       <Route path="/mails" element={<Mails />} />
+                      <Route path="/email-automation" element={<EmailAutomation />} />
                       <Route path="/storage" element={<Storage />} />
                     
                     {/* Store Module Routes */}

@@ -80,10 +80,10 @@ export default function GeminiChat({ companyId, token }: GeminiChatProps) {
   }
 
   const suggestedPrompts = [
-    { icon: Mail, text: "Search for invoices from last month", color: "text-blue-600" },
-    { icon: Calendar, text: "Schedule a meeting for next week", color: "text-green-600" },
-    { icon: FileText, text: "Analyze recent purchase orders", color: "text-purple-600" },
-    { icon: HardDrive, text: "Find contracts in Google Drive", color: "text-orange-600" }
+    { icon: Mail, text: "Process unread vendor emails", color: "text-blue-600" },
+    { icon: FileText, text: "Extract invoice data from latest emails", color: "text-purple-600" },
+    { icon: RefreshCw, text: "Auto-approve pending invoices under ₹1000", color: "text-green-600" },
+    { icon: Send, text: "Send payment confirmations to vendors", color: "text-orange-600" }
   ]
 
   return (
