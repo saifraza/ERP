@@ -138,16 +138,16 @@ app.post('/process', async (c) => {
 app.post('/process-batch', async (c) => {
   try {
     const body = await c.req.json()
-    const { companyId, maxResults = 10, query = 'is:unread' } = body
+    const { companyId, maxResults = 10 } = body // Removed query parameter
     
-    console.log(`Processing batch emails - Company: ${companyId}, Query: ${query}`)
+    console.log(`Processing batch emails - Company: ${companyId}, MaxResults: ${maxResults}`)
     console.log('Request body:', JSON.stringify(body))
     console.log('User:', c.get('user'))
     
     // Get unprocessed emails
     let emails = []
     try {
-      emails = await multiTenantGmail.listEmails(companyId, maxResults, query)
+      emails = await multiTenantGmail.listEmails(companyId, maxResults) // No query parameter
     } catch (gmailError: any) {
       console.error('Gmail list error:', gmailError)
       throw new Error(`Failed to list emails: ${gmailError.message}`)

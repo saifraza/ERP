@@ -119,8 +119,10 @@ export default function EmailAutomation() {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('Process batch response:', data)
+        
         if (data.processed === 0) {
-          toast('No unread emails found to process', {
+          toast('No emails found to process', {
             icon: '📧',
             style: {
               background: '#3b82f6',
@@ -128,7 +130,26 @@ export default function EmailAutomation() {
             },
           })
         } else {
-          toast.success(`Processed ${data.processed} emails`)
+          // Show detailed results
+          const successCount = data.results?.filter((r: any) => r.success !== false).length || 0
+          const failedCount = data.processed - successCount
+          
+          toast.success(
+            `Processed ${data.processed} emails\n✓ ${successCount} successful\n${failedCount > 0 ? `✗ ${failedCount} failed` : ''}`,
+            { duration: 5000 }
+          )
+          
+          // Log results for debugging
+          if (data.results) {
+            console.log('Processing results:', data.results)
+            data.results.forEach((result: any) => {
+              if (result.success === false) {
+                console.error(`Failed to process ${result.subject}:`, result.error)
+              } else {
+                console.log(`Processed ${result.subject}:`, result)
+              }
+            })
+          }
         }
         loadHistory()
       } else {
@@ -343,30 +364,78 @@ export default function EmailAutomation() {
             {/* Recent Processing Results */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Processing</h3>
-              <div className="space-y-3">
-                {history.slice(0, 5).map((result) => (
-                  <div key={result.emailId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {result.status === 'completed' ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-red-500" />
-                      )}
-                      <div>
-                        <p className="font-medium text-gray-900">{result.subject}</p>
-                        <p className="text-sm text-gray-600">From: {result.from}</p>
+              {history.length === 0 ? (
+                <div className="text-center py-8">
+                  <Mail className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-gray-500">No emails processed yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Click "Process Emails" to start</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {history.slice(0, 5).map((result, index) => (
+                    <div key={result.emailId || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {result.status === 'completed' ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-red-500" />
+                        )}
+                        <div>
+                          <p className="font-medium text-gray-900">{result.subject}</p>
+                          <p className="text-sm text-gray-600">From: {result.from}</p>
+                          {result.extractedData && (
+                            <p className="text-xs text-indigo-600 mt-1">
+                              Type: {result.extractedData.emailType || 'Unknown'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">
+                          {new Date(result.processedAt).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {result.actions?.join(', ') || 'Processed'}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">
-                        {new Date(result.processedAt).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {result.actions.join(', ')}
-                      </p>
-                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Processing Summary */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">What Email Automation Does</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-gray-900">Classifies Emails</p>
+                    <p className="text-sm text-gray-600">AI identifies invoices, POs, quotations automatically</p>
                   </div>
-                ))}
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-gray-900">Extracts Data</p>
+                    <p className="text-sm text-gray-600">Pulls invoice numbers, amounts, dates from emails</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-gray-900">Applies Business Rules</p>
+                    <p className="text-sm text-gray-600">Auto-approves small invoices, creates tasks for review</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-gray-900">Sends Acknowledgments</p>
+                    <p className="text-sm text-gray-600">Automatically replies to vendors confirming receipt</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
