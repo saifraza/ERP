@@ -103,20 +103,37 @@
 
   /* Custom scrollbar for webkit browsers */
   .scrollbar-thin::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+    @apply bg-gray-100 dark:bg-gray-800 rounded-lg;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+    @apply bg-gray-400 dark:bg-gray-600 rounded-lg border-2 border-gray-100 dark:border-gray-800;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-gray-500;
+    @apply bg-gray-500 dark:bg-gray-500;
+  }
+  
+  /* Force scrollbar to always show */
+  .scrollbar-always {
+    overflow-y: scroll !important;
+  }
+  
+  .scrollbar-always::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  .scrollbar-always::-webkit-scrollbar-track {
+    @apply bg-gray-200 dark:bg-gray-700 rounded-lg;
+  }
+  
+  .scrollbar-always::-webkit-scrollbar-thumb {
+    @apply bg-gray-500 dark:bg-gray-400 rounded-lg;
   }
 
   /* Glass morphism effect */

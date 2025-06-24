@@ -90,11 +90,14 @@ const navigation = [
         name: 'Procurement',
         icon: ShoppingBag,
         children: [
-          { name: 'Requisitions', href: '/store/requisitions', icon: ClipboardList },
-          { name: 'Purchase Orders', href: '/store/purchase-orders', icon: FileText },
-          { name: 'Vendor Quotations', href: '/store/quotations', icon: Calculator },
-          { name: 'Goods Receipt', href: '/store/goods-receipt', icon: Package },
-          { name: 'Quality Inspection', href: '/store/inspection', icon: FileCheck },
+          { name: 'Vendor Management', href: '/procurement/vendors', icon: Users, badge: 'NEW', badgeColor: 'green' },
+          { name: 'Purchase Requisitions', href: '/procurement/requisitions', icon: ClipboardList, badge: 'NEW', badgeColor: 'green' },
+          { name: 'RFQ Management', href: '/procurement/rfqs', icon: Calculator, badge: 'NEW', badgeColor: 'green' },
+          { name: 'Purchase Orders', href: '/procurement/purchase-orders', icon: FileText },
+          { name: 'Quotation Comparison', href: '/procurement/quotations', icon: BarChart3 },
+          { name: 'Goods Receipt', href: '/procurement/grn', icon: Package },
+          { name: 'Vendor Invoices', href: '/procurement/invoices', icon: Receipt },
+          { name: 'Vendor Payments', href: '/procurement/payments', icon: IndianRupee },
         ]
       },
       {
@@ -468,7 +471,7 @@ function SidebarContent({
   handleSearch
 }: any) {
   return (
-    <div className="flex grow flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+    <div className="flex h-full flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Logo */}
       <div className="flex h-16 shrink-0 items-center px-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-x-3">
@@ -502,7 +505,7 @@ function SidebarContent({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin">
+      <nav className="flex-1 overflow-y-scroll px-4 py-4 scrollbar-always">
         {navigation.map((section: any) => (
           <div key={section.title} className="mb-6">
             <h3 className="mb-2 px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
