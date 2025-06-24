@@ -22,6 +22,7 @@ import EmailSettings from './pages/settings/EmailSettings'
 import GmailTest from './pages/GmailTest'
 import EmailAutomation from './pages/EmailAutomation'
 import VendorsProcurement from './pages/procurement/Vendors'
+import VendorDetail from './pages/procurement/VendorDetail'
 import PurchaseRequisitions from './pages/procurement/PurchaseRequisitions'
 import RFQManagement from './pages/procurement/RFQManagement'
 import { useAuthStore } from './stores/authStore'
@@ -107,7 +108,7 @@ function App() {
                     
                     {/* Procurement Module Routes */}
                     <Route path="/procurement/vendors" element={<VendorsProcurement />} />
-                    <Route path="/procurement/vendors/:id" element={<div>Vendor Details</div>} />
+                    <Route path="/procurement/vendors/:id" element={<VendorDetail />} />
                     <Route path="/procurement/requisitions" element={<PurchaseRequisitions />} />
                     <Route path="/procurement/requisitions/:id" element={<div>PR Details</div>} />
                     <Route path="/procurement/rfqs" element={<RFQManagement />} />
