@@ -5,10 +5,7 @@ import { multiTenantGmail } from '../services/multi-tenant-gmail.js'
 
 const app = new Hono()
 
-// Protect all routes
-app.use('*', authMiddleware)
-
-// Health check for email automation
+// Public health check (no auth required for debugging)
 app.get('/health', async (c) => {
   try {
     // Check if we can access Gmail
@@ -60,7 +57,7 @@ app.get('/health', async (c) => {
   }
 })
 
-// Simple test endpoint
+// Simple test endpoint (public)
 app.get('/test', async (c) => {
   try {
     return c.json({
@@ -75,6 +72,9 @@ app.get('/test', async (c) => {
     })
   }
 })
+
+// Apply auth middleware to all routes below this point
+app.use('*', authMiddleware)
 
 // Process a specific email
 app.post('/process', async (c) => {
