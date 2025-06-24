@@ -81,6 +81,7 @@ model Company {
   // Relations
   users          CompanyUser[]
   factories      Factory[]
+  divisions      Division[]
   vendors        Vendor[]
   customers      Customer[]
   accounts       Account[]
@@ -156,6 +157,21 @@ enum FactoryType {
   INTEGRATED
   FEED
   POWER
+}
+
+// Division Management
+model Division {
+  id          String    @id @default(uuid())
+  companyId   String
+  name        String
+  code        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  company     Company   @relation(fields: [companyId], references: [id])
+  
+  @@unique([companyId, code])
+  @@index([companyId])
 }
 
 // ==================== MASTER DATA ====================
