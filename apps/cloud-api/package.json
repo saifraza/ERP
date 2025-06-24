@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "npx tsx build.js",
-    "start": "npx tsx src/index.ts",
+    "start": "npm run migrate && npx tsx src/index.ts",
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "studio": "prisma studio",
