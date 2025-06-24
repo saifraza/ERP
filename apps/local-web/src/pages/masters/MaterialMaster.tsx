@@ -33,8 +33,8 @@ interface Material {
   minOrderQuantity?: number
   maxOrderQuantity?: number
   leadTimeDays: number
-  preferredVendors?: string
-  qualityParameters?: string
+  preferredVendors?: string[]
+  qualityParameters?: Record<string, any>
   isActive: boolean
   createdAt: string
   updatedAt: string
