@@ -14,6 +14,7 @@ import storageRoutes from './routes/storage.js'
 import emailOAuthRoutes from './routes/email-oauth.js'
 import assistantRoutes from './routes/assistant.js'
 import debugRoutes from './routes/debug.js'
+import emailRoutes from './routes/email.js'
 
 const app = new Hono()
 
@@ -75,6 +76,7 @@ app.route('/api/storage', storageRoutes)
 app.route('/api/email-oauth', emailOAuthRoutes)
 app.route('/api/assistant', assistantRoutes)
 app.route('/api/debug', debugRoutes)
+app.route('/api/email', emailRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {

@@ -182,11 +182,39 @@ export default function Mails() {
 
   const selectEmail = async (email: Email) => {
     setSelectedEmail(email)
-    // Set the snippet immediately, then we could fetch full content if needed
-    setEmailContent(email.snippet || 'No preview available')
+    setLoadingEmail(true)
     
-    // For now, just use the snippet as the content
-    // In the future, we could add an endpoint to fetch full email body
+    // Set snippet as placeholder while loading
+    setEmailContent(email.snippet || 'Loading full email content...')
+    
+    try {
+      // Fetch full email content
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://cloud-api-production-0f4d.up.railway.app'
+      const response = await fetch(
+        `${apiUrl}/api/email/message/${email.id}?companyId=${currentCompany?.id || ''}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data) {
+          // Use text body if available, otherwise use snippet
+          setEmailContent(data.data.textBody || data.data.snippet || 'No content available')
+        }
+      } else {
+        // Fall back to snippet if fetch fails
+        setEmailContent(email.snippet || 'Unable to load full content')
+      }
+    } catch (error) {
+      console.error('Failed to fetch full email:', error)
+      setEmailContent(email.snippet || 'Error loading email content')
+    } finally {
+      setLoadingEmail(false)
+    }
   }
 
   const sendChatMessage = async () => {
@@ -525,10 +553,17 @@ export default function Mails() {
                     
                     <div className="border-t pt-4">
                       <div className="prose prose-sm max-w-none">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-gray-700 whitespace-pre-wrap">
-                            {selectedEmail.snippet || emailContent || 'No preview available for this email.'}
-                          </p>
+                        <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                          {loadingEmail ? (
+                            <div className="flex items-center gap-2 text-gray-500">
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                              <span>Loading full email content...</span>
+                            </div>
+                          ) : (
+                            <p className="text-gray-700 whitespace-pre-wrap">
+                              {emailContent || selectedEmail.snippet || 'No content available for this email.'}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
