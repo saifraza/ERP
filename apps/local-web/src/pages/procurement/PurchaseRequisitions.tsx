@@ -9,7 +9,7 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
-import AddPRModal from '../../components/procurement/AddPRModal'
+import AddRequisitionModal from '../../components/procurement/AddRequisitionModal'
 
 interface PRItem {
   id: string
@@ -410,8 +410,8 @@ export default function PurchaseRequisitions() {
         )}
       </div>
 
-      {/* Add PR Modal */}
-      <AddPRModal
+      {/* Add Requisition Modal */}
+      <AddRequisitionModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => {
