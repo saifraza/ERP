@@ -54,22 +54,34 @@ export class EmailAutomationService {
       // Get email details
       const email = await this.getEmailDetails(emailId, companyId)
       
-      // Identify email type
+      // Check if this is a procurement-related email
+      const isProcurementEmail = await this.isProcurementRelated(email)
+      
+      if (isProcurementEmail && companyId) {
+        // Use procurement automation service for procurement emails
+        const { procurementAutomation } = await import('./procurement-automation.js')
+        const result = await procurementAutomation.processVendorEmail(email, companyId)
+        
+        // Store processing result
+        await this.storeProcessingResult({
+          emailId,
+          status: 'completed',
+          extractedData: result,
+          actions: [result.action || 'processed'],
+          processedAt: new Date()
+        })
+        
+        return result
+      }
+      
+      // Original processing for non-procurement emails
       const emailType = await this.identifyEmailType(email)
-      
-      // Extract attachments if any
       const attachments = await this.processAttachments(email, companyId)
-      
-      // Extract structured data based on email type
       const extractedData = await this.extractBusinessData(email, attachments, emailType)
-      
-      // Apply business rules
       const actions = await this.applyBusinessRules(email, extractedData, emailType)
       
-      // Execute actions
       await this.executeActions(actions, email, extractedData, companyId)
       
-      // Store processing result
       await this.storeProcessingResult({
         emailId,
         status: 'completed',
@@ -101,30 +113,35 @@ export class EmailAutomationService {
   }
   
   /**
+   * Check if email is procurement related
+   */
+  private async isProcurementRelated(email: any): Promise<boolean> {
+    const keywords = [
+      'quotation', 'quote', 'rfq', 'invoice', 'purchase order', 
+      'po number', 'delivery', 'payment', 'vendor', 'supplier',
+      'procurement', 'pricing', 'bid', 'tender'
+    ]
+    
+    const text = `${email.subject} ${email.body}`.toLowerCase()
+    return keywords.some(keyword => text.includes(keyword))
+  }
+  
+  /**
    * Get full email details including attachments
    */
   private async getEmailDetails(emailId: string, companyId?: string) {
-    const { client } = await multiTenantGmail.getClient(companyId)
-    const gmail = google.gmail({ version: 'v1', auth: client })
-    
-    const response = await gmail.users.messages.get({
-      userId: 'me',
-      id: emailId,
-      format: 'full'
-    })
-    
-    const message = response.data
-    const headers = message.payload?.headers || []
+    // Use the new method that properly handles full email content
+    const email = await multiTenantGmail.getEmailContent(companyId, emailId)
     
     return {
-      id: emailId,
-      threadId: message.threadId,
-      from: headers.find(h => h.name === 'From')?.value || '',
-      to: headers.find(h => h.name === 'To')?.value || '',
-      subject: headers.find(h => h.name === 'Subject')?.value || '',
-      date: headers.find(h => h.name === 'Date')?.value || '',
-      body: this.extractBody(message.payload),
-      attachments: this.extractAttachmentInfo(message.payload)
+      id: email.id,
+      threadId: email.threadId,
+      from: email.from,
+      to: email.to,
+      subject: email.subject,
+      date: email.date,
+      body: email.textBody || email.htmlBody || '',
+      attachments: email.attachments
     }
   }
   

@@ -92,13 +92,11 @@ export class MultiTenantGmailService {
     console.log(`Query: ${query}, MaxResults: ${maxResults}`)
     
     try {
-      // For now, let's not use query parameter due to scope limitations
-      // We'll fetch all messages and filter client-side if needed
+      // With gmail.readonly scope, we can use query parameters
       const response = await gmail.users.messages.list({
         userId: 'me',
         maxResults: maxResults || 10,
-        // Don't use query parameter to avoid scope issues
-        // q: query || ''
+        q: query || '' // Enable query parameter with full read scope
       })
       
       const messages = response.data.messages || []
@@ -147,6 +145,105 @@ export class MultiTenantGmailService {
     } catch (error: any) {
       console.error(`Gmail list error for ${email}:`, error)
       throw new Error(`Failed to list emails for ${email}: ${error?.message}`)
+    }
+  }
+  
+  /**
+   * Get full email content
+   */
+  async getEmailContent(
+    companyId: string | undefined,
+    messageId: string
+  ) {
+    const { client, email } = await this.getClient(companyId)
+    const gmail = google.gmail({ version: 'v1', auth: client })
+    
+    console.log(`Getting full email content for ${messageId} from ${email}`)
+    
+    try {
+      const response = await gmail.users.messages.get({
+        userId: 'me',
+        id: messageId,
+        format: 'full'
+      })
+      
+      const message = response.data
+      const payload = message.payload
+      
+      // Extract headers
+      const headers = payload?.headers || []
+      const subject = headers.find((h: any) => h.name === 'Subject')?.value || '(No Subject)'
+      const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown'
+      const to = headers.find((h: any) => h.name === 'To')?.value || ''
+      const date = headers.find((h: any) => h.name === 'Date')?.value || ''
+      
+      // Extract body
+      let textBody = ''
+      let htmlBody = ''
+      
+      const extractBody = (parts: any[]): void => {
+        for (const part of parts) {
+          if (part.mimeType === 'text/plain' && part.body?.data) {
+            textBody = Buffer.from(part.body.data, 'base64').toString('utf-8')
+          } else if (part.mimeType === 'text/html' && part.body?.data) {
+            htmlBody = Buffer.from(part.body.data, 'base64').toString('utf-8')
+          } else if (part.parts) {
+            extractBody(part.parts)
+          }
+        }
+      }
+      
+      if (payload?.parts) {
+        extractBody(payload.parts)
+      } else if (payload?.body?.data) {
+        const body = Buffer.from(payload.body.data, 'base64').toString('utf-8')
+        if (payload.mimeType === 'text/html') {
+          htmlBody = body
+        } else {
+          textBody = body
+        }
+      }
+      
+      // Extract attachments info
+      const attachments: any[] = []
+      const extractAttachments = (parts: any[]): void => {
+        for (const part of parts) {
+          if (part.filename && part.body?.attachmentId) {
+            attachments.push({
+              filename: part.filename,
+              mimeType: part.mimeType,
+              size: part.body.size,
+              attachmentId: part.body.attachmentId
+            })
+          }
+          if (part.parts) {
+            extractAttachments(part.parts)
+          }
+        }
+      }
+      
+      if (payload?.parts) {
+        extractAttachments(payload.parts)
+      }
+      
+      return {
+        id: message.id,
+        threadId: message.threadId,
+        subject,
+        from,
+        to,
+        date,
+        snippet: message.snippet,
+        textBody,
+        htmlBody,
+        attachments,
+        labels: message.labelIds || [],
+        account: email
+      }
+      
+    } catch (error: any) {
+      console.error(`Failed to get email content for ${messageId}:`, error)
+      throw new Error(`Failed to get email content: ${error?.message}`)
     }
   }
   

@@ -29,8 +29,44 @@ model User {
   emailCredentials EmailCredential[]
 }
 
-// Company and Factory Models (Referenced from schema-masters.prisma)
-// These will be imported during build
+// Temporary models - will be replaced with proper import mechanism
+model Company {
+  id                String   @id @default(uuid())
+  name              String
+  code              String   @unique
+  
+  // Relations
+  farmers           Farmer[]
+  vendors           Vendor[]
+  purchaseRequisitions PurchaseRequisition[]
+  rfqs              RFQ[]
+  quotations        Quotation[]
+  purchaseOrders    PurchaseOrder[]
+  grns              GRN[]
+  vendorInvoices    VendorInvoice[]
+  users             CompanyUser[]
+  emailCredentials  EmailCredential[]
+}
+
+model CompanyUser {
+  id                String   @id @default(uuid())
+  userId            String
+  companyId         String
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id])
+  company           Company  @relation(fields: [companyId], references: [id])
+}
+
+model Division {
+  id                String   @id @default(uuid())
+  companyId         String
+  name              String
+  code              String
+  
+  // Relations
+  purchaseRequisitions PurchaseRequisition[]
+}
 
 // Farmer Management (Multi-tenant)
 model Farmer {
@@ -47,6 +83,9 @@ model Farmer {
   status         String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  
+  // Relations
+  company        Company  @relation(fields: [companyId], references: [id])
 
   // Relations
   deliveries     CaneDelivery[]
@@ -289,5 +328,402 @@ model EmailCredential {
 
   @@index([companyId])
   @@index([userId])
-  @@map("email_credentials")
+}
+
+// ==================== PROCUREMENT SYSTEM ====================
+
+// Vendor Management
+model Vendor {
+  id                String   @id @default(uuid())
+  companyId         String
+  code              String
+  name              String
+  type              String   // supplier, contractor, service_provider
+  category          String   // chemicals, spare_parts, consumables, services
+  gstNumber         String?
+  panNumber         String?
+  address           String
+  city              String
+  state             String
+  pincode           String
+  country           String   @default("India")
+  contactPerson     String
+  email             String
+  phone             String
+  alternatePhone    String?
+  bankName          String?
+  bankAccount       String?
+  bankIfsc          String?
+  creditLimit       Float    @default(0)
+  creditDays        Int      @default(30)
+  rating            Float    @default(3) // 1-5 rating
+  status            String   @default("active") // active, inactive, blacklisted
+  qualificationDate DateTime?
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  quotations        Quotation[]
+  purchaseOrders    PurchaseOrder[]
+  invoices          VendorInvoice[]
+  evaluations       VendorEvaluation[]
+  
+  @@unique([companyId, code])
+  @@index([companyId, status])
+}
+
+// Vendor Evaluation
+model VendorEvaluation {
+  id                String   @id @default(uuid())
+  vendorId          String
+  evaluationDate    DateTime
+  qualityScore      Float    // 1-5
+  deliveryScore     Float    // 1-5
+  priceScore        Float    // 1-5
+  serviceScore      Float    // 1-5
+  overallScore      Float    // Calculated average
+  evaluatedBy       String
+  comments          String?  @db.Text
+  recommendation    String   // continue, review, terminate
+  createdAt         DateTime @default(now())
+
+  // Relations
+  vendor            Vendor   @relation(fields: [vendorId], references: [id])
+}
+
+// Purchase Requisition (PR)
+model PurchaseRequisition {
+  id                String   @id @default(uuid())
+  companyId         String
+  prNumber          String
+  divisionId        String
+  departmentId      String?
+  requestedBy       String
+  requestDate       DateTime
+  requiredBy        DateTime
+  priority          String   @default("normal") // urgent, high, normal, low
+  status            String   @default("draft") // draft, submitted, approved, rejected, converted
+  approvedBy        String?
+  approvalDate      DateTime?
+  rejectionReason   String?
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  division          Division @relation(fields: [divisionId], references: [id])
+  items             PRItem[]
+  rfqs              RFQ[]
+  
+  @@unique([companyId, prNumber])
+  @@index([companyId, status])
+}
+
+// PR Line Items
+model PRItem {
+  id                String   @id @default(uuid())
+  prId              String
+  itemCode          String
+  itemDescription   String
+  quantity          Float
+  unit              String
+  estimatedPrice    Float?
+  specifications    String?  @db.Text
+  preferredVendor   String?
+  justification     String?
+  
+  // Relations
+  pr                PurchaseRequisition @relation(fields: [prId], references: [id], onDelete: Cascade)
+}
+
+// Request for Quotation (RFQ)
+model RFQ {
+  id                String   @id @default(uuid())
+  companyId         String
+  rfqNumber         String
+  prId              String?
+  issueDate         DateTime
+  dueDate           DateTime
+  status            String   @default("draft") // draft, sent, closed, cancelled
+  terms             String?  @db.Text
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  pr                PurchaseRequisition? @relation(fields: [prId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendors           RFQVendor[]
+  items             RFQItem[]
+  quotations        Quotation[]
+  
+  @@unique([companyId, rfqNumber])
+  @@index([companyId, status])
+}
+
+// RFQ Vendors
+model RFQVendor {
+  id                String   @id @default(uuid())
+  rfqId             String
+  vendorId          String
+  emailSent         Boolean  @default(false)
+  emailSentAt       DateTime?
+  responseReceived  Boolean  @default(false)
+  
+  // Relations
+  rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+}
+
+// RFQ Line Items
+model RFQItem {
+  id                String   @id @default(uuid())
+  rfqId             String
+  itemCode          String
+  itemDescription   String
+  quantity          Float
+  unit              String
+  specifications    String?  @db.Text
+  
+  // Relations
+  rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+}
+
+// Vendor Quotations
+model Quotation {
+  id                String   @id @default(uuid())
+  companyId         String
+  quotationNumber   String
+  rfqId             String?
+  vendorId          String
+  quotationDate     DateTime
+  validUntil        DateTime
+  currency          String   @default("INR")
+  subtotal          Float
+  taxAmount         Float
+  totalAmount       Float
+  paymentTerms      String
+  deliveryTerms     String
+  status            String   @default("received") // received, under_review, approved, rejected
+  emailId           String?  // Reference to email that contained this quotation
+  attachmentPath    String?
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rfq               RFQ?     @relation(fields: [rfqId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items             QuotationItem[]
+  comparison        QuotationComparison[]
+  
+  @@unique([companyId, quotationNumber])
+  @@index([companyId, vendorId])
+}
+
+// Quotation Line Items
+model QuotationItem {
+  id                String   @id @default(uuid())
+  quotationId       String
+  itemCode          String
+  itemDescription   String
+  quantity          Float
+  unit              String
+  unitPrice         Float
+  discount          Float    @default(0)
+  taxRate           Float
+  taxAmount         Float
+  totalAmount       Float
+  deliveryDays      Int?
+  warranty          String?
+  
+  // Relations
+  quotation         Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}
+
+// Quotation Comparison
+model QuotationComparison {
+  id                String   @id @default(uuid())
+  rfqId             String
+  itemCode          String
+  selectedVendorId  String?
+  selectionReason   String?
+  comparedBy        String
+  comparedAt        DateTime
+  approved          Boolean  @default(false)
+  approvedBy        String?
+  approvalDate      DateTime?
+  
+  // Relations
+  quotations        Quotation[]
+}
+
+// Purchase Order
+model PurchaseOrder {
+  id                String   @id @default(uuid())
+  companyId         String
+  poNumber          String
+  vendorId          String
+  quotationId       String?
+  orderDate         DateTime
+  deliveryDate      DateTime
+  deliveryAddress   String
+  billingAddress    String
+  currency          String   @default("INR")
+  subtotal          Float
+  taxAmount         Float
+  totalAmount       Float
+  advanceAmount     Float    @default(0)
+  paymentTerms      String
+  deliveryTerms     String
+  status            String   @default("draft") // draft, approved, sent, acknowledged, partial, completed, cancelled
+  approvedBy        String?
+  approvalDate      DateTime?
+  emailSent         Boolean  @default(false)
+  emailSentAt       DateTime?
+  vendorAcknowledged Boolean @default(false)
+  acknowledgedAt    DateTime?
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items             POItem[]
+  grns              GRN[]
+  invoices          VendorInvoice[]
+  
+  @@unique([companyId, poNumber])
+  @@index([companyId, vendorId])
+  @@index([companyId, status])
+}
+
+// PO Line Items
+model POItem {
+  id                String   @id @default(uuid())
+  poId              String
+  itemCode          String
+  itemDescription   String
+  quantity          Float
+  unit              String
+  unitPrice         Float
+  discount          Float    @default(0)
+  taxRate           Float
+  taxAmount         Float
+  totalAmount       Float
+  receivedQuantity  Float    @default(0)
+  pendingQuantity   Float    // Calculated field
+  
+  // Relations
+  po                PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  grnItems          GRNItem[]
+}
+
+// Goods Receipt Note (GRN)
+model GRN {
+  id                String   @id @default(uuid())
+  companyId         String
+  grnNumber         String
+  poId              String
+  receivedDate      DateTime
+  receivedBy        String
+  vehicleNumber     String?
+  driverName        String?
+  invoiceNumber     String?
+  invoiceDate       DateTime?
+  status            String   @default("draft") // draft, verified, approved, rejected
+  qualityChecked    Boolean  @default(false)
+  qualityRemarks    String?
+  storageLocation   String?
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  po                PurchaseOrder @relation(fields: [poId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items             GRNItem[]
+  
+  @@unique([companyId, grnNumber])
+  @@index([companyId, poId])
+}
+
+// GRN Line Items
+model GRNItem {
+  id                String   @id @default(uuid())
+  grnId             String
+  poItemId          String
+  receivedQuantity  Float
+  acceptedQuantity  Float
+  rejectedQuantity  Float    @default(0)
+  rejectionReason   String?
+  remarks           String?
+  
+  // Relations
+  grn               GRN      @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  poItem            POItem   @relation(fields: [poItemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+// Vendor Invoice
+model VendorInvoice {
+  id                String   @id @default(uuid())
+  companyId         String
+  invoiceNumber     String
+  vendorId          String
+  poId              String?
+  invoiceDate       DateTime
+  dueDate           DateTime
+  currency          String   @default("INR")
+  subtotal          Float
+  taxAmount         Float
+  totalAmount       Float
+  paidAmount        Float    @default(0)
+  status            String   @default("received") // received, verified, approved, paid, cancelled
+  emailId           String?  // Reference to email that contained this invoice
+  attachmentPath    String?
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  approvedBy        String?
+  approvedAt        DateTime?
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  po                PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments          VendorPayment[]
+  
+  @@unique([companyId, vendorId, invoiceNumber])
+  @@index([companyId, status])
+}
+
+// Vendor Payments
+model VendorPayment {
+  id                String   @id @default(uuid())
+  companyId         String
+  paymentNumber     String
+  vendorId          String
+  invoiceId         String
+  paymentDate       DateTime
+  amount            Float
+  paymentMode       String   // bank_transfer, cheque, cash, upi
+  referenceNumber   String?
+  bankAccount       String?
+  status            String   @default("pending") // pending, completed, failed, cancelled
+  processedBy       String
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  invoice           VendorInvoice @relation(fields: [invoiceId], references: [id])
+  
+  @@unique([companyId, paymentNumber])
+  @@index([companyId, vendorId])
 }

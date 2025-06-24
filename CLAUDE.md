@@ -162,6 +162,22 @@ ERP/
 - [x] Gmail label management
 - [x] Processing history with audit trail
 
+### ✅ Procurement System (NEW!)
+- [x] Complete procurement database schema (15+ tables)
+- [x] Vendor management with evaluation system
+- [x] Purchase Requisition (PR) workflow
+- [x] Request for Quotation (RFQ) management
+- [x] Quotation processing and comparison
+- [x] Purchase Order (PO) generation
+- [x] Goods Receipt Note (GRN) tracking
+- [x] Vendor invoice processing
+- [x] Payment tracking
+- [x] Email-based procurement automation
+- [x] Auto-process quotations from vendor emails
+- [x] Auto-process invoices with PO matching
+- [x] Send RFQs to multiple vendors via email
+- [x] Vendor rating and evaluation system
+
 ### 🚀 Ready for Phase 2
 - [ ] Business logic implementation
 - [ ] Hardware integration (Weighbridge, DCS)
@@ -513,3 +529,57 @@ Last Updated: 2025-06-23
 - ✅ Railway internal networking optimization
 - ✅ Cleaned up obsolete code and documentation
 - ✅ All services deployed and operational
+- ✅ Complete procurement system implementation
+- ✅ Email-based vendor automation
+- ✅ Full OAuth scope for Gmail reading
+
+## Procurement System API
+
+### Vendor Management
+- `GET /api/vendors` - List all vendors
+- `GET /api/vendors/:id` - Get vendor details with stats
+- `POST /api/vendors` - Create new vendor
+- `PUT /api/vendors/:id` - Update vendor
+- `POST /api/vendors/:id/evaluate` - Evaluate vendor performance
+- `POST /api/vendors/import` - Bulk import vendors
+
+### Purchase Requisitions
+- `GET /api/purchase-requisitions` - List PRs
+- `GET /api/purchase-requisitions/:id` - Get PR details
+- `POST /api/purchase-requisitions` - Create new PR
+- `PUT /api/purchase-requisitions/:id` - Update PR (draft only)
+- `POST /api/purchase-requisitions/:id/submit` - Submit for approval
+- `POST /api/purchase-requisitions/:id/approval` - Approve/Reject PR
+- `POST /api/purchase-requisitions/:id/convert-to-rfq` - Convert to RFQ
+
+### Request for Quotations
+- `GET /api/rfqs` - List RFQs
+- `GET /api/rfqs/:id` - Get RFQ details
+- `POST /api/rfqs/:id/send` - Send RFQ to vendors via email
+- `POST /api/rfqs/:id/close` - Close RFQ
+- `GET /api/rfqs/:id/comparison` - Compare received quotations
+- `POST /api/rfqs/:id/select-vendors` - Select vendors for items
+
+### Procurement Workflow
+1. **Requisition**: User creates PR with required items
+2. **Approval**: Manager approves PR
+3. **RFQ Creation**: Convert approved PR to RFQ
+4. **Vendor Selection**: Choose vendors and send RFQ emails
+5. **Quotation Receipt**: Auto-process vendor quotation emails
+6. **Comparison**: Compare and select best quotations
+7. **PO Generation**: Create PO from selected quotations
+8. **Delivery**: Track GRN on material receipt
+9. **Invoice**: Auto-process vendor invoices
+10. **Payment**: Track payments against invoices
+
+### Email Automation for Procurement
+- Automatically processes vendor emails for:
+  - Quotations in response to RFQs
+  - Invoices with PO matching
+  - PO acknowledgments
+  - Delivery notifications
+- Sends automated emails for:
+  - RFQ to multiple vendors
+  - Quotation acknowledgments
+  - Invoice receipt confirmations
+- AI-powered data extraction from email attachments

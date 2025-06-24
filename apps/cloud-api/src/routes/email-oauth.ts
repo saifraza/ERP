@@ -64,14 +64,15 @@ app.get('/connect/:companyId', async (c) => {
     // Get OAuth client
     const oauth2Client = getOAuth2Client()
     
-    // Generate OAuth URL
+    // Generate OAuth URL with full Gmail access
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: [
-        'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/gmail.send',
-        'https://www.googleapis.com/auth/gmail.metadata',
-        'https://www.googleapis.com/auth/calendar'
+        'https://www.googleapis.com/auth/gmail.readonly',  // Full read access to emails
+        'https://www.googleapis.com/auth/gmail.send',       // Send emails
+        'https://www.googleapis.com/auth/gmail.modify',     // Modify emails (labels, etc)
+        'https://www.googleapis.com/auth/calendar',         // Calendar access
+        'https://www.googleapis.com/auth/userinfo.email'    // Get user email
       ],
       state: JSON.stringify({ companyId, userId }),
       prompt: 'consent' // Force consent to ensure we get refresh token
