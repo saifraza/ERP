@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Building2, Mail, Phone, MapPin, CreditCard, FileText, AlertCircle, RefreshCw } from 'lucide-react'
+import { X, Building2, Mail, Phone, MapPin, CreditCard, FileText, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
@@ -32,7 +32,7 @@ interface VendorFormData {
 }
 
 const initialFormData: VendorFormData = {
-  code: '',
+  code: 'AUTO', // Will be generated on backend
   name: '',
   type: 'MATERIAL',
   gstNumber: '',
@@ -69,66 +69,13 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Partial<VendorFormData>>({})
   const [activeTab, setActiveTab] = useState<'basic' | 'contact' | 'financial'>('basic')
-  const [generatingCode, setGeneratingCode] = useState(false)
 
-  const generateVendorCode = async () => {
-    setGeneratingCode(true)
-    try {
-      // Get vendor type prefix
-      const typePrefix = {
-        'MATERIAL': 'MAT',
-        'SERVICE': 'SVC',
-        'TRANSPORTER': 'TRN',
-        'CONTRACTOR': 'CON',
-        'OTHER': 'OTH'
-      }[formData.type] || 'VEN'
-
-      // Get next sequence number from backend
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/vendors/next-code?type=${formData.type}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      if (response.ok) {
-        const data = await response.json()
-        const nextNumber = data.nextNumber || 1
-        const paddedNumber = String(nextNumber).padStart(4, '0')
-        const vendorCode = `${typePrefix}${paddedNumber}`
-        
-        setFormData(prev => ({ ...prev, code: vendorCode }))
-      } else {
-        // Fallback: Generate based on timestamp
-        const timestamp = Date.now().toString().slice(-4)
-        const vendorCode = `${typePrefix}${timestamp}`
-        setFormData(prev => ({ ...prev, code: vendorCode }))
-      }
-    } catch (error) {
-      console.error('Error generating vendor code:', error)
-      // Fallback: Generate based on timestamp
-      const typePrefix = formData.type.slice(0, 3).toUpperCase()
-      const timestamp = Date.now().toString().slice(-4)
-      const vendorCode = `${typePrefix}${timestamp}`
-      setFormData(prev => ({ ...prev, code: vendorCode }))
-    } finally {
-      setGeneratingCode(false)
-    }
-  }
-
-  // Generate vendor code when modal opens
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Reset form when modal opens
       setFormData(initialFormData)
       setErrors({})
       setActiveTab('basic')
-      // Generate code after a small delay to ensure form is reset
-      setTimeout(() => {
-        generateVendorCode()
-      }, 100)
     }
   }, [isOpen])
 
@@ -142,17 +89,12 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
     if (errors[name as keyof VendorFormData]) {
       setErrors(prev => ({ ...prev, [name]: undefined }))
     }
-    // Regenerate code if vendor type changes
-    if (name === 'type') {
-      generateVendorCode()
-    }
   }
 
   const validateForm = (): boolean => {
     const newErrors: Partial<VendorFormData> = {}
 
     // Basic validations
-    if (!formData.code.trim()) newErrors.code = 'Vendor code is required'
     if (!formData.name.trim()) newErrors.name = 'Vendor name is required'
     if (!formData.addressLine1.trim()) newErrors.addressLine1 = 'Address is required'
     if (!formData.city.trim()) newErrors.city = 'City is required'
@@ -293,35 +235,18 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Vendor Code * (Auto-generated)
+                        Vendor Code
                       </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="code"
-                          value={formData.code}
-                          onChange={handleChange}
-                          readOnly
-                          className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.code 
-                              ? 'border-red-500' 
-                              : 'border-gray-300 dark:border-gray-600'
-                          } bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white cursor-not-allowed`}
-                          placeholder={generatingCode ? "Generating..." : "Auto-generated"}
-                        />
-                        <button
-                          type="button"
-                          onClick={generateVendorCode}
-                          disabled={generatingCode}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
-                          title="Regenerate code"
-                        >
-                          <RefreshCw className={`h-4 w-4 text-gray-600 dark:text-gray-400 ${generatingCode ? 'animate-spin' : ''}`} />
-                        </button>
-                      </div>
-                      {errors.code && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.code}</p>
-                      )}
+                      <input
+                        type="text"
+                        value="Will be auto-generated"
+                        readOnly
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        A unique code will be assigned automatically
+                      </p>
                     </div>
 
                     <div>
