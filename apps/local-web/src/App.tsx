@@ -19,6 +19,7 @@ import Companies from './pages/masters/Companies'
 import CompanyEdit from './pages/masters/CompanyEdit'
 import Mails from './pages/Mails'
 import EmailSettings from './pages/settings/EmailSettings'
+import GmailTest from './pages/GmailTest'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -111,6 +112,7 @@ function App() {
                     <Route path="/reports" element={<div>Reports</div>} />
                     <Route path="/settings" element={<div>Settings</div>} />
                     <Route path="/settings/email" element={<EmailSettings />} />
+                    <Route path="/gmail-test" element={<GmailTest />} />
                   </Routes>
                 </Layout>
                 )

@@ -26,8 +26,9 @@ const navigation = [
   {
     title: 'Main',
     items: [
-      { name: 'Dashboard', href: '/', icon: Home, badge: 'New' },
-      { name: 'AI Assistant', href: '/mails', icon: Sparkles, badge: 'AI', badgeColor: 'green' },
+      { name: 'Dashboard', href: '/', icon: Home },
+      { name: 'Email & AI', href: '/mails', icon: Sparkles, badge: 'NEW', badgeColor: 'green' },
+      { name: 'Gmail Test', href: '/gmail-test', icon: Mail, badge: 'TEST' },
       { name: 'Documents', href: '/documents', icon: FileText },
       { name: 'Storage', href: '/storage', icon: Database },
     ]
@@ -426,7 +427,7 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
           </div>
 
           {/* Main content area */}
-          <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+          <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 scrollbar-thin">
             <div className="p-6">
               {children}
             </div>
@@ -500,7 +501,7 @@ function SidebarContent({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-4">
+      <nav className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin">
         {navigation.map((section: any) => (
           <div key={section.title} className="mb-6">
             <h3 className="mb-2 px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
