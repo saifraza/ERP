@@ -8,6 +8,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import AddMaterialModal from '../../components/masters/AddMaterialModal'
+import EditMaterialModal from '../../components/masters/EditMaterialModal'
 
 interface Material {
   id: string
@@ -659,6 +660,21 @@ export default function MaterialMaster() {
           </div>
         </div>
       )}
+
+      {/* Edit Material Modal */}
+      <EditMaterialModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedMaterial(null)
+        }}
+        onSuccess={() => {
+          setShowEditModal(false)
+          setSelectedMaterial(null)
+          fetchMaterials()
+        }}
+        material={selectedMaterial}
+      />
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && selectedMaterial && (

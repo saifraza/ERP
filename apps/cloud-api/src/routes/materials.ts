@@ -429,6 +429,9 @@ app.put('/:id', async (c) => {
     const existing = await prisma.material.findFirst({
       where: {
         id: materialId
+      },
+      include: {
+        uom: true
       }
     })
     
@@ -436,9 +439,65 @@ app.put('/:id', async (c) => {
       return c.json({ success: false, error: 'Material not found' }, 404)
     }
     
+    // Find or create UOM if unit changed
+    let uomId = existing.uomId
+    if (body.unit && body.unit !== existing.uom?.code) {
+      const uom = await prisma.uOM.findFirst({
+        where: { 
+          companyId: existing.companyId,
+          code: body.unit
+        }
+      })
+      
+      if (!uom) {
+        const newUom = await prisma.uOM.create({
+          data: {
+            companyId: existing.companyId,
+            code: body.unit,
+            name: body.unit,
+            isActive: true
+          }
+        })
+        uomId = newUom.id
+      } else {
+        uomId = uom.id
+      }
+    }
+    
+    // Process data for storage - mapping to cloud schema
+    const updateData: any = {
+      name: body.name,
+      description: body.description,
+      category: body.category,
+      uomId: uomId,
+      hsnCodeId: body.hsnCode,
+      reorderLevel: body.reorderLevel || 0,
+      reorderQty: body.reorderQuantity || 0,
+      minStockLevel: body.minOrderQuantity || 0,
+      maxStockLevel: body.maxOrderQuantity,
+      leadTimeDays: body.leadTimeDays || 0,
+      isActive: body.isActive !== false,
+      isCritical: body.criticalItem || false,
+      specifications: JSON.stringify({
+        technicalGrade: body.technicalGrade,
+        complianceStandard: body.complianceStandard,
+        storageConditions: body.storageConditions,
+        hazardCategory: body.hazardCategory,
+        shelfLife: body.shelfLife,
+        subCategory: body.subCategory,
+        industryCategory: body.industryCategory,
+        division: body.division,
+        preferredVendors: body.preferredVendors,
+        qualityParameters: body.qualityParameters
+      })
+    }
+    
     const material = await prisma.material.update({
       where: { id: materialId },
-      data: body
+      data: updateData,
+      include: {
+        uom: true
+      }
     })
     
     return c.json({ success: true, material })
