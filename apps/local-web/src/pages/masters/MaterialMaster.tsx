@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { 
   Package, Plus, Search, Filter, Download, Upload, 
   Edit, Eye, MoreVertical, Tag, Box, AlertCircle,
-  CheckCircle, XCircle, Barcode, Shield, Beaker
+  CheckCircle, XCircle, Barcode, Shield, Beaker, Trash2, X
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
@@ -50,6 +50,10 @@ export default function MaterialMaster() {
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [criticalOnly, setCriticalOnly] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
+  const [showViewModal, setShowViewModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     fetchMaterials()
@@ -115,6 +119,67 @@ export default function MaterialMaster() {
     }
   }
 
+  const handleViewMaterial = (material: Material) => {
+    setSelectedMaterial(material)
+    setShowViewModal(true)
+  }
+
+  const handleEditMaterial = (material: Material) => {
+    setSelectedMaterial(material)
+    setShowEditModal(true)
+  }
+
+  const handleDeleteMaterial = async () => {
+    if (!selectedMaterial) return
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/materials/${selectedMaterial.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (response.ok) {
+        toast.success('Material deleted successfully')
+        setShowDeleteConfirm(false)
+        setSelectedMaterial(null)
+        fetchMaterials()
+      } else {
+        toast.error('Failed to delete material')
+      }
+    } catch (error) {
+      console.error('Error deleting material:', error)
+      toast.error('Failed to delete material')
+    }
+  }
+
+  const handleExport = () => {
+    // Convert materials to CSV
+    const headers = ['Code', 'Name', 'Category', 'Division', 'Unit', 'Status']
+    const csvData = materials.map(m => [
+      m.code,
+      m.name,
+      getCategoryLabel(m.category),
+      getDivisionLabel(m.division),
+      m.unit,
+      m.isActive ? 'Active' : 'Inactive'
+    ])
+    
+    const csv = [headers, ...csvData].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `materials_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
+    toast.success('Materials exported successfully')
+  }
+
   const getCategoryColor = (category: string) => {
     const colors = {
       RAW_MATERIAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -176,11 +241,17 @@ export default function MaterialMaster() {
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage material codes and specifications</p>
         </div>
         <div className="flex gap-3">
-          <button className="btn-secondary flex items-center gap-2">
+          <button 
+            className="btn-secondary flex items-center gap-2"
+            onClick={() => toast.info('Import feature coming soon')}
+          >
             <Upload className="h-4 w-4" />
             Import
           </button>
-          <button className="btn-secondary flex items-center gap-2">
+          <button 
+            className="btn-secondary flex items-center gap-2"
+            onClick={handleExport}
+          >
             <Download className="h-4 w-4" />
             Export
           </button>
@@ -460,22 +531,28 @@ export default function MaterialMaster() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => handleViewMaterial(material)}
                           className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                           title="View Details"
                         >
                           <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </button>
                         <button 
+                          onClick={() => handleEditMaterial(material)}
                           className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                           title="Edit"
                         >
                           <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </button>
                         <button 
-                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                          title="More Options"
+                          onClick={() => {
+                            setSelectedMaterial(material)
+                            setShowDeleteConfirm(true)
+                          }}
+                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-600 dark:text-red-400"
+                          title="Delete"
                         >
-                          <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
@@ -496,6 +573,129 @@ export default function MaterialMaster() {
           fetchMaterials()
         }}
       />
+
+      {/* View Material Modal */}
+      {showViewModal && selectedMaterial && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="fixed inset-0 bg-gray-900/75 transition-opacity" onClick={() => setShowViewModal(false)} />
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Material Details</h2>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Material Code</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.code}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Name</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Category</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{getCategoryLabel(selectedMaterial.category)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Division</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{getDivisionLabel(selectedMaterial.division)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Unit</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.unit}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.isActive ? 'Active' : 'Inactive'}</p>
+                  </div>
+                  {selectedMaterial.hsnCode && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">HSN Code</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.hsnCode}</p>
+                    </div>
+                  )}
+                  {selectedMaterial.criticalItem && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Critical Item</p>
+                      <p className="font-medium text-red-600 dark:text-red-400">Yes</p>
+                    </div>
+                  )}
+                  {selectedMaterial.technicalGrade && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Technical Grade</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.technicalGrade}</p>
+                    </div>
+                  )}
+                  {selectedMaterial.complianceStandard && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Compliance Standard</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.complianceStandard}</p>
+                    </div>
+                  )}
+                  {selectedMaterial.description && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Description</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedMaterial.description}</p>
+                    </div>
+                  )}
+                  {selectedMaterial.specifications && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Specifications</p>
+                      <p className="font-medium text-gray-900 dark:text-white whitespace-pre-wrap">{selectedMaterial.specifications}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedMaterial && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="fixed inset-0 bg-gray-900/75 transition-opacity" onClick={() => setShowDeleteConfirm(false)} />
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-12 w-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                    <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Material</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">This action cannot be undone</p>
+                  </div>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 mb-6">
+                  Are you sure you want to delete material <strong>{selectedMaterial.code} - {selectedMaterial.name}</strong>?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteMaterial}
+                    className="btn-danger"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

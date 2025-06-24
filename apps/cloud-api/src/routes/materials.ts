@@ -413,6 +413,35 @@ app.patch('/:id/toggle-status', async (c) => {
   }
 })
 
+// Delete material
+app.delete('/:id', async (c) => {
+  const userId = c.get('userId')
+  const materialId = c.req.param('id')
+  
+  try {
+    // Check if material exists
+    const existing = await prisma.material.findFirst({
+      where: { id: materialId }
+    })
+    
+    if (!existing) {
+      return c.json({ success: false, error: 'Material not found' }, 404)
+    }
+    
+    // Check if material is used in any transaction
+    // TODO: Add checks for inventory, requisitions, POs, etc.
+    
+    await prisma.material.delete({
+      where: { id: materialId }
+    })
+    
+    return c.json({ success: true, message: 'Material deleted successfully' })
+  } catch (error: any) {
+    console.error('Error deleting material:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // Get industry categories for a division and category
 app.get('/industry-categories', async (c) => {
   const { division, category } = c.req.query()
