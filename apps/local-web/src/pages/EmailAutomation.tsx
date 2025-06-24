@@ -94,6 +94,12 @@ export default function EmailAutomation() {
 
   const processBatch = async () => {
     setProcessing(true)
+    
+    // Debug logging
+    console.log('Current company:', currentCompany)
+    console.log('Company ID:', currentCompany?.id)
+    console.log('Token exists:', !!token)
+    
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/email-automation/process-batch`,
@@ -104,7 +110,7 @@ export default function EmailAutomation() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            companyId: currentCompany?.id,
+            companyId: currentCompany?.id || null,
             maxResults: 10,
             query: 'is:unread' // Remove vendor filter to process all unread emails
           })
@@ -127,10 +133,17 @@ export default function EmailAutomation() {
         loadHistory()
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Server error response:', errorData)
+        console.error('Response status:', response.status)
         throw new Error(errorData.error || errorData.details || 'Failed to process emails')
       }
     } catch (error: any) {
       console.error('Process batch error:', error)
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      })
       toast.error(error.message || 'Failed to process emails')
     } finally {
       setProcessing(false)
@@ -177,23 +190,59 @@ export default function EmailAutomation() {
               </h1>
               <p className="text-gray-600 mt-1">Automate vendor email processing and document extraction</p>
             </div>
-            <button
-              onClick={processBatch}
-              disabled={processing}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {processing ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4" />
-                  Process Emails
-                </>
-              )}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={processBatch}
+                disabled={processing}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {processing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Process Emails
+                  </>
+                )}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await fetch(
+                      `${import.meta.env.VITE_API_URL}/api/email-automation/debug/list-emails`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                          companyId: currentCompany?.id,
+                          maxResults: 5
+                        })
+                      }
+                    )
+                    const data = await response.json()
+                    console.log('Debug list emails result:', data)
+                    if (data.success) {
+                      toast.success(`Found ${data.count} emails`)
+                    } else {
+                      toast.error(data.error || 'Failed to list emails')
+                    }
+                  } catch (error) {
+                    console.error('Debug error:', error)
+                    toast.error('Failed to test email listing')
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                <Mail className="h-4 w-4" />
+                Test List
+              </button>
+            </div>
           </div>
         </div>
       </div>
