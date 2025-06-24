@@ -168,10 +168,29 @@ model Division {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   
-  company     Company   @relation(fields: [companyId], references: [id])
+  company      Company       @relation(fields: [companyId], references: [id])
+  departments  Department[]
+  requisitions Requisition[]
   
   @@unique([companyId, code])
   @@index([companyId])
+}
+
+// Department Management
+model Department {
+  id          String    @id @default(uuid())
+  divisionId  String
+  name        String
+  code        String
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  division    Division  @relation(fields: [divisionId], references: [id])
+  
+  @@unique([divisionId, code])
+  @@index([divisionId])
 }
 
 // ==================== MASTER DATA ====================
@@ -373,6 +392,7 @@ enum AccountNature {
 model Requisition {
   id               String    @id @default(uuid())
   factoryId        String
+  divisionId       String
   requisitionNo    String
   requisitionDate  DateTime
   department       String
@@ -387,6 +407,7 @@ model Requisition {
   updatedAt        DateTime  @updatedAt
   
   factory          Factory             @relation(fields: [factoryId], references: [id])
+  division         Division            @relation(fields: [divisionId], references: [id])
   requestedByUser  User                @relation("CreatedByUser", fields: [requestedBy], references: [id])
   approvedByUser   User?               @relation("ApprovedByUser", fields: [approvedBy], references: [id])
   items            RequisitionItem[]
@@ -394,6 +415,7 @@ model Requisition {
   
   @@unique([factoryId, requisitionNo])
   @@index([factoryId])
+  @@index([divisionId])
   @@index([status])
   @@index([requisitionDate])
 }

@@ -19,6 +19,7 @@ const requisitionItemSchema = z.object({
 
 const requisitionSchema = z.object({
   factoryId: z.string().uuid(),
+  divisionId: z.string().uuid(),
   department: z.string().min(1),
   priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
   purpose: z.string().optional(),
@@ -67,7 +68,7 @@ app.get('/', async (c) => {
     const companyId = companyUser?.companyId
     
     if (!companyId) {
-      return c.json({ success: true, requisitions: [] })
+      return c.json({ requisitions: [] })
     }
     
     const where: any = {
@@ -152,10 +153,10 @@ app.get('/', async (c) => {
       updatedAt: req.updatedAt
     }))
     
-    return c.json({ success: true, requisitions: formattedRequisitions })
+    return c.json({ requisitions: formattedRequisitions })
   } catch (error: any) {
     console.error('Error fetching requisitions:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -174,7 +175,7 @@ app.get('/:id', async (c) => {
     const companyId = companyUser?.companyId
     
     if (!companyId) {
-      return c.json({ success: false, error: 'User not associated with a company' }, 400)
+      return c.json({ error: 'User not associated with a company' }, 400)
     }
     
     const requisition = await prisma.requisition.findFirst({
@@ -218,7 +219,7 @@ app.get('/:id', async (c) => {
     })
     
     if (!requisition) {
-      return c.json({ success: false, error: 'Requisition not found' }, 404)
+      return c.json({ error: 'Requisition not found' }, 404)
     }
     
     // Format the response
@@ -261,10 +262,10 @@ app.get('/:id', async (c) => {
       updatedAt: requisition.updatedAt
     }
     
-    return c.json({ success: true, requisition: formattedRequisition })
+    return c.json({ requisition: formattedRequisition })
   } catch (error: any) {
     console.error('Error fetching requisition:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -283,7 +284,6 @@ app.post('/', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -301,7 +301,6 @@ app.post('/', async (c) => {
     
     if (!factory) {
       return c.json({ 
-        success: false, 
         error: 'Invalid factory' 
       }, 400)
     }
@@ -321,7 +320,6 @@ app.post('/', async (c) => {
     
     if (materials.length !== materialIds.length) {
       return c.json({ 
-        success: false, 
         error: 'One or more materials are invalid' 
       }, 400)
     }
@@ -330,6 +328,7 @@ app.post('/', async (c) => {
     const requisition = await prisma.requisition.create({
       data: {
         factoryId: validated.factoryId,
+        divisionId: validated.divisionId,
         requisitionNo,
         requisitionDate: new Date(),
         department: validated.department,
@@ -368,18 +367,17 @@ app.post('/', async (c) => {
       }
     })
     
-    return c.json({ success: true, requisition })
+    return c.json({ requisition })
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return c.json({ 
-        success: false, 
         error: 'Validation failed', 
         details: error.errors 
       }, 400)
     }
     
     console.error('Error creating requisition:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -399,7 +397,6 @@ app.put('/:id', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -417,12 +414,11 @@ app.put('/:id', async (c) => {
     })
     
     if (!existing) {
-      return c.json({ success: false, error: 'Requisition not found' }, 404)
+      return c.json({ error: 'Requisition not found' }, 404)
     }
     
     if (existing.status !== 'DRAFT') {
       return c.json({ 
-        success: false, 
         error: 'Cannot update requisition that is not in draft status' 
       }, 400)
     }
@@ -473,10 +469,10 @@ app.put('/:id', async (c) => {
       })
     })
     
-    return c.json({ success: true, requisition })
+    return c.json({ requisition })
   } catch (error: any) {
     console.error('Error updating requisition:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -496,7 +492,6 @@ app.post('/:id/submit', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -516,14 +511,12 @@ app.post('/:id/submit', async (c) => {
     
     if (!requisition) {
       return c.json({ 
-        success: false, 
         error: 'Requisition not found or not in draft status' 
       }, 404)
     }
     
     if (requisition.items.length === 0) {
       return c.json({ 
-        success: false, 
         error: 'Cannot submit requisition without items' 
       }, 400)
     }
@@ -554,10 +547,10 @@ app.post('/:id/submit', async (c) => {
       }
     })
     
-    return c.json({ success: true, requisition: updated })
+    return c.json({ requisition: updated })
   } catch (error: any) {
     console.error('Error submitting requisition:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -580,7 +573,6 @@ app.post('/:id/approve', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -597,7 +589,6 @@ app.post('/:id/approve', async (c) => {
     
     if (!requisition) {
       return c.json({ 
-        success: false, 
         error: 'Requisition not found or not in submitted status' 
       }, 404)
     }
@@ -631,10 +622,10 @@ app.post('/:id/approve', async (c) => {
       }
     })
     
-    return c.json({ success: true, requisition: updated })
+    return c.json({ requisition: updated })
   } catch (error: any) {
     console.error('Error approving requisition:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -649,7 +640,6 @@ app.post('/:id/reject', async (c) => {
     
     if (!reason) {
       return c.json({ 
-        success: false, 
         error: 'Rejection reason is required' 
       }, 400)
     }
@@ -664,7 +654,6 @@ app.post('/:id/reject', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -681,7 +670,6 @@ app.post('/:id/reject', async (c) => {
     
     if (!requisition) {
       return c.json({ 
-        success: false, 
         error: 'Requisition not found or not in submitted status' 
       }, 404)
     }
@@ -713,10 +701,10 @@ app.post('/:id/reject', async (c) => {
       }
     })
     
-    return c.json({ success: true, requisition: updated })
+    return c.json({ requisition: updated })
   } catch (error: any) {
     console.error('Error rejecting requisition:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -736,7 +724,6 @@ app.delete('/:id', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -753,7 +740,6 @@ app.delete('/:id', async (c) => {
     
     if (!requisition) {
       return c.json({ 
-        success: false, 
         error: 'Requisition not found or cannot be deleted' 
       }, 404)
     }
@@ -762,10 +748,10 @@ app.delete('/:id', async (c) => {
       where: { id: requisitionId }
     })
     
-    return c.json({ success: true, message: 'Requisition deleted successfully' })
+    return c.json({ message: 'Requisition deleted successfully' })
   } catch (error: any) {
     console.error('Error deleting requisition:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 

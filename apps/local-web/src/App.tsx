@@ -18,6 +18,7 @@ import CompanySetup from './pages/setup/CompanySetup'
 import Companies from './pages/masters/Companies'
 import CompanyEdit from './pages/masters/CompanyEdit'
 import Divisions from './pages/masters/Divisions'
+import Departments from './pages/masters/Departments'
 import VendorMaster from './pages/masters/VendorMaster'
 import MaterialMaster from './pages/masters/MaterialMaster'
 import Mails from './pages/Mails'
@@ -126,6 +127,7 @@ function App() {
                     <Route path="/masters/companies" element={<Companies />} />
                     <Route path="/masters/companies/edit" element={<CompanyEdit />} />
                     <Route path="/masters/divisions" element={<Divisions />} />
+                    <Route path="/masters/departments" element={<Departments />} />
                     <Route path="/masters/materials" element={<MaterialMaster />} />
                     <Route path="/masters/vendors" element={<VendorMaster />} />
                     <Route path="/masters/customers" element={<div>Customers</div>} />

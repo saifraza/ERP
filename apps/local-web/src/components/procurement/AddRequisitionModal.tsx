@@ -30,6 +30,15 @@ interface Division {
   code: string
 }
 
+interface Department {
+  id: string
+  divisionId: string
+  name: string
+  code: string
+  description?: string
+  isActive: boolean
+}
+
 interface Factory {
   id: string
   name: string
@@ -57,8 +66,10 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
   const [loading, setLoading] = useState(false)
   const [factories, setFactories] = useState<Factory[]>([])
   const [divisions, setDivisions] = useState<Division[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [loadingFactories, setLoadingFactories] = useState(false)
   const [loadingDivisions, setLoadingDivisions] = useState(false)
+  const [loadingDepartments, setLoadingDepartments] = useState(false)
   const [materials, setMaterials] = useState<Material[]>([])
   const [loadingMaterials, setLoadingMaterials] = useState(false)
   const [showMaterialPicker, setShowMaterialPicker] = useState<number | null>(null)
@@ -68,7 +79,8 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
     factoryId: '',
     divisionId: '',
     divisionCode: '', // Add division code for material filtering
-    department: '',
+    departmentId: '',
+    department: '', // Keep for backward compatibility
     priority: 'NORMAL',
     purpose: '',
     remarks: ''
@@ -106,6 +118,13 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
       fetchMaterials()
     }
   }, [formData.divisionCode])
+
+  // Fetch departments when division is selected
+  useEffect(() => {
+    if (formData.divisionId) {
+      fetchDepartments()
+    }
+  }, [formData.divisionId])
 
   const fetchFactories = async () => {
     try {
@@ -149,6 +168,27 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
     }
   }
 
+  const fetchDepartments = async () => {
+    try {
+      setLoadingDepartments(true)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/departments?divisionId=${formData.divisionId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setDepartments(data.departments || [])
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error)
+      toast.error('Failed to load departments')
+    } finally {
+      setLoadingDepartments(false)
+    }
+  }
+
   const fetchMaterials = async () => {
     try {
       setLoadingMaterials(true)
@@ -180,6 +220,7 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
       factoryId: '',
       divisionId: '',
       divisionCode: '',
+      departmentId: '',
       department: '',
       priority: 'NORMAL',
       purpose: '',
@@ -201,6 +242,7 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
     setErrors({})
     setItemErrors([{}])
     setMaterials([])
+    setDepartments([])
     setShowMaterialPicker(null)
     setMaterialFilter('')
   }
@@ -214,10 +256,20 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
       setFormData(prev => ({
         ...prev,
         divisionId: value,
-        divisionCode: selectedDivision?.code.toLowerCase() || ''
+        divisionCode: selectedDivision?.code.toLowerCase() || '',
+        departmentId: '', // Reset department when division changes
+        department: '' // Reset department name
       }))
-      // Clear materials when division changes
+      // Clear materials and departments when division changes
       setMaterials([])
+      setDepartments([])
+    } else if (name === 'departmentId') {
+      const selectedDepartment = departments.find(d => d.id === value)
+      setFormData(prev => ({
+        ...prev,
+        departmentId: value,
+        department: selectedDepartment?.name || ''
+      }))
     } else {
       setFormData(prev => ({
         ...prev,
@@ -313,7 +365,7 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
     // Validate main form
     if (!formData.factoryId) newErrors.factoryId = 'Factory is required'
     if (!formData.divisionId) newErrors.divisionId = 'Division is required'
-    if (!formData.department) newErrors.department = 'Department is required'
+    if (!formData.departmentId) newErrors.departmentId = 'Department is required'
     
     // Validate items
     let hasItemErrors = false
@@ -527,20 +579,37 @@ export default function AddRequisitionModal({ isOpen, onClose, onSuccess }: AddR
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Department *
                     </label>
-                    <input
-                      type="text"
-                      name="department"
-                      value={formData.department}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        errors.department 
-                          ? 'border-red-500' 
-                          : 'border-gray-300 dark:border-gray-600'
-                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                      placeholder="e.g., Production, Maintenance, Lab"
-                    />
-                    {errors.department && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.department}</p>
+                    {loadingDepartments ? (
+                      <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                        <span className="text-gray-500 dark:text-gray-400">Loading departments...</span>
+                      </div>
+                    ) : (
+                      <select
+                        name="departmentId"
+                        value={formData.departmentId}
+                        onChange={handleChange}
+                        disabled={!formData.divisionId}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          errors.departmentId 
+                            ? 'border-red-500' 
+                            : 'border-gray-300 dark:border-gray-600'
+                        } bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        <option value="">Select Department</option>
+                        {departments.filter(d => d.isActive).map(department => (
+                          <option key={department.id} value={department.id}>
+                            {department.name} ({department.code})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {errors.departmentId && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.departmentId}</p>
+                    )}
+                    {!formData.divisionId && (
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Please select a division first
+                      </p>
                     )}
                   </div>
 

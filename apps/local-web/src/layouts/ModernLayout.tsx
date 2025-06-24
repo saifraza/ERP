@@ -48,6 +48,7 @@ const navigation = [
     children: [
       { name: 'Companies', href: '/masters/companies' },
       { name: 'Divisions', href: '/masters/divisions' },
+      { name: 'Departments', href: '/masters/departments' },
       { name: 'Materials', href: '/masters/materials' },
       { name: 'Vendors', href: '/masters/vendors' },
       { name: 'Customers', href: '/masters/customers' },
