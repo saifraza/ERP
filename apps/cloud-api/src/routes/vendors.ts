@@ -35,6 +35,10 @@ app.get('/', async (c) => {
   const user = c.get('user')
   const { isActive, type, search } = c.req.query()
   
+  if (!user.companyId) {
+    return c.json({ success: true, vendors: [] })
+  }
+  
   try {
     const where: any = {
       companyId: user.companyId
@@ -156,6 +160,13 @@ app.get('/:id', async (c) => {
 // Create new vendor
 app.post('/', async (c) => {
   const user = c.get('user')
+  
+  if (!user.companyId) {
+    return c.json({ 
+      success: false, 
+      error: 'User is not associated with a company' 
+    }, 400)
+  }
   
   try {
     const body = await c.req.json()
