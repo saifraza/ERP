@@ -9,19 +9,14 @@ export const companyAuthMiddleware = async (c: Context, next: Next) => {
       return c.json({ error: 'User not authenticated' }, 401)
     }
     
-    // Fetch user with company data
+    // Fetch user
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         email: true,
         name: true,
-        role: true,
-        companyAccess: {
-          select: {
-            companyId: true
-          }
-        }
+        role: true
       }
     })
     
@@ -29,8 +24,11 @@ export const companyAuthMiddleware = async (c: Context, next: Next) => {
       return c.json({ error: 'User not found' }, 401)
     }
     
-    // Get the first company (assuming user belongs to one company)
-    const companyUser = user.companyAccess[0]
+    // Get the user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
     
     if (!companyUser) {
       return c.json({ error: 'User is not associated with any company' }, 403)

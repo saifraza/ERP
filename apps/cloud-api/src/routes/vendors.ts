@@ -37,17 +37,12 @@ app.get('/', async (c) => {
   
   try {
     // Get user's company
-    const userWithCompany = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        companyAccess: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
     })
     
-    const companyId = userWithCompany?.companyAccess[0]?.companyId
+    const companyId = companyUser?.companyId
     
     if (!companyId) {
       return c.json({ success: true, vendors: [] })
@@ -174,17 +169,12 @@ app.post('/', async (c) => {
   
   try {
     // Get user's company
-    const userWithCompany = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        companyAccess: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
     })
     
-    const companyId = userWithCompany?.companyAccess[0]?.companyId
+    const companyId = companyUser?.companyId
     
     if (!companyId) {
       return c.json({ 
@@ -278,17 +268,12 @@ app.post('/import', async (c) => {
   
   try {
     // Get user's company
-    const userWithCompany = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        companyAccess: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
     })
     
-    const companyId = userWithCompany?.companyAccess[0]?.companyId
+    const companyId = companyUser?.companyId
     
     if (!companyId) {
       return c.json({ 
