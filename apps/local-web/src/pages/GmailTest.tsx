@@ -49,16 +49,19 @@ export default function GmailTest() {
     setTestResults(null)
     const results = []
     
-    // Test 1: MCP Health Check
+    // Test 1: OAuth Configuration
+    results.push(await runTest('OAuth Configuration', '/api/debug/oauth-config'))
+    
+    // Test 2: MCP Health Check
     results.push(await runTest('MCP Health Check', '/api/mcp/health'))
     
-    // Test 2: OAuth Scopes
+    // Test 3: OAuth Scopes
     results.push(await runTest('OAuth Scopes', '/api/debug/oauth-scopes'))
     
-    // Test 3: Direct Calendar Test
+    // Test 4: Direct Calendar Test
     results.push(await runTest('Calendar Test', '/api/debug/test-calendar'))
     
-    // Test 4: List Emails
+    // Test 5: List Emails
     const emailTest = await fetch(
       `${import.meta.env.VITE_API_URL || 'https://cloud-api-production-0f4d.up.railway.app'}/api/mcp/gmail/list-emails`,
       {

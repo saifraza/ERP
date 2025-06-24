@@ -277,23 +277,38 @@ export class GmailService {
       // Get the access token to check scopes
       const tokenInfo = await this.oauth2Client.getAccessToken()
       if (tokenInfo.token) {
-        // Decode the JWT to see the scopes
-        const payload = tokenInfo.token.split('.')[1]
-        const decoded = JSON.parse(Buffer.from(payload, 'base64').toString())
-        console.log('OAuth token scopes:', decoded.scope)
-        
-        // Check if we have the required scopes
-        const requiredScopes = [
-          'https://www.googleapis.com/auth/gmail.readonly',
-          'https://www.googleapis.com/auth/gmail.send'
-        ]
-        
-        const hasScopes = decoded.scope ? decoded.scope.split(' ') : []
-        const missingScopes = requiredScopes.filter(scope => !hasScopes.includes(scope))
-        
-        if (missingScopes.length > 0) {
-          console.warn('Missing required Gmail scopes:', missingScopes)
-          console.warn('Current scopes:', hasScopes)
+        try {
+          // Try to get token info from Google's tokeninfo endpoint
+          const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${tokenInfo.token}`)
+          if (response.ok) {
+            const tokenData = await response.json()
+            console.log('OAuth token info:', {
+              email: tokenData.email,
+              scope: tokenData.scope,
+              expires_in: tokenData.expires_in
+            })
+            
+            // Check if we have the required scopes
+            const requiredScopes = [
+              'https://www.googleapis.com/auth/gmail.readonly',
+              'https://www.googleapis.com/auth/gmail.send',
+              'https://www.googleapis.com/auth/calendar.readonly'
+            ]
+            
+            const hasScopes = tokenData.scope ? tokenData.scope.split(' ') : []
+            const missingScopes = requiredScopes.filter(scope => !hasScopes.includes(scope))
+            
+            if (missingScopes.length > 0) {
+              console.warn('Missing required scopes:', missingScopes)
+              console.warn('Current scopes:', hasScopes)
+            } else {
+              console.log('All required scopes are present')
+            }
+          } else {
+            console.error('Failed to get token info from Google:', response.status)
+          }
+        } catch (error) {
+          console.error('Error checking token info:', error)
         }
       }
     } catch (error) {
