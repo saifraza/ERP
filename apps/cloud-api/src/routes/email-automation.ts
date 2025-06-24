@@ -73,6 +73,35 @@ app.get('/test', async (c) => {
   }
 })
 
+// Debug endpoint to list emails (requires auth)
+app.post('/debug/list-emails', authMiddleware, async (c) => {
+  try {
+    const { companyId, maxResults = 5 } = await c.req.json()
+    
+    console.log('Debug list emails - companyId:', companyId)
+    
+    const emails = await multiTenantGmail.listEmails(companyId, maxResults, 'is:unread')
+    
+    return c.json({
+      success: true,
+      count: emails.length,
+      emails: emails.map(e => ({
+        id: e.id,
+        subject: e.subject,
+        from: e.from,
+        date: e.date
+      }))
+    })
+  } catch (error: any) {
+    console.error('Debug list emails error:', error)
+    return c.json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    }, 500)
+  }
+})
+
 // Apply auth middleware to all routes below this point
 app.use('*', authMiddleware)
 
@@ -108,12 +137,21 @@ app.post('/process', async (c) => {
 // Process multiple emails in batch
 app.post('/process-batch', async (c) => {
   try {
-    const { companyId, maxResults = 10, query = 'is:unread' } = await c.req.json()
+    const body = await c.req.json()
+    const { companyId, maxResults = 10, query = 'is:unread' } = body
     
     console.log(`Processing batch emails - Company: ${companyId}, Query: ${query}`)
+    console.log('Request body:', JSON.stringify(body))
+    console.log('User:', c.get('user'))
     
     // Get unprocessed emails
-    const emails = await multiTenantGmail.listEmails(companyId, maxResults, query)
+    let emails = []
+    try {
+      emails = await multiTenantGmail.listEmails(companyId, maxResults, query)
+    } catch (gmailError: any) {
+      console.error('Gmail list error:', gmailError)
+      throw new Error(`Failed to list emails: ${gmailError.message}`)
+    }
     
     console.log(`Found ${emails.length} emails to process`)
     
