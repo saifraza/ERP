@@ -145,6 +145,9 @@ ERP/
 - [x] Master data structure for all divisions
 - [x] Store module schema (Requisitions, POs, GRNs)
 - [x] Finance module schema (Invoices, Payments, Banking)
+- [x] Division Master (Sugar, Ethanol, Power, Feed, Common)
+- [x] Department Master with industry-specific templates
+- [x] Material Master with division-wise categorization
 
 ### ✅ AI & Email Features
 - [x] Gmail OAuth2 integration (Multi-tenant support)
@@ -376,6 +379,11 @@ pnpm build:docker    # Build Docker images
 pnpm db:push         # Push schema changes
 pnpm db:migrate      # Run migrations
 pnpm db:studio       # Open Prisma Studio
+pnpm db:repair       # Fix failed migrations
+
+# Memory Issues (if Node.js heap out of memory)
+export NODE_OPTIONS="--max-old-space-size=4096"  # Increase to 4GB
+export NODE_OPTIONS="--max-old-space-size=8192"  # Increase to 8GB
 ```
 
 ## Deployment URLs
@@ -459,8 +467,31 @@ WEIGHBRIDGE_PORT="COM3"
 DCS_SERVER="192.168.1.100"
 ```
 
+## Troubleshooting
+
+### Node.js Heap Out of Memory Error
+If you encounter memory issues while running the application:
+```bash
+# Set environment variable before running commands
+export NODE_OPTIONS="--max-old-space-size=4096"
+
+# Or run directly with the flag
+node --max-old-space-size=4096 your-script.js
+```
+
+### Database Migration Failures
+If migrations fail with "migrate found failed migrations" error:
+1. Run the repair script: `pnpm db:repair`
+2. Then run migrations again: `pnpm db:migrate`
+
+### API 500 Errors
+Common causes and fixes:
+- Missing relations in Prisma queries - ensure all referenced relations are included
+- Missing fields in database - run `pnpm db:push` to sync schema
+- Authentication issues - verify JWT token is valid
+
 ## Known Issues
-- None yet
+- Git config shows committer email as local machine - configure with `git config --global --edit`
 
 ## Key Technologies & Services
 
@@ -520,9 +551,9 @@ DCS_SERVER="192.168.1.100"
 
 ## Contact
 Solo Developer Project
-Last Updated: 2025-06-23
+Last Updated: 2024-12-26
 
-## Recent Updates
+## Recent Updates (December 2024)
 - ✅ Consolidated APIs (removed backend-api, kept cloud-api)
 - ✅ Fixed authentication to accept username "saif"
 - ✅ Database migrated with seed data
@@ -532,6 +563,82 @@ Last Updated: 2025-06-23
 - ✅ Complete procurement system implementation
 - ✅ Email-based vendor automation
 - ✅ Full OAuth scope for Gmail reading
+- ✅ Fixed Node.js heap memory issues
+- ✅ Added Division Master with full CRUD operations
+- ✅ Added Department Master with industry-standard templates
+- ✅ Fixed database migration issues with repair script
+- ✅ Updated Purchase Requisitions to support divisions
+- ✅ Fixed requisition display and API structure issues
+- ✅ Added division relation to all requisition queries
+
+## Division & Department Management
+
+### Division Master
+The system supports the following business divisions:
+- **SUGAR**: Sugar manufacturing division
+- **ETHANOL**: Ethanol production division  
+- **POWER**: Power generation division
+- **FEED**: Animal feed division
+- **COMMON**: Shared services division
+
+### Department Templates
+Each division has industry-specific department templates:
+
+#### Sugar Division Departments
+- Production (PROD) - Sugar production and processing
+- Maintenance (MAINT) - Mechanical and electrical maintenance
+- Quality Control (QC) - Laboratory and quality testing
+- Cane Yard (CY) - Cane receiving and management
+- Boiling House (BH) - Juice processing and crystallization
+- Packing (PACK) - Sugar packing and storage
+
+#### Ethanol Division Departments
+- Distillation (DIST) - Ethanol production and distillation
+- Fermentation (FERM) - Fermentation process management
+- Quality Lab (LAB) - Quality testing and certification
+- Utilities (UTIL) - Steam, power, and water management
+- ETP (ETP) - Effluent treatment plant
+- Storage (STOR) - Tank farm and storage
+
+#### Power Division Departments
+- Boiler Operations (BOILER) - Boiler operations and maintenance
+- Turbine Operations (TURB) - Turbine operations and maintenance
+- Electrical (ELEC) - Electrical maintenance and grid operations
+- Instrumentation (INST) - Control systems and instrumentation
+- Coal Handling (COAL) - Fuel handling and management
+
+#### Feed Division Departments
+- Production (PROD) - Feed manufacturing
+- Quality Assurance (QA) - Feed quality and testing
+- Raw Material (RM) - Raw material management
+- Pelletizing (PELL) - Pelletizing operations
+- Dispatch (DISP) - Finished goods and dispatch
+
+#### Common Division Departments
+- HR & Admin (HR) - Human resources and administration
+- Finance & Accounts (FIN) - Finance and accounting
+- IT (IT) - Information technology
+- Stores (STORE) - Central stores and inventory
+- Security (SEC) - Security and safety
+- Purchase (PUR) - Centralized procurement
+
+### API Endpoints
+
+#### Division Management
+- `GET /api/divisions` - List all divisions
+- `GET /api/divisions/:id` - Get division details
+- `POST /api/divisions` - Create new division
+- `PUT /api/divisions/:id` - Update division
+- `DELETE /api/divisions/:id` - Delete division
+- `POST /api/divisions/quick-setup` - Create default divisions
+
+#### Department Management  
+- `GET /api/departments` - List all departments
+- `GET /api/departments/:id` - Get department details
+- `POST /api/departments` - Create new department
+- `PUT /api/departments/:id` - Update department
+- `DELETE /api/departments/:id` - Delete department
+- `POST /api/departments/setup-defaults` - Create default departments for a division
 
 ## Procurement System API
 
