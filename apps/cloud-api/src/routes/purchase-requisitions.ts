@@ -35,20 +35,22 @@ async function generatePRNumber(companyId: string): Promise<string> {
   const month = String(new Date().getMonth() + 1).padStart(2, '0')
   
   // Get last PR number for this month
-  const lastPR = await prisma.purchaseRequisition.findFirst({
+  const lastPR = await prisma.requisition.findFirst({
     where: {
-      companyId,
-      prNumber: {
+      factory: {
+        companyId
+      },
+      requisitionNo: {
         startsWith: `PR-${year}${month}`
       }
     },
-    orderBy: { prNumber: 'desc' },
-    select: { prNumber: true }
+    orderBy: { requisitionNo: 'desc' },
+    select: { requisitionNo: true }
   })
   
   let sequence = 1
   if (lastPR) {
-    const lastSequence = parseInt(lastPR.prNumber.split('-').pop() || '0')
+    const lastSequence = parseInt(lastPR.requisitionNo.split('-').pop() || '0')
     sequence = lastSequence + 1
   }
   
@@ -87,15 +89,20 @@ app.get('/', async (c) => {
       if (to) where.requestDate.lte = new Date(to)
     }
     
-    const prs = await prisma.purchaseRequisition.findMany({
+    const prs = await prisma.requisition.findMany({
       where,
       include: {
-        division: {
-          select: { name: true }
+        factory: {
+          include: {
+            divisions: {
+              where: { id: divisionId || undefined },
+              select: { name: true }
+            }
+          }
         },
         items: true,
         _count: {
-          select: { rfqs: true }
+          select: { purchaseOrders: true }
         }
       },
       orderBy: { createdAt: 'desc' }

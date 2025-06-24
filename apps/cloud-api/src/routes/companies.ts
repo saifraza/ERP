@@ -163,4 +163,48 @@ app.delete('/:id', authMiddleware, async (c) => {
   }
 })
 
+// Get factories for user's current company
+app.get('/my/factories', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ success: true, factories: [] })
+    }
+    
+    const factories = await prisma.factory.findMany({
+      where: {
+        companyId: companyId,
+        isActive: true
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        type: true,
+        city: true,
+        state: true,
+        crushingCapacity: true,
+        powerCapacity: true,
+        ethanolCapacity: true,
+        feedCapacity: true
+      },
+      orderBy: { name: 'asc' }
+    })
+    
+    return c.json({ success: true, factories })
+  } catch (error: any) {
+    console.error('Error fetching factories:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 export default app

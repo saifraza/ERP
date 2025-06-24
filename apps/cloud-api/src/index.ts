@@ -18,10 +18,11 @@ import emailRoutes from './routes/email.js'
 import geminiAssistantRoutes from './routes/gemini-assistant.js'
 import emailAutomationRoutes from './routes/email-automation.js'
 import vendorsRoutes from './routes/vendors.js'
-import purchaseRequisitionsRoutes from './routes/purchase-requisitions.js'
+import requisitionsRoutes from './routes/requisitions.js'
 import rfqsRoutes from './routes/rfqs.js'
 import divisionsRoutes from './routes/divisions.js'
 import materialsRoutes from './routes/materials.js'
+import factoriesRoutes from './routes/factories.js'
 
 const app = new Hono()
 
@@ -87,10 +88,11 @@ app.route('/api/email', emailRoutes)
 app.route('/api/gemini', geminiAssistantRoutes)
 app.route('/api/email-automation', emailAutomationRoutes)
 app.route('/api/vendors', vendorsRoutes)
-app.route('/api/purchase-requisitions', purchaseRequisitionsRoutes)
+app.route('/api/requisitions', requisitionsRoutes)
 app.route('/api/rfqs', rfqsRoutes)
 app.route('/api/divisions', divisionsRoutes)
 app.route('/api/materials', materialsRoutes)
+app.route('/api/factories', factoriesRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {
