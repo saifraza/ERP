@@ -22,12 +22,11 @@ interface Vendor {
   state: string
   creditLimit: number
   creditDays: number
-  rating?: number
   isActive: boolean
   _count?: {
-    quotations?: number
     purchaseOrders?: number
     invoices?: number
+    payments?: number
   }
 }
 
@@ -160,16 +159,13 @@ export default function Vendors() {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Avg Rating</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {vendors.length > 0 
-                  ? (vendors.reduce((sum, v) => sum + (v.rating || 0), 0) / vendors.length).toFixed(1)
-                  : '0.0'
-                }
+                {vendors.reduce((sum, v) => sum + (v._count?.purchaseOrders || 0), 0)}
               </p>
             </div>
             <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-              <Star className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              <Package className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
             </div>
           </div>
         </div>
@@ -256,9 +252,6 @@ export default function Vendors() {
                     Credit
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Rating
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Business
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -320,34 +313,11 @@ export default function Vendors() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        {vendor.rating ? (
-                          <>
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < Math.floor(vendor.rating || 0)
-                                    ? 'text-yellow-500 fill-current'
-                                    : 'text-gray-300 dark:text-gray-600'
-                                }`}
-                              />
-                            ))}
-                            <span className="ml-1 text-sm text-gray-600 dark:text-gray-400">
-                              {vendor.rating.toFixed(1)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-sm text-gray-400">Not rated</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
                       <div className="flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1">
-                          <FileText className="h-4 w-4 text-gray-400" />
+                          <IndianRupee className="h-4 w-4 text-gray-400" />
                           <span className="text-gray-600 dark:text-gray-400">
-                            {vendor._count?.quotations || 0}
+                            {vendor._count?.payments || 0}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">

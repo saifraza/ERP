@@ -71,22 +71,6 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
   const [activeTab, setActiveTab] = useState<'basic' | 'contact' | 'financial'>('basic')
   const [generatingCode, setGeneratingCode] = useState(false)
 
-  if (!isOpen) return null
-
-  // Generate vendor code when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      // Reset form when modal opens
-      setFormData(initialFormData)
-      setErrors({})
-      setActiveTab('basic')
-      // Generate code after a small delay to ensure form is reset
-      setTimeout(() => {
-        generateVendorCode()
-      }, 100)
-    }
-  }, [isOpen])
-
   const generateVendorCode = async () => {
     setGeneratingCode(true)
     try {
@@ -133,6 +117,20 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
       setGeneratingCode(false)
     }
   }
+
+  // Generate vendor code when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form when modal opens
+      setFormData(initialFormData)
+      setErrors({})
+      setActiveTab('basic')
+      // Generate code after a small delay to ensure form is reset
+      setTimeout(() => {
+        generateVendorCode()
+      }, 100)
+    }
+  }, [isOpen])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -225,6 +223,8 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
       setLoading(false)
     }
   }
+
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">

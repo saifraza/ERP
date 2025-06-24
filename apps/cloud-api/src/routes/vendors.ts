@@ -77,20 +77,20 @@ app.get('/next-code', async (c) => {
 // Get all vendors for a company
 app.get('/', async (c) => {
   const user = c.get('user')
-  const { status, category, search } = c.req.query()
+  const { isActive, type, search } = c.req.query()
   
   try {
     const where: any = {
       companyId: user.companyId
     }
     
-    if (status) where.status = status
-    if (category) where.category = category
+    if (isActive !== undefined) where.isActive = isActive === 'true'
+    if (type) where.type = type
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { code: { contains: search } },
-        { email: { contains: search } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } }
       ]
     }
     
@@ -99,9 +99,9 @@ app.get('/', async (c) => {
       include: {
         _count: {
           select: {
-            quotations: true,
             purchaseOrders: true,
-            invoices: true
+            invoices: true,
+            payments: true
           }
         }
       },
@@ -127,21 +127,6 @@ app.get('/:id', async (c) => {
         companyId: user.companyId
       },
       include: {
-        evaluations: {
-          orderBy: { evaluationDate: 'desc' },
-          take: 5
-        },
-        quotations: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-          select: {
-            id: true,
-            quotationNumber: true,
-            quotationDate: true,
-            totalAmount: true,
-            status: true
-          }
-        },
         purchaseOrders: {
           orderBy: { createdAt: 'desc' },
           take: 10,
@@ -290,68 +275,6 @@ app.put('/:id', async (c) => {
   }
 })
 
-// Evaluate vendor
-app.post('/:id/evaluate', async (c) => {
-  const user = c.get('user')
-  const vendorId = c.req.param('id')
-  
-  try {
-    const body = await c.req.json()
-    const { 
-      qualityScore, 
-      deliveryScore, 
-      priceScore, 
-      serviceScore, 
-      comments,
-      recommendation 
-    } = body
-    
-    // Validate scores
-    const scores = [qualityScore, deliveryScore, priceScore, serviceScore]
-    if (scores.some(score => score < 1 || score > 5)) {
-      return c.json({ 
-        success: false, 
-        error: 'Scores must be between 1 and 5' 
-      }, 400)
-    }
-    
-    // Calculate overall score
-    const overallScore = scores.reduce((a, b) => a + b, 0) / scores.length
-    
-    const evaluation = await prisma.vendorEvaluation.create({
-      data: {
-        vendorId,
-        evaluationDate: new Date(),
-        qualityScore,
-        deliveryScore,
-        priceScore,
-        serviceScore,
-        overallScore,
-        evaluatedBy: user.name,
-        comments,
-        recommendation
-      }
-    })
-    
-    // Update vendor rating
-    const allEvaluations = await prisma.vendorEvaluation.findMany({
-      where: { vendorId },
-      select: { overallScore: true }
-    })
-    
-    const avgRating = allEvaluations.reduce((sum, e) => sum + e.overallScore, 0) / allEvaluations.length
-    
-    await prisma.vendor.update({
-      where: { id: vendorId },
-      data: { rating: avgRating }
-    })
-    
-    return c.json({ success: true, evaluation })
-  } catch (error: any) {
-    console.error('Error evaluating vendor:', error)
-    return c.json({ success: false, error: error.message }, 500)
-  }
-})
 
 // Import vendors from email/CSV
 app.post('/import', async (c) => {
