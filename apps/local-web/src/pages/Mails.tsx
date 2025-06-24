@@ -43,6 +43,8 @@ export default function Mails() {
   const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>('all')
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null)
+  const [emailContent, setEmailContent] = useState<string>('')
+  const [loadingEmail, setLoadingEmail] = useState(false)
   
   // AI Assistant state
   const [chatMessage, setChatMessage] = useState('')
@@ -57,6 +59,13 @@ export default function Mails() {
       loadEmailAccounts()
     }
   }, [currentCompany])
+
+  // Auto-load emails when email accounts are loaded
+  useEffect(() => {
+    if (emailAccounts.length > 0 && emails.length === 0) {
+      fetchEmails()
+    }
+  }, [emailAccounts])
 
   const loadEmailAccounts = async () => {
     if (!currentCompany) return
@@ -169,6 +178,14 @@ export default function Mails() {
       subject: 'Test from ERP System',
       body: '<h1>Test Email</h1><p>This is a test email sent from the ERP system using Gmail integration.</p>'
     })
+  }
+
+  const selectEmail = async (email: Email) => {
+    setSelectedEmail(email)
+    setEmailContent(email.snippet || '')
+    
+    // Optionally fetch full email content here
+    // For now, we'll just show the snippet
   }
 
   const sendChatMessage = async () => {
@@ -426,8 +443,10 @@ export default function Mails() {
                     {emails.map((email) => (
                       <div 
                         key={email.id} 
-                        onClick={() => setSelectedEmail(email)}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => selectEmail(email)}
+                        className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                          selectedEmail?.id === email.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''
+                        }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
@@ -464,31 +483,68 @@ export default function Mails() {
             </div>
 
             {/* Email Preview */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              {selectedEmail ? (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">{selectedEmail.subject}</h3>
-                  <p className="text-sm text-gray-600 mb-4">From: {selectedEmail.from}</p>
-                  <div className="prose prose-sm max-w-none">
-                    <p className="text-gray-700">{selectedEmail.snippet || 'Email content preview...'}</p>
+            <div className="bg-white rounded-lg shadow-sm">
+              <div className="border-b border-gray-200 px-6 py-3 bg-gray-50">
+                <h3 className="font-medium text-gray-900">Email Preview</h3>
+              </div>
+              <div className="p-6">
+                {selectedEmail ? (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-lg text-gray-900">{selectedEmail.subject || '(No Subject)'}</h3>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">From:</span> {selectedEmail.from}
+                        </p>
+                        {selectedEmail.to && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">To:</span> {selectedEmail.to}
+                          </p>
+                        )}
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Date:</span> {new Date(selectedEmail.date).toLocaleString()}
+                        </p>
+                        {selectedEmail.account && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Account:</span> {selectedEmail.account}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <div className="prose prose-sm max-w-none">
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <p className="text-gray-700 whitespace-pre-wrap">
+                            {emailContent || selectedEmail.snippet || 'Loading email content...'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 flex gap-2 pt-4 border-t">
+                      <button className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                        <Eye className="h-4 w-4" />
+                        View Full Email
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+                        <Download className="h-4 w-4" />
+                        Download
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+                        <MessageSquare className="h-4 w-4" />
+                        Reply
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-6 flex gap-2">
-                    <button className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-                      <Eye className="h-3 w-3" />
-                      View Full
-                    </button>
-                    <button className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-                      <Download className="h-3 w-3" />
-                      Download
-                    </button>
+                ) : (
+                  <div className="text-center py-12">
+                    <Eye className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-gray-500">Select an email to preview</p>
+                    <p className="text-sm text-gray-400 mt-1">Click on any email from the list to see its details</p>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500">
-                  <Eye className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>Select an email to preview</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
