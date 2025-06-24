@@ -34,7 +34,7 @@ interface VendorFormData {
 const initialFormData: VendorFormData = {
   code: '',
   name: '',
-  type: 'SUPPLIER',
+  type: 'MATERIAL',
   gstNumber: '',
   panNumber: '',
   addressLine1: '',
@@ -279,9 +279,11 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
                         onChange={handleChange}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
-                        <option value="SUPPLIER">Supplier</option>
+                        <option value="MATERIAL">Material Supplier</option>
+                        <option value="SERVICE">Service Provider</option>
+                        <option value="TRANSPORTER">Transporter</option>
                         <option value="CONTRACTOR">Contractor</option>
-                        <option value="SERVICE_PROVIDER">Service Provider</option>
+                        <option value="OTHER">Other</option>
                       </select>
                     </div>
 

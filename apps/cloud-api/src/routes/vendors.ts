@@ -12,7 +12,7 @@ app.use('*', authMiddleware)
 const vendorSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
-  type: z.enum(['SUPPLIER', 'CONTRACTOR', 'SERVICE_PROVIDER']),
+  type: z.enum(['MATERIAL', 'SERVICE', 'TRANSPORTER', 'CONTRACTOR', 'OTHER']),
   gstNumber: z.string().optional(),
   panNumber: z.string().optional(),
   addressLine1: z.string().min(1),

@@ -85,12 +85,16 @@ export default function Vendors() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'SUPPLIER':
+      case 'MATERIAL':
         return '📦'
+      case 'SERVICE':
+        return '🛠️'
+      case 'TRANSPORTER':
+        return '🚚'
       case 'CONTRACTOR':
         return '🔧'
-      case 'SERVICE_PROVIDER':
-        return '🛠️'
+      case 'OTHER':
+        return '📋'
       default:
         return '📋'
     }
