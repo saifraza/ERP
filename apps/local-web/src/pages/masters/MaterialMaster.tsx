@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { 
   Package, Plus, Search, Filter, Download, Upload, 
   Edit, Eye, MoreVertical, Tag, Box, AlertCircle,
-  CheckCircle, XCircle, Barcode
+  CheckCircle, XCircle, Barcode, Shield, Beaker
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
@@ -16,14 +16,24 @@ interface Material {
   description?: string
   category: string
   subCategory?: string
+  industryCategory?: string
   division: string
   unit: string
   hsnCode?: string
+  technicalGrade?: string
+  complianceStandard?: string
   specifications?: string
+  criticalItem: boolean
+  shelfLife?: number
+  storageConditions?: string
+  hazardCategory?: string
   reorderLevel?: number
   reorderQuantity?: number
   minOrderQuantity?: number
+  maxOrderQuantity?: number
   leadTimeDays: number
+  preferredVendors?: string
+  qualityParameters?: string
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -38,11 +48,12 @@ export default function MaterialMaster() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedDivision, setSelectedDivision] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [criticalOnly, setCriticalOnly] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
 
   useEffect(() => {
     fetchMaterials()
-  }, [currentCompany, selectedCategory, selectedDivision, selectedStatus])
+  }, [currentCompany, selectedCategory, selectedDivision, selectedStatus, criticalOnly])
 
   const fetchMaterials = async () => {
     try {
@@ -51,6 +62,7 @@ export default function MaterialMaster() {
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
       if (selectedDivision !== 'all') params.append('division', selectedDivision)
       if (selectedStatus !== 'all') params.append('isActive', selectedStatus === 'active' ? 'true' : 'false')
+      if (criticalOnly) params.append('criticalItem', 'true')
       if (searchQuery) params.append('search', searchQuery)
 
       const response = await fetch(
@@ -205,24 +217,24 @@ export default function MaterialMaster() {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Raw Materials</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Critical Items</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {materials.filter(m => m.category === 'raw_material').length}
+                {materials.filter(m => m.criticalItem).length}
               </p>
             </div>
-            <Box className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+            <Shield className="h-8 w-8 text-red-600 dark:text-red-400" />
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Spare Parts</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Chemicals</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {materials.filter(m => m.category === 'spare_part').length}
+                {materials.filter(m => m.category === 'chemical').length}
               </p>
             </div>
-            <Tag className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            <Beaker className="h-8 w-8 text-purple-600 dark:text-purple-400" />
           </div>
         </div>
       </div>
@@ -279,6 +291,16 @@ export default function MaterialMaster() {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
+
+          <label className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+            <input
+              type="checkbox"
+              checked={criticalOnly}
+              onChange={(e) => setCriticalOnly(e.target.checked)}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Critical Only</span>
+          </label>
         </div>
       </div>
 
@@ -323,7 +345,7 @@ export default function MaterialMaster() {
                     Unit
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    HSN Code
+                    Compliance
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Stock Info
@@ -366,8 +388,26 @@ export default function MaterialMaster() {
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {material.unit}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {material.hsnCode || '-'}
+                    <td className="px-6 py-4">
+                      <div className="space-y-1">
+                        {material.complianceStandard && (
+                          <div className="flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-blue-500" />
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{material.complianceStandard}</span>
+                          </div>
+                        )}
+                        {material.hazardCategory && material.hazardCategory !== 'Non-Hazardous' && (
+                          <div className="flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3 text-orange-500" />
+                            <span className="text-xs text-orange-600 dark:text-orange-400">{material.hazardCategory}</span>
+                          </div>
+                        )}
+                        {material.criticalItem && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                            Critical
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm">

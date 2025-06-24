@@ -408,14 +408,24 @@ model Material {
   description       String?  @db.Text
   category          String   // raw_material, consumable, spare_part, chemical, packing, other
   subCategory       String?
+  industryCategory  String?  // Industry-specific category (e.g., process_chemical, fermentation, boiler_consumable)
   division          String   // sugar, ethanol, power, feed, common
   unit              String   // KG, LTR, PCS, MTR, etc.
   hsnCode           String?
+  technicalGrade    String?  // For chemicals: AR, LR, Commercial, Food Grade, etc.
+  complianceStandard String? // IS, BIS, FSSAI, ISO, etc.
   specifications    String?  @db.Text
+  criticalItem      Boolean  @default(false) // For critical spares and materials
+  shelfLife         Int?     // In days, for chemicals and perishables
+  storageConditions String?  // Temperature, humidity requirements
+  hazardCategory    String?  // For hazardous materials classification
   reorderLevel      Float?
   reorderQuantity   Float?
   minOrderQuantity  Float?
+  maxOrderQuantity  Float?   // Maximum order quantity for hazardous materials
   leadTimeDays      Int      @default(0)
+  preferredVendors  String?  @db.Text // JSON array of vendor IDs
+  qualityParameters String?  @db.Text // JSON object of quality specs
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -426,6 +436,8 @@ model Material {
   @@unique([companyId, code])
   @@index([companyId, category])
   @@index([companyId, division])
+  @@index([companyId, industryCategory])
+  @@index([companyId, criticalItem])
   @@index([companyId, isActive])
 }
 
