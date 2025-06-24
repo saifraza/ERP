@@ -30,6 +30,50 @@ const vendorSchema = z.object({
   creditDays: z.number().default(30)
 })
 
+// Get next vendor code
+app.get('/next-code', async (c) => {
+  const user = c.get('user')
+  const { type } = c.req.query()
+  
+  try {
+    // Get the count of vendors with the same type
+    const vendorCount = await prisma.vendor.count({
+      where: {
+        companyId: user.companyId,
+        type: type as any || 'MATERIAL'
+      }
+    })
+    
+    // Also check for the highest number in existing codes
+    const vendors = await prisma.vendor.findMany({
+      where: {
+        companyId: user.companyId,
+        type: type as any || 'MATERIAL',
+        code: {
+          startsWith: type ? type.slice(0, 3) : 'MAT'
+        }
+      },
+      select: { code: true },
+      orderBy: { code: 'desc' },
+      take: 1
+    })
+    
+    let nextNumber = vendorCount + 1
+    
+    if (vendors.length > 0) {
+      // Extract number from the last code
+      const lastCode = vendors[0].code
+      const lastNumber = parseInt(lastCode.slice(-4)) || 0
+      nextNumber = Math.max(nextNumber, lastNumber + 1)
+    }
+    
+    return c.json({ success: true, nextNumber })
+  } catch (error: any) {
+    console.error('Error getting next vendor code:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 // Get all vendors for a company
 app.get('/', async (c) => {
   const user = c.get('user')
