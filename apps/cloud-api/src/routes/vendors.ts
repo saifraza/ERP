@@ -1,12 +1,14 @@
 import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
+import { companyAuthMiddleware } from '../middleware/company-auth.js'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
 
 const app = new Hono()
 
-// Apply auth middleware to all routes
+// Apply both auth middlewares to all routes
 app.use('*', authMiddleware)
+app.use('*', companyAuthMiddleware)
 
 // Vendor creation schema
 const vendorSchema = z.object({
