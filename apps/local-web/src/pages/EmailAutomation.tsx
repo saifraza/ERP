@@ -114,7 +114,13 @@ export default function EmailAutomation() {
       if (response.ok) {
         const data = await response.json()
         if (data.processed === 0) {
-          toast.info('No unread emails found to process')
+          toast('No unread emails found to process', {
+            icon: '📧',
+            style: {
+              background: '#3b82f6',
+              color: '#fff',
+            },
+          })
         } else {
           toast.success(`Processed ${data.processed} emails`)
         }
