@@ -4,6 +4,7 @@ import { useCompanyStore } from '../stores/companyStore'
 import { Mail, RefreshCw, Send, Search, Paperclip, Calendar, AlertCircle, User, Bot, Clock, Filter, Download, Eye, MessageSquare, Sparkles, LogOut, Settings } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import GeminiChat from '../components/GeminiChat'
 
 interface Email {
   id: string
@@ -39,7 +40,7 @@ export default function Mails() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'emails' | 'calendar' | 'assistant'>('emails')
+  const [activeTab, setActiveTab] = useState<'emails' | 'calendar' | 'assistant' | 'gemini'>('emails')
   const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>('all')
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null)
@@ -428,6 +429,18 @@ export default function Mails() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab('gemini')}
+              className={`flex-1 px-6 py-3 font-medium transition-colors flex items-center justify-center gap-2 relative ${
+                activeTab === 'gemini'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Sparkles className="h-4 w-4" />
+              Gemini AI
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full font-semibold">NEW</span>
+            </button>
           </div>
         </div>
 
@@ -740,6 +753,13 @@ export default function Mails() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Gemini AI Tab */}
+        {activeTab === 'gemini' && (
+          <div style={{ height: '600px' }}>
+            <GeminiChat companyId={currentCompany?.id} token={token || ''} />
           </div>
         )}
       </div>
