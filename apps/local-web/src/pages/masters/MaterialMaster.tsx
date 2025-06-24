@@ -117,24 +117,30 @@ export default function MaterialMaster() {
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      raw_material: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      consumable: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      spare_part: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-      chemical: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-      packing: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      other: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+      RAW_MATERIAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+      CONSUMABLE: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      SPARE_PART: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+      CHEMICAL: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+      PACKING_MATERIAL: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      FUEL: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+      FINISHED_GOODS: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+      SEMI_FINISHED: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
+      OTHER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
     }
-    return colors[category as keyof typeof colors] || colors.other
+    return colors[category as keyof typeof colors] || colors.OTHER
   }
 
   const getCategoryLabel = (category: string) => {
     const labels = {
-      raw_material: 'Raw Material',
-      consumable: 'Consumable',
-      spare_part: 'Spare Part',
-      chemical: 'Chemical',
-      packing: 'Packing',
-      other: 'Other'
+      RAW_MATERIAL: 'Raw Material',
+      CONSUMABLE: 'Consumable',
+      SPARE_PART: 'Spare Part',
+      CHEMICAL: 'Chemical',
+      PACKING_MATERIAL: 'Packing',
+      FUEL: 'Fuel',
+      FINISHED_GOODS: 'Finished Goods',
+      SEMI_FINISHED: 'Semi Finished',
+      OTHER: 'Other'
     }
     return labels[category as keyof typeof labels] || category
   }
@@ -231,7 +237,7 @@ export default function MaterialMaster() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Chemicals</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {materials.filter(m => m.category === 'chemical').length}
+                {materials.filter(m => m.category === 'CHEMICAL').length}
               </p>
             </div>
             <Beaker className="h-8 w-8 text-purple-600 dark:text-purple-400" />
@@ -261,12 +267,15 @@ export default function MaterialMaster() {
             className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">All Categories</option>
-            <option value="raw_material">Raw Material</option>
-            <option value="consumable">Consumable</option>
-            <option value="spare_part">Spare Part</option>
-            <option value="chemical">Chemical</option>
-            <option value="packing">Packing</option>
-            <option value="other">Other</option>
+            <option value="RAW_MATERIAL">Raw Material</option>
+            <option value="CONSUMABLE">Consumable</option>
+            <option value="SPARE_PART">Spare Part</option>
+            <option value="CHEMICAL">Chemical</option>
+            <option value="PACKING_MATERIAL">Packing Material</option>
+            <option value="FUEL">Fuel</option>
+            <option value="FINISHED_GOODS">Finished Goods</option>
+            <option value="SEMI_FINISHED">Semi Finished</option>
+            <option value="OTHER">Other</option>
           </select>
 
           <select

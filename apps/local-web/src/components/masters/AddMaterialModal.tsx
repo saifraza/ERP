@@ -37,7 +37,7 @@ interface MaterialFormData {
 const initialFormData: MaterialFormData = {
   name: '',
   description: '',
-  category: 'raw_material',
+  category: 'RAW_MATERIAL',
   subCategory: '',
   industryCategory: '',
   division: 'common',
@@ -357,12 +357,15 @@ export default function AddMaterialModal({ isOpen, onClose, onSuccess }: AddMate
                         onChange={handleChange}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
-                        <option value="raw_material">Raw Material</option>
-                        <option value="consumable">Consumable</option>
-                        <option value="spare_part">Spare Part</option>
-                        <option value="chemical">Chemical</option>
-                        <option value="packing">Packing Material</option>
-                        <option value="other">Other</option>
+                        <option value="RAW_MATERIAL">Raw Material</option>
+                        <option value="CONSUMABLE">Consumable</option>
+                        <option value="SPARE_PART">Spare Part</option>
+                        <option value="CHEMICAL">Chemical</option>
+                        <option value="PACKING_MATERIAL">Packing Material</option>
+                        <option value="FUEL">Fuel</option>
+                        <option value="FINISHED_GOODS">Finished Goods</option>
+                        <option value="SEMI_FINISHED">Semi Finished</option>
+                        <option value="OTHER">Other</option>
                       </select>
                     </div>
 
@@ -501,7 +504,7 @@ export default function AddMaterialModal({ isOpen, onClose, onSuccess }: AddMate
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Technical Grade */}
-                    {formData.category === 'chemical' && (
+                    {formData.category === 'CHEMICAL' && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Technical Grade

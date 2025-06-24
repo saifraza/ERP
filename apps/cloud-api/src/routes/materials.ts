@@ -12,7 +12,7 @@ app.use('*', authMiddleware)
 const materialSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  category: z.enum(['raw_material', 'consumable', 'spare_part', 'chemical', 'packing', 'other']),
+  category: z.enum(['RAW_MATERIAL', 'CONSUMABLE', 'SPARE_PART', 'PACKING_MATERIAL', 'CHEMICAL', 'FUEL', 'FINISHED_GOODS', 'SEMI_FINISHED', 'OTHER']),
   subCategory: z.string().optional(),
   industryCategory: z.string().optional(),
   division: z.enum(['sugar', 'ethanol', 'power', 'feed', 'common']),
@@ -47,12 +47,15 @@ async function generateMaterialCode(companyId: string, category: string, divisio
   
   // Category prefixes
   const categoryPrefix = {
-    'raw_material': 'RM',
-    'consumable': 'CON',
-    'spare_part': 'SP',
-    'chemical': 'CHM',
-    'packing': 'PKG',
-    'other': 'OTH'
+    'RAW_MATERIAL': 'RM',
+    'CONSUMABLE': 'CON',
+    'SPARE_PART': 'SP',
+    'CHEMICAL': 'CHM',
+    'PACKING_MATERIAL': 'PKG',
+    'FUEL': 'FUL',
+    'FINISHED_GOODS': 'FG',
+    'SEMI_FINISHED': 'SF',
+    'OTHER': 'OTH'
   }[category] || 'MAT'
   
   // Get count of materials in this category and division
@@ -107,10 +110,53 @@ app.get('/', async (c) => {
     
     const materials = await prisma.material.findMany({
       where,
+      include: {
+        uom: true
+      },
       orderBy: { name: 'asc' }
     })
     
-    return c.json({ success: true, materials })
+    // Parse specifications JSON and map to expected format
+    const formattedMaterials = materials.map(material => {
+      let specs = null
+      try {
+        specs = material.specifications ? JSON.parse(material.specifications) : {}
+      } catch (e) {
+        specs = {}
+      }
+      
+      return {
+        id: material.id,
+        code: material.code,
+        name: material.name,
+        description: material.description,
+        category: material.category,
+        subCategory: specs.subCategory || '',
+        industryCategory: specs.industryCategory || '',
+        division: specs.division || 'common',
+        unit: material.uom.code,
+        hsnCode: material.hsnCodeId,
+        technicalGrade: specs.technicalGrade || '',
+        complianceStandard: specs.complianceStandard || '',
+        specifications: material.specifications,
+        criticalItem: material.isCritical,
+        shelfLife: specs.shelfLife || 0,
+        storageConditions: specs.storageConditions || '',
+        hazardCategory: specs.hazardCategory || '',
+        reorderLevel: material.reorderLevel,
+        reorderQuantity: material.reorderQty,
+        minOrderQuantity: material.minStockLevel,
+        maxOrderQuantity: material.maxStockLevel,
+        leadTimeDays: material.leadTimeDays,
+        preferredVendors: specs.preferredVendors || [],
+        qualityParameters: specs.qualityParameters || {},
+        isActive: material.isActive,
+        createdAt: material.createdAt,
+        updatedAt: material.updatedAt
+      }
+    })
+    
+    return c.json({ success: true, materials: formattedMaterials })
   } catch (error: any) {
     console.error('Error fetching materials:', error)
     return c.json({ success: false, error: error.message }, 500)
@@ -216,23 +262,65 @@ app.post('/', async (c) => {
     // Generate material code
     const code = await generateMaterialCode(companyId, validated.category, validated.division)
     
-    // Process data for storage
-    const data: any = {
-      ...validated,
-      code,
-      companyId
+    // Find UOM
+    const uom = await prisma.uOM.findFirst({
+      where: { 
+        companyId: companyId,
+        code: validated.unit
+      }
+    })
+    
+    if (!uom) {
+      // Create UOM if it doesn't exist
+      const newUom = await prisma.uOM.create({
+        data: {
+          companyId: companyId,
+          code: validated.unit,
+          name: validated.unit,
+          isActive: true
+        }
+      })
+      
+      var uomId = newUom.id
+    } else {
+      var uomId = uom.id
     }
     
-    // Convert arrays to JSON strings for storage
-    if (validated.preferredVendors) {
-      data.preferredVendors = JSON.stringify(validated.preferredVendors)
-    }
-    if (validated.qualityParameters) {
-      data.qualityParameters = JSON.stringify(validated.qualityParameters)
+    // Process data for storage - mapping to cloud schema
+    const data: any = {
+      companyId,
+      code,
+      name: validated.name,
+      description: validated.description,
+      category: validated.category,
+      type: 'STOCK', // Default to STOCK type
+      uomId: uomId,
+      reorderLevel: validated.reorderLevel || 0,
+      reorderQty: validated.reorderQuantity || 0,
+      minStockLevel: validated.minOrderQuantity || 0,
+      maxStockLevel: validated.maxOrderQuantity,
+      leadTimeDays: validated.leadTimeDays || 0,
+      isActive: true,
+      isCritical: validated.criticalItem || false,
+      specifications: validated.specifications ? JSON.stringify({
+        technicalGrade: validated.technicalGrade,
+        complianceStandard: validated.complianceStandard,
+        storageConditions: validated.storageConditions,
+        hazardCategory: validated.hazardCategory,
+        shelfLife: validated.shelfLife,
+        subCategory: validated.subCategory,
+        industryCategory: validated.industryCategory,
+        division: validated.division,
+        preferredVendors: validated.preferredVendors,
+        qualityParameters: validated.qualityParameters
+      }) : null
     }
     
     const material = await prisma.material.create({
-      data
+      data,
+      include: {
+        uom: true
+      }
     })
     
     return c.json({ success: true, material })
