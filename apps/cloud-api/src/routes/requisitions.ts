@@ -94,6 +94,9 @@ app.get('/', async (c) => {
         factory: {
           select: { name: true, code: true }
         },
+        division: {
+          select: { name: true, code: true }
+        },
         items: {
           include: {
             material: {
@@ -135,6 +138,7 @@ app.get('/', async (c) => {
       approvedDate: req.approvedDate,
       remarks: req.remarks,
       factory: req.factory,
+      division: req.division,
       items: req.items.map(item => ({
         id: item.id,
         materialId: item.materialId,
@@ -189,6 +193,9 @@ app.get('/:id', async (c) => {
         factory: {
           select: { name: true, code: true }
         },
+        division: {
+          select: { name: true, code: true }
+        },
         items: {
           include: {
             material: {
@@ -238,6 +245,7 @@ app.get('/:id', async (c) => {
       approvedDate: requisition.approvedDate,
       remarks: requisition.remarks,
       factory: requisition.factory,
+      division: requisition.division,
       items: requisition.items.map(item => ({
         id: item.id,
         material: {
@@ -351,6 +359,9 @@ app.post('/', async (c) => {
         factory: {
           select: { name: true, code: true }
         },
+        division: {
+          select: { name: true, code: true }
+        },
         items: {
           include: {
             material: {
@@ -452,6 +463,9 @@ app.put('/:id', async (c) => {
           factory: {
             select: { name: true, code: true }
           },
+          division: {
+            select: { name: true, code: true }
+          },
           items: {
             include: {
               material: {
@@ -531,6 +545,9 @@ app.post('/:id/submit', async (c) => {
         factory: {
           select: { name: true, code: true }
         },
+        division: {
+          select: { name: true, code: true }
+        },
         items: {
           include: {
             material: {
@@ -604,6 +621,9 @@ app.post('/:id/approve', async (c) => {
       },
       include: {
         factory: {
+          select: { name: true, code: true }
+        },
+        division: {
           select: { name: true, code: true }
         },
         items: {
@@ -683,6 +703,9 @@ app.post('/:id/reject', async (c) => {
       },
       include: {
         factory: {
+          select: { name: true, code: true }
+        },
+        division: {
           select: { name: true, code: true }
         },
         items: {
