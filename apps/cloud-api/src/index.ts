@@ -21,6 +21,7 @@ import vendorsRoutes from './routes/vendors.js'
 import purchaseRequisitionsRoutes from './routes/purchase-requisitions.js'
 import rfqsRoutes from './routes/rfqs.js'
 import divisionsRoutes from './routes/divisions.js'
+import materialsRoutes from './routes/materials.js'
 
 const app = new Hono()
 
@@ -89,6 +90,7 @@ app.route('/api/vendors', vendorsRoutes)
 app.route('/api/purchase-requisitions', purchaseRequisitionsRoutes)
 app.route('/api/rfqs', rfqsRoutes)
 app.route('/api/divisions', divisionsRoutes)
+app.route('/api/materials', materialsRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2, Package, Building, Calendar, AlertCircle } from 'lucide-react'
+import { X, Plus, Trash2, Package, Building, Calendar, AlertCircle, Search } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'react-hot-toast'
 
@@ -26,11 +26,29 @@ interface Division {
   code: string
 }
 
+interface Material {
+  id: string
+  code: string
+  name: string
+  description?: string
+  unit: string
+  specifications?: string
+}
+
+interface Vendor {
+  id: string
+  code: string
+  name: string
+}
+
 export default function AddPRModal({ isOpen, onClose, onSuccess }: AddPRModalProps) {
   const { token } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [divisions, setDivisions] = useState<Division[]>([])
   const [loadingDivisions, setLoadingDivisions] = useState(false)
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [materialSearches, setMaterialSearches] = useState<{ [key: number]: Material[] }>({})
+  const [searchingMaterial, setSearchingMaterial] = useState<{ [key: number]: boolean }>({})
   
   const [formData, setFormData] = useState({
     divisionId: '',
@@ -54,10 +72,11 @@ export default function AddPRModal({ isOpen, onClose, onSuccess }: AddPRModalPro
   const [errors, setErrors] = useState<any>({})
   const [itemErrors, setItemErrors] = useState<any[]>([{}])
 
-  // Fetch divisions when modal opens
+  // Fetch divisions and vendors when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchDivisions()
+      fetchVendors()
       resetForm()
     }
   }, [isOpen])
@@ -83,6 +102,48 @@ export default function AddPRModal({ isOpen, onClose, onSuccess }: AddPRModalPro
     }
   }
 
+  const fetchVendors = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/vendors?isActive=true`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setVendors(data.vendors || [])
+      }
+    } catch (error) {
+      console.error('Error fetching vendors:', error)
+    }
+  }
+
+  const searchMaterials = async (index: number, query: string) => {
+    if (!query || query.length < 2) {
+      setMaterialSearches(prev => ({ ...prev, [index]: [] }))
+      return
+    }
+
+    setSearchingMaterial(prev => ({ ...prev, [index]: true }))
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/materials/search/autocomplete?q=${encodeURIComponent(query)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setMaterialSearches(prev => ({ ...prev, [index]: data.materials || [] }))
+      }
+    } catch (error) {
+      console.error('Error searching materials:', error)
+    } finally {
+      setSearchingMaterial(prev => ({ ...prev, [index]: false }))
+    }
+  }
+
   const resetForm = () => {
     setFormData({
       divisionId: '',
@@ -103,6 +164,8 @@ export default function AddPRModal({ isOpen, onClose, onSuccess }: AddPRModalPro
     }])
     setErrors({})
     setItemErrors([{}])
+    setMaterialSearches({})
+    setSearchingMaterial({})
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -131,6 +194,24 @@ export default function AddPRModal({ isOpen, onClose, onSuccess }: AddPRModalPro
       newItemErrors[index] = { ...newItemErrors[index], [field]: undefined }
       setItemErrors(newItemErrors)
     }
+
+    // Trigger material search for item code
+    if (field === 'itemCode' && value) {
+      searchMaterials(index, value)
+    }
+  }
+
+  const selectMaterial = (index: number, material: Material) => {
+    const newItems = [...items]
+    newItems[index] = {
+      ...newItems[index],
+      itemCode: material.code,
+      itemDescription: material.name,
+      unit: material.unit,
+      specifications: material.specifications || ''
+    }
+    setItems(newItems)
+    setMaterialSearches(prev => ({ ...prev, [index]: [] }))
   }
 
   const addItem = () => {
@@ -408,23 +489,53 @@ export default function AddPRModal({ isOpen, onClose, onSuccess }: AddPRModalPro
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                        <div className="relative">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Item Code *
                           </label>
-                          <input
-                            type="text"
-                            value={item.itemCode}
-                            onChange={(e) => handleItemChange(index, 'itemCode', e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                              itemErrors[index]?.itemCode 
-                                ? 'border-red-500' 
-                                : 'border-gray-300 dark:border-gray-600'
-                            } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                            placeholder="e.g., MAT001"
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={item.itemCode}
+                              onChange={(e) => handleItemChange(index, 'itemCode', e.target.value)}
+                              className={`w-full px-3 py-2 pr-8 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                itemErrors[index]?.itemCode 
+                                  ? 'border-red-500' 
+                                  : 'border-gray-300 dark:border-gray-600'
+                              } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                              placeholder="Search material..."
+                            />
+                            {searchingMaterial[index] && (
+                              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                              </div>
+                            )}
+                          </div>
                           {itemErrors[index]?.itemCode && (
                             <p className="mt-1 text-xs text-red-600 dark:text-red-400">{itemErrors[index].itemCode}</p>
+                          )}
+                          
+                          {/* Material search results */}
+                          {materialSearches[index] && materialSearches[index].length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {materialSearches[index].map((material) => (
+                                <button
+                                  key={material.id}
+                                  type="button"
+                                  onClick={() => selectMaterial(index, material)}
+                                  className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start gap-2"
+                                >
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-900 dark:text-white">{material.code}</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">{material.name}</div>
+                                    {material.specifications && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">{material.specifications}</div>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">{material.unit}</div>
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </div>
 
@@ -507,13 +618,18 @@ export default function AddPRModal({ isOpen, onClose, onSuccess }: AddPRModalPro
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Preferred Vendor
                           </label>
-                          <input
-                            type="text"
+                          <select
                             value={item.preferredVendor}
                             onChange={(e) => handleItemChange(index, 'preferredVendor', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="Vendor name (optional)"
-                          />
+                          >
+                            <option value="">Select vendor (optional)</option>
+                            {vendors.map(vendor => (
+                              <option key={vendor.id} value={vendor.name}>
+                                {vendor.name} ({vendor.code})
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         <div className="md:col-span-2">

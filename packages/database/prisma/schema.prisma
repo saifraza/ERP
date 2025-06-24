@@ -39,6 +39,7 @@ model Company {
   farmers           Farmer[]
   vendors           Vendor[]
   divisions         Division[]
+  materials         Material[]
   purchaseRequisitions PurchaseRequisition[]
   rfqs              RFQ[]
   quotations        Quotation[]
@@ -396,6 +397,34 @@ model VendorEvaluation {
 
   // Relations
   vendor            Vendor   @relation(fields: [vendorId], references: [id])
+}
+
+// Material Master
+model Material {
+  id                String   @id @default(uuid())
+  companyId         String
+  code              String
+  name              String
+  description       String?  @db.Text
+  category          String   // raw_material, consumable, spare_part, chemical, packing, other
+  subCategory       String?
+  unit              String   // KG, LTR, PCS, MTR, etc.
+  hsnCode           String?
+  specifications    String?  @db.Text
+  reorderLevel      Float?
+  reorderQuantity   Float?
+  minOrderQuantity  Float?
+  leadTimeDays      Int      @default(0)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
+  
+  @@unique([companyId, code])
+  @@index([companyId, category])
+  @@index([companyId, isActive])
 }
 
 // Purchase Requisition (PR)

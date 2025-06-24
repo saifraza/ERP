@@ -18,6 +18,7 @@ import CompanySetup from './pages/setup/CompanySetup'
 import Companies from './pages/masters/Companies'
 import CompanyEdit from './pages/masters/CompanyEdit'
 import VendorMaster from './pages/masters/VendorMaster'
+import MaterialMaster from './pages/masters/MaterialMaster'
 import Mails from './pages/Mails'
 import EmailSettings from './pages/settings/EmailSettings'
 import GmailTest from './pages/GmailTest'
@@ -122,7 +123,7 @@ function App() {
                     {/* Masters Module Routes */}
                     <Route path="/masters/companies" element={<Companies />} />
                     <Route path="/masters/companies/edit" element={<CompanyEdit />} />
-                    <Route path="/masters/materials" element={<div>Materials</div>} />
+                    <Route path="/masters/materials" element={<MaterialMaster />} />
                     <Route path="/masters/vendors" element={<VendorMaster />} />
                     <Route path="/masters/customers" element={<div>Customers</div>} />
                     <Route path="/masters/accounts" element={<div>Chart of Accounts</div>} />
