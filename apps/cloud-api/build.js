@@ -5,10 +5,7 @@ import fs from 'fs'
 console.log('Building cloud-api for production...')
 
 try {
-  // Install dependencies
-  console.log('Installing dependencies...')
-  execSync('npm install', { stdio: 'inherit' })
-  
+  // Skip install in CI/build environments - dependencies should already be installed
   // Generate Prisma client
   console.log('Generating Prisma client...')
   execSync('npx prisma generate', { stdio: 'inherit' })

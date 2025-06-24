@@ -43,7 +43,7 @@ export default function AddMaterialModal({ isOpen, onClose, onSuccess }: AddMate
   const { token } = useAuthStore()
   const [formData, setFormData] = useState<MaterialFormData>(initialFormData)
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<Partial<MaterialFormData>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof MaterialFormData, string>>>({})
 
   // Reset form when modal opens
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function AddMaterialModal({ isOpen, onClose, onSuccess }: AddMate
   }
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<MaterialFormData> = {}
+    const newErrors: Partial<Record<keyof MaterialFormData, string>> = {}
 
     if (!formData.name.trim()) newErrors.name = 'Material name is required'
     if (!formData.unit.trim()) newErrors.unit = 'Unit is required'
