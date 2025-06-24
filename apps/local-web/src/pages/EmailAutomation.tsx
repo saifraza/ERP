@@ -106,20 +106,26 @@ export default function EmailAutomation() {
           body: JSON.stringify({
             companyId: currentCompany?.id,
             maxResults: 10,
-            query: 'is:unread from:vendor'
+            query: 'is:unread' // Remove vendor filter to process all unread emails
           })
         }
       )
       
       if (response.ok) {
         const data = await response.json()
-        toast.success(`Processed ${data.processed} emails`)
+        if (data.processed === 0) {
+          toast.info('No unread emails found to process')
+        } else {
+          toast.success(`Processed ${data.processed} emails`)
+        }
         loadHistory()
       } else {
-        throw new Error('Failed to process emails')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || errorData.details || 'Failed to process emails')
       }
-    } catch (error) {
-      toast.error('Failed to process emails')
+    } catch (error: any) {
+      console.error('Process batch error:', error)
+      toast.error(error.message || 'Failed to process emails')
     } finally {
       setProcessing(false)
     }

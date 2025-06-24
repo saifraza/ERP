@@ -8,6 +8,38 @@ const app = new Hono()
 // Protect all routes
 app.use('*', authMiddleware)
 
+// Health check for email automation
+app.get('/health', async (c) => {
+  try {
+    // Check if we can access Gmail
+    const emails = await multiTenantGmail.listEmails(undefined, 1)
+    
+    // Check if Gemini is available
+    let geminiStatus = 'not configured'
+    try {
+      const gemini = emailAutomation['getGemini']()
+      if (gemini) geminiStatus = 'available'
+    } catch (e) {
+      geminiStatus = 'error: ' + e.message
+    }
+    
+    return c.json({
+      success: true,
+      status: 'healthy',
+      gmail: emails.length >= 0 ? 'connected' : 'error',
+      gemini: geminiStatus,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error: any) {
+    return c.json({
+      success: false,
+      status: 'unhealthy',
+      error: error?.message,
+      timestamp: new Date().toISOString()
+    })
+  }
+})
+
 // Process a specific email
 app.post('/process', async (c) => {
   try {
@@ -42,13 +74,18 @@ app.post('/process-batch', async (c) => {
   try {
     const { companyId, maxResults = 10, query = 'is:unread' } = await c.req.json()
     
+    console.log(`Processing batch emails - Company: ${companyId}, Query: ${query}`)
+    
     // Get unprocessed emails
     const emails = await multiTenantGmail.listEmails(companyId, maxResults, query)
+    
+    console.log(`Found ${emails.length} emails to process`)
     
     const results = []
     
     for (const email of emails) {
       try {
+        console.log(`Processing email: ${email.subject} (${email.id})`)
         const result = await emailAutomation.processVendorEmail(email.id, companyId)
         results.push({
           emailId: email.id,
@@ -56,6 +93,7 @@ app.post('/process-batch', async (c) => {
           ...result
         })
       } catch (error: any) {
+        console.error(`Failed to process email ${email.id}:`, error)
         results.push({
           emailId: email.id,
           subject: email.subject,
