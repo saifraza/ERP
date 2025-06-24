@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { 
   Package, Plus, Search, Filter, Download, Upload, 
   Edit, Eye, MoreVertical, Tag, Box, AlertCircle,
-  CheckCircle, XCircle, Barcode, Shield, Beaker, Trash2, X
+  CheckCircle, XCircle, Barcode, Shield, Beaker, Trash2, X, Settings
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
@@ -55,10 +55,101 @@ export default function MaterialMaster() {
   const [showViewModal, setShowViewModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [setupLoading, setSetupLoading] = useState(false)
+  const [setupStatus, setSetupStatus] = useState<{
+    divisions: boolean
+    factories: boolean
+  }>({ divisions: false, factories: false })
 
   useEffect(() => {
     fetchMaterials()
+    checkSetupStatus()
   }, [currentCompany, selectedCategory, selectedDivision, selectedStatus, criticalOnly])
+
+  const checkSetupStatus = async () => {
+    try {
+      // Check if divisions exist
+      const divisionsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/divisions`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      
+      if (divisionsResponse.ok) {
+        const divisionsData = await divisionsResponse.json()
+        if (divisionsData.divisions && divisionsData.divisions.length > 0) {
+          setSetupStatus(prev => ({ ...prev, divisions: true }))
+        }
+      }
+
+      // Check if factories exist
+      const factoriesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/companies/my/factories`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      
+      if (factoriesResponse.ok) {
+        const factoriesData = await factoriesResponse.json()
+        if (factoriesData.factories && factoriesData.factories.length > 0) {
+          setSetupStatus(prev => ({ ...prev, factories: true }))
+        }
+      }
+    } catch (error) {
+      console.error('Error checking setup status:', error)
+    }
+  }
+
+  const handleSetupDivisions = async () => {
+    setSetupLoading(true)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/setup-divisions/create-defaults`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        toast.success(data.message || 'Default divisions created successfully!')
+        setSetupStatus(prev => ({ ...prev, divisions: true }))
+        fetchMaterials() // Refresh materials after creating divisions
+      } else {
+        toast.error(data.error || 'Failed to create divisions')
+      }
+    } catch (error) {
+      toast.error('Failed to create divisions')
+    } finally {
+      setSetupLoading(false)
+    }
+  }
+
+  const handleSetupFactories = async () => {
+    setSetupLoading(true)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/setup-divisions/create-default-factories`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        toast.success(data.message || 'Default factory created successfully!')
+        setSetupStatus(prev => ({ ...prev, factories: true }))
+      } else {
+        toast.error(data.error || 'Failed to create factory')
+      }
+    } catch (error) {
+      toast.error('Failed to create factory')
+    } finally {
+      setSetupLoading(false)
+    }
+  }
 
   const fetchMaterials = async () => {
     try {
@@ -265,6 +356,68 @@ export default function MaterialMaster() {
             <Plus className="h-4 w-4" />
             New Material
           </button>
+        </div>
+      </div>
+
+      {/* Quick Setup Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+            <Settings className="h-5 w-5 mr-2" />
+            Quick Setup
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              {setupStatus.divisions ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+              )}
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Business Divisions</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Sugar, Ethanol, Power, Feed, Common</p>
+              </div>
+            </div>
+            <button
+              onClick={handleSetupDivisions}
+              disabled={setupLoading || setupStatus.divisions}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                setupStatus.divisions
+                  ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  : 'bg-primary-600 text-white hover:bg-primary-700'
+              }`}
+            >
+              {setupStatus.divisions ? 'Created' : 'Create Divisions'}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              {setupStatus.factories ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+              )}
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Main Factory</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Integrated factory with all divisions</p>
+              </div>
+            </div>
+            <button
+              onClick={handleSetupFactories}
+              disabled={setupLoading || setupStatus.factories}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                setupStatus.factories
+                  ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  : 'bg-primary-600 text-white hover:bg-primary-700'
+              }`}
+            >
+              {setupStatus.factories ? 'Created' : 'Create Factory'}
+            </button>
+          </div>
         </div>
       </div>
 
