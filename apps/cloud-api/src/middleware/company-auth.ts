@@ -17,10 +17,9 @@ export const companyAuthMiddleware = async (c: Context, next: Next) => {
         email: true,
         name: true,
         role: true,
-        companyUsers: {
+        companyAccess: {
           select: {
-            companyId: true,
-            role: true
+            companyId: true
           }
         }
       }
@@ -31,7 +30,7 @@ export const companyAuthMiddleware = async (c: Context, next: Next) => {
     }
     
     // Get the first company (assuming user belongs to one company)
-    const companyUser = user.companyUsers[0]
+    const companyUser = user.companyAccess[0]
     
     if (!companyUser) {
       return c.json({ error: 'User is not associated with any company' }, 403)
