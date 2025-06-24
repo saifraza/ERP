@@ -26,6 +26,7 @@ import EmailAutomation from './pages/EmailAutomation'
 import VendorsProcurement from './pages/procurement/Vendors'
 import VendorDetail from './pages/procurement/VendorDetail'
 import PurchaseRequisitions from './pages/procurement/PurchaseRequisitions'
+import PurchaseRequisitionDetail from './pages/procurement/PurchaseRequisitionDetail'
 import RFQManagement from './pages/procurement/RFQManagement'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
@@ -112,7 +113,7 @@ function App() {
                     <Route path="/procurement/vendors" element={<VendorsProcurement />} />
                     <Route path="/procurement/vendors/:id" element={<VendorDetail />} />
                     <Route path="/procurement/requisitions" element={<PurchaseRequisitions />} />
-                    <Route path="/procurement/requisitions/:id" element={<div>PR Details</div>} />
+                    <Route path="/procurement/requisitions/:id" element={<PurchaseRequisitionDetail />} />
                     <Route path="/procurement/rfqs" element={<RFQManagement />} />
                     <Route path="/procurement/purchase-orders" element={<div>Purchase Orders</div>} />
                     <Route path="/procurement/quotations" element={<div>Quotation Comparison</div>} />

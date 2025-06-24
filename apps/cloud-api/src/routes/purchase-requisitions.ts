@@ -114,13 +114,19 @@ app.get('/:id', async (c) => {
   const prId = c.req.param('id')
   
   try {
-    // Get user's company
-    const companyUser = await prisma.companyUser.findFirst({
-      where: { userId: userId },
-      select: { companyId: true }
+    // Get user's company and user details
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        email: true,
+        companyAccess: {
+          select: { companyId: true }
+        }
+      }
     })
     
-    const companyId = companyUser?.companyId
+    const companyId = user?.companyAccess[0]?.companyId
     
     if (!companyId) {
       return c.json({ success: false, error: 'Company not found' }, 404)
@@ -132,7 +138,12 @@ app.get('/:id', async (c) => {
         companyId: companyId
       },
       include: {
-        division: true,
+        company: {
+          select: { name: true }
+        },
+        division: {
+          select: { name: true }
+        },
         items: true,
         rfqs: {
           include: {
@@ -148,7 +159,54 @@ app.get('/:id', async (c) => {
       return c.json({ success: false, error: 'PR not found' }, 404)
     }
     
-    return c.json({ success: true, pr })
+    // Format response with proper structure
+    const formattedPR = {
+      id: pr.id,
+      prNumber: pr.prNumber,
+      title: `Purchase Requisition - ${pr.division.name}`,
+      description: pr.notes,
+      division: pr.divisionId,
+      status: pr.status,
+      priority: pr.priority,
+      createdAt: pr.createdAt,
+      requiredBy: pr.requiredBy,
+      items: pr.items.map(item => ({
+        id: item.id,
+        materialId: item.itemCode,
+        material: {
+          code: item.itemCode,
+          name: item.itemDescription,
+          description: item.specifications,
+          unit: item.unit,
+          specifications: item.specifications
+        },
+        quantity: item.quantity,
+        requiredBy: pr.requiredBy,
+        preferredVendorId: item.preferredVendor,
+        purpose: item.justification || 'General requirement',
+        estimatedCost: item.estimatedPrice
+      })),
+      requestor: {
+        name: pr.requestedBy,
+        email: user?.email || ''
+      },
+      approvals: [
+        {
+          id: '1',
+          level: 'Department Head',
+          approverName: pr.approvedBy || 'Pending',
+          status: pr.status === 'approved' ? 'approved' : pr.status === 'rejected' ? 'rejected' : 'pending',
+          approvedAt: pr.approvalDate,
+          comments: pr.rejectionReason
+        }
+      ],
+      totalAmount: pr.items.reduce((sum, item) => sum + (item.estimatedPrice || 0) * item.quantity, 0),
+      company: {
+        name: pr.company.name
+      }
+    }
+    
+    return c.json({ success: true, pr: formattedPR })
   } catch (error: any) {
     console.error('Error fetching PR:', error)
     return c.json({ success: false, error: error.message }, 500)
@@ -310,10 +368,25 @@ app.post('/:id/submit', async (c) => {
   const prId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ 
+        success: false, 
+        error: 'User is not associated with a company' 
+      }, 400)
+    }
+    
     const pr = await prisma.purchaseRequisition.findFirst({
       where: {
         id: prId,
-        companyId: user.companyId,
+        companyId: companyId,
         status: 'draft'
       },
       include: {
@@ -356,25 +429,38 @@ app.post('/:id/submit', async (c) => {
   }
 })
 
-// Approve/Reject PR
-app.post('/:id/approval', async (c) => {
+// Approve PR
+app.post('/:id/approve', async (c) => {
   const userId = c.get('userId')
   const prId = c.req.param('id')
   
   try {
-    const { action, reason } = await c.req.json()
+    const { comments } = await c.req.json()
     
-    if (!['approve', 'reject'].includes(action)) {
+    // Get user's company and name
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        companyAccess: {
+          select: { companyId: true }
+        }
+      }
+    })
+    
+    const companyId = user?.companyAccess[0]?.companyId
+    
+    if (!companyId) {
       return c.json({ 
         success: false, 
-        error: 'Invalid action' 
+        error: 'User is not associated with a company' 
       }, 400)
     }
     
     const pr = await prisma.purchaseRequisition.findFirst({
       where: {
         id: prId,
-        companyId: user.companyId,
+        companyId: companyId,
         status: 'submitted'
       }
     })
@@ -391,10 +477,9 @@ app.post('/:id/approval', async (c) => {
     const updated = await prisma.purchaseRequisition.update({
       where: { id: prId },
       data: {
-        status: action === 'approve' ? 'approved' : 'rejected',
-        approvedBy: action === 'approve' ? user.name : null,
-        approvalDate: action === 'approve' ? new Date() : null,
-        rejectionReason: action === 'reject' ? reason : null,
+        status: 'approved',
+        approvedBy: user?.name || 'Unknown',
+        approvalDate: new Date(),
         updatedAt: new Date()
       }
     })
@@ -402,10 +487,77 @@ app.post('/:id/approval', async (c) => {
     return c.json({ 
       success: true, 
       pr: updated,
-      message: `PR ${action}ed successfully`
+      message: 'PR approved successfully'
     })
   } catch (error: any) {
-    console.error('Error processing PR approval:', error)
+    console.error('Error approving PR:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Reject PR
+app.post('/:id/reject', async (c) => {
+  const userId = c.get('userId')
+  const prId = c.req.param('id')
+  
+  try {
+    const { comments } = await c.req.json()
+    
+    if (!comments || comments.trim() === '') {
+      return c.json({ 
+        success: false, 
+        error: 'Rejection reason is required' 
+      }, 400)
+    }
+    
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ 
+        success: false, 
+        error: 'User is not associated with a company' 
+      }, 400)
+    }
+    
+    const pr = await prisma.purchaseRequisition.findFirst({
+      where: {
+        id: prId,
+        companyId: companyId,
+        status: 'submitted'
+      }
+    })
+    
+    if (!pr) {
+      return c.json({ 
+        success: false, 
+        error: 'PR not found or not in submitted status' 
+      }, 404)
+    }
+    
+    // TODO: Check if user has approval rights
+    
+    const updated = await prisma.purchaseRequisition.update({
+      where: { id: prId },
+      data: {
+        status: 'rejected',
+        rejectionReason: comments,
+        updatedAt: new Date()
+      }
+    })
+    
+    return c.json({ 
+      success: true, 
+      pr: updated,
+      message: 'PR rejected successfully'
+    })
+  } catch (error: any) {
+    console.error('Error rejecting PR:', error)
     return c.json({ success: false, error: error.message }, 500)
   }
 })
