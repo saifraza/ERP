@@ -14,6 +14,7 @@ interface MaterialFormData {
   description: string
   category: string
   subCategory: string
+  division: string
   unit: string
   hsnCode: string
   specifications: string
@@ -28,6 +29,7 @@ const initialFormData: MaterialFormData = {
   description: '',
   category: 'raw_material',
   subCategory: '',
+  division: 'common',
   unit: '',
   hsnCode: '',
   specifications: '',
@@ -72,6 +74,7 @@ export default function AddMaterialModal({ isOpen, onClose, onSuccess }: AddMate
 
     if (!formData.name.trim()) newErrors.name = 'Material name is required'
     if (!formData.unit.trim()) newErrors.unit = 'Unit is required'
+    if (!formData.division) newErrors.division = 'Division is required'
     
     // Validate quantities
     if (formData.reorderLevel < 0) newErrors.reorderLevel = 'Reorder level cannot be negative'
@@ -214,6 +217,32 @@ export default function AddMaterialModal({ isOpen, onClose, onSuccess }: AddMate
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="e.g., Piping, Electrical, etc."
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Division *
+                    </label>
+                    <select
+                      name="division"
+                      value={formData.division}
+                      onChange={handleChange}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        errors.division 
+                          ? 'border-red-500' 
+                          : 'border-gray-300 dark:border-gray-600'
+                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    >
+                      <option value="">Select Division</option>
+                      <option value="sugar">Sugar</option>
+                      <option value="ethanol">Ethanol</option>
+                      <option value="power">Power</option>
+                      <option value="feed">Animal Feed</option>
+                      <option value="common">Common (Shared)</option>
+                    </select>
+                    {errors.division && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.division}</p>
+                    )}
                   </div>
 
                   <div>

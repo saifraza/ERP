@@ -14,6 +14,7 @@ const materialSchema = z.object({
   description: z.string().optional(),
   category: z.enum(['raw_material', 'consumable', 'spare_part', 'chemical', 'packing', 'other']),
   subCategory: z.string().optional(),
+  division: z.enum(['sugar', 'ethanol', 'power', 'feed', 'common']),
   unit: z.string().min(1),
   hsnCode: z.string().optional(),
   specifications: z.string().optional(),
@@ -51,7 +52,7 @@ async function generateMaterialCode(companyId: string, category: string): Promis
 // Get all materials
 app.get('/', async (c) => {
   const userId = c.get('userId')
-  const { category, isActive, search } = c.req.query()
+  const { category, division, isActive, search } = c.req.query()
   
   try {
     // Get user's company
@@ -71,6 +72,7 @@ app.get('/', async (c) => {
     }
     
     if (category) where.category = category
+    if (division) where.division = division
     if (isActive !== undefined) where.isActive = isActive === 'true'
     if (search) {
       where.OR = [

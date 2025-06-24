@@ -16,6 +16,7 @@ interface Material {
   description?: string
   category: string
   subCategory?: string
+  division: string
   unit: string
   hsnCode?: string
   specifications?: string
@@ -35,18 +36,20 @@ export default function MaterialMaster() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedDivision, setSelectedDivision] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
 
   useEffect(() => {
     fetchMaterials()
-  }, [currentCompany, selectedCategory, selectedStatus])
+  }, [currentCompany, selectedCategory, selectedDivision, selectedStatus])
 
   const fetchMaterials = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
+      if (selectedDivision !== 'all') params.append('division', selectedDivision)
       if (selectedStatus !== 'all') params.append('isActive', selectedStatus === 'active' ? 'true' : 'false')
       if (searchQuery) params.append('search', searchQuery)
 
@@ -122,6 +125,28 @@ export default function MaterialMaster() {
       other: 'Other'
     }
     return labels[category as keyof typeof labels] || category
+  }
+
+  const getDivisionColor = (division: string) => {
+    const colors = {
+      sugar: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      ethanol: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+      power: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      feed: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+      common: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+    }
+    return colors[division as keyof typeof colors] || colors.common
+  }
+
+  const getDivisionLabel = (division: string) => {
+    const labels = {
+      sugar: 'Sugar',
+      ethanol: 'Ethanol',
+      power: 'Power',
+      feed: 'Feed',
+      common: 'Common'
+    }
+    return labels[division as keyof typeof labels] || division
   }
 
   return (
@@ -233,6 +258,19 @@ export default function MaterialMaster() {
           </select>
 
           <select
+            value={selectedDivision}
+            onChange={(e) => setSelectedDivision(e.target.value)}
+            className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="all">All Divisions</option>
+            <option value="sugar">Sugar</option>
+            <option value="ethanol">Ethanol</option>
+            <option value="power">Power</option>
+            <option value="feed">Animal Feed</option>
+            <option value="common">Common</option>
+          </select>
+
+          <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -279,6 +317,9 @@ export default function MaterialMaster() {
                     Category
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Division
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Unit
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -315,6 +356,11 @@ export default function MaterialMaster() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(material.category)}`}>
                         {getCategoryLabel(material.category)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDivisionColor(material.division)}`}>
+                        {getDivisionLabel(material.division)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">

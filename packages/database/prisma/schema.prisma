@@ -408,6 +408,7 @@ model Material {
   description       String?  @db.Text
   category          String   // raw_material, consumable, spare_part, chemical, packing, other
   subCategory       String?
+  division          String   // sugar, ethanol, power, feed, common
   unit              String   // KG, LTR, PCS, MTR, etc.
   hsnCode           String?
   specifications    String?  @db.Text
@@ -424,6 +425,7 @@ model Material {
   
   @@unique([companyId, code])
   @@index([companyId, category])
+  @@index([companyId, division])
   @@index([companyId, isActive])
 }
 
@@ -447,8 +449,8 @@ model PurchaseRequisition {
   updatedAt         DateTime @updatedAt
 
   // Relations
-  company           Company  @relation(fields: [companyId], references: [id])
-  division          Division @relation(fields: [divisionId], references: [id])
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  division          Division @relation(fields: [divisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   items             PRItem[]
   rfqs              RFQ[]
   
