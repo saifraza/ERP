@@ -21,7 +21,17 @@ app.post('/chat', async (c) => {
     }
 
     // Get Gemini service
-    const gemini = getGeminiService()
+    let gemini
+    try {
+      gemini = getGeminiService()
+    } catch (error: any) {
+      return c.json({
+        success: false,
+        error: 'Gemini AI service is not configured',
+        details: error?.message,
+        setupInstructions: 'Please add GEMINI_API_KEY to your environment variables'
+      }, 503)
+    }
     
     // Get workspace context (emails count, etc)
     let workspaceContext = {
@@ -170,7 +180,18 @@ app.post('/analyze-email', async (c) => {
       body: "Email content would go here"
     }
     
-    const gemini = getGeminiService()
+    let gemini
+    try {
+      gemini = getGeminiService()
+    } catch (error: any) {
+      return c.json({
+        success: false,
+        error: 'Gemini AI service is not configured',
+        details: error?.message,
+        setupInstructions: 'Please add GEMINI_API_KEY to your environment variables'
+      }, 503)
+    }
+    
     const analysis = await gemini.analyzeEmail(emailData)
     
     return c.json({
@@ -200,7 +221,18 @@ app.post('/extract-document', async (c) => {
       }, 400)
     }
     
-    const gemini = getGeminiService()
+    let gemini
+    try {
+      gemini = getGeminiService()
+    } catch (error: any) {
+      return c.json({
+        success: false,
+        error: 'Gemini AI service is not configured',
+        details: error?.message,
+        setupInstructions: 'Please add GEMINI_API_KEY to your environment variables'
+      }, 503)
+    }
+    
     const extractedData = await gemini.extractDocumentData(documentText, documentType)
     
     return c.json({
@@ -230,7 +262,18 @@ app.post('/generate-email', async (c) => {
       }, 400)
     }
     
-    const gemini = getGeminiService()
+    let gemini
+    try {
+      gemini = getGeminiService()
+    } catch (error: any) {
+      return c.json({
+        success: false,
+        error: 'Gemini AI service is not configured',
+        details: error?.message,
+        setupInstructions: 'Please add GEMINI_API_KEY to your environment variables'
+      }, 503)
+    }
+    
     const generatedEmail = await gemini.generateEmailResponse(originalEmail, instructions)
     
     return c.json({

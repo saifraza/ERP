@@ -32,7 +32,19 @@ export interface ProcessedEmail {
 }
 
 export class EmailAutomationService {
-  private gemini = getGeminiService()
+  private gemini: any = null
+  
+  private getGemini() {
+    if (!this.gemini) {
+      try {
+        this.gemini = getGeminiService()
+      } catch (error) {
+        console.warn('Gemini service not available:', error.message)
+        return null
+      }
+    }
+    return this.gemini
+  }
   
   /**
    * Process incoming vendor emails
@@ -120,6 +132,21 @@ export class EmailAutomationService {
    * Identify email type using AI
    */
   private async identifyEmailType(email: any): Promise<string> {
+    const gemini = this.getGemini()
+    if (!gemini) {
+      // Fallback to simple keyword matching if Gemini is not available
+      const subject = email.subject?.toLowerCase() || ''
+      const body = email.body?.toLowerCase() || ''
+      const combined = subject + ' ' + body
+      
+      if (combined.includes('invoice')) return 'invoice'
+      if (combined.includes('purchase order') || combined.includes('po ')) return 'purchase_order'
+      if (combined.includes('quotation') || combined.includes('quote')) return 'quotation'
+      if (combined.includes('contract')) return 'contract'
+      if (combined.includes('payment')) return 'payment_notification'
+      return 'other'
+    }
+    
     const prompt = `Analyze this business email and categorize it:
     
     From: ${email.from}
@@ -138,7 +165,7 @@ export class EmailAutomationService {
     
     Return only the category name.`
     
-    const response = await this.gemini.generateResponse(prompt)
+    const response = await gemini.generateResponse(prompt)
     return response.trim().toLowerCase()
   }
   
@@ -191,11 +218,36 @@ export class EmailAutomationService {
    * Extract business data from email and attachments
    */
   private async extractBusinessData(email: any, attachments: any[], emailType: string) {
+    const gemini = this.getGemini()
     const combinedText = `
       Email Subject: ${email.subject}
       Email Body: ${email.body}
       ${attachments.map(a => `Attachment ${a.filename}: ${a.text?.substring(0, 1000)}`).join('\n')}
     `
+    
+    if (!gemini) {
+      // Fallback to basic extraction without AI
+      const basicData: any = {
+        emailType,
+        subject: email.subject,
+        from: email.from,
+        date: email.date,
+        hasAttachments: attachments.length > 0
+      }
+      
+      // Try to extract some basic info with regex
+      const amountMatch = combinedText.match(/(?:total|amount|₹|rs\.?|inr)\s*:?\s*([\d,]+(?:\.\d{2})?)/i)
+      if (amountMatch) {
+        basicData.totalAmount = amountMatch[1].replace(/,/g, '')
+      }
+      
+      const invoiceMatch = combinedText.match(/(?:invoice|bill)\s*(?:no|number|#)?\s*:?\s*([A-Z0-9\-\/]+)/i)
+      if (invoiceMatch) {
+        basicData.invoiceNumber = invoiceMatch[1]
+      }
+      
+      return basicData
+    }
     
     let extractionPrompt = ''
     
@@ -261,7 +313,7 @@ export class EmailAutomationService {
         Return as JSON.`
     }
     
-    const response = await this.gemini.generateResponse(extractionPrompt)
+    const response = await gemini.generateResponse(extractionPrompt)
     
     try {
       return JSON.parse(response)

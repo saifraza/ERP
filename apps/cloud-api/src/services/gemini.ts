@@ -7,7 +7,7 @@ export class GeminiService {
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY not configured')
+      throw new Error('GEMINI_API_KEY not configured. Please set the GEMINI_API_KEY environment variable.')
     }
 
     this.genAI = new GoogleGenerativeAI(apiKey)
@@ -333,6 +333,9 @@ let geminiService: GeminiService | null = null
 
 export function getGeminiService(): GeminiService {
   if (!geminiService) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured. Please set the GEMINI_API_KEY environment variable.')
+    }
     geminiService = new GeminiService()
   }
   return geminiService
