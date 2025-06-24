@@ -21,6 +21,9 @@ import Mails from './pages/Mails'
 import EmailSettings from './pages/settings/EmailSettings'
 import GmailTest from './pages/GmailTest'
 import EmailAutomation from './pages/EmailAutomation'
+import VendorsProcurement from './pages/procurement/Vendors'
+import PurchaseRequisitions from './pages/procurement/PurchaseRequisitions'
+import RFQManagement from './pages/procurement/RFQManagement'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -101,6 +104,18 @@ function App() {
                     <Route path="/finance/receipts" element={<div>Receipts</div>} />
                     <Route path="/finance/banking" element={<div>Banking</div>} />
                     <Route path="/finance/gst" element={<div>GST Returns</div>} />
+                    
+                    {/* Procurement Module Routes */}
+                    <Route path="/procurement/vendors" element={<VendorsProcurement />} />
+                    <Route path="/procurement/vendors/:id" element={<div>Vendor Details</div>} />
+                    <Route path="/procurement/requisitions" element={<PurchaseRequisitions />} />
+                    <Route path="/procurement/requisitions/:id" element={<div>PR Details</div>} />
+                    <Route path="/procurement/rfqs" element={<RFQManagement />} />
+                    <Route path="/procurement/purchase-orders" element={<div>Purchase Orders</div>} />
+                    <Route path="/procurement/quotations" element={<div>Quotation Comparison</div>} />
+                    <Route path="/procurement/grn" element={<div>Goods Receipt</div>} />
+                    <Route path="/procurement/invoices" element={<div>Vendor Invoices</div>} />
+                    <Route path="/procurement/payments" element={<div>Vendor Payments</div>} />
                     
                     {/* Masters Module Routes */}
                     <Route path="/masters/companies" element={<Companies />} />
