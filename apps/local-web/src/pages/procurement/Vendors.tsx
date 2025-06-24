@@ -9,6 +9,7 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
+import AddVendorModal from '../../components/procurement/AddVendorModal'
 
 interface Vendor {
   id: string
@@ -403,6 +404,16 @@ export default function Vendors() {
           </div>
         )}
       </div>
+
+      {/* Add Vendor Modal */}
+      <AddVendorModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          setShowAddModal(false)
+          fetchVendors()
+        }}
+      />
     </div>
   )
 }
