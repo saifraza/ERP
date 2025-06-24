@@ -182,10 +182,11 @@ export default function Mails() {
 
   const selectEmail = async (email: Email) => {
     setSelectedEmail(email)
-    setEmailContent(email.snippet || '')
+    // Set the snippet immediately, then we could fetch full content if needed
+    setEmailContent(email.snippet || 'No preview available')
     
-    // Optionally fetch full email content here
-    // For now, we'll just show the snippet
+    // For now, just use the snippet as the content
+    // In the future, we could add an endpoint to fetch full email body
   }
 
   const sendChatMessage = async () => {
@@ -281,7 +282,7 @@ export default function Mails() {
 
       <div className="max-w-7xl mx-auto p-6">
         {/* Account Status Bar */}
-        {emailAccounts.length > 0 && (
+        {(emailAccounts.length > 0 || emails.length > 0) && (
           <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -291,12 +292,22 @@ export default function Mails() {
                   onChange={(e) => setSelectedAccount(e.target.value)}
                   className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="all">All Accounts ({emailAccounts.length})</option>
-                  {emailAccounts.map((account) => (
-                    <option key={account.id} value={account.emailAddress}>
-                      {account.emailAddress}
+                  {emailAccounts.length > 0 ? (
+                    <>
+                      <option value="all">All Accounts ({emailAccounts.length})</option>
+                      {emailAccounts.map((account) => (
+                        <option key={account.id} value={account.emailAddress}>
+                          {account.emailAddress}
+                        </option>
+                      ))}
+                    </>
+                  ) : emails.length > 0 ? (
+                    <option value="default">
+                      {emails[0]?.account || 'Connected Account'}
                     </option>
-                  ))}
+                  ) : (
+                    <option value="none">No accounts</option>
+                  )}
                 </select>
               </div>
               <a 
@@ -309,8 +320,8 @@ export default function Mails() {
           </div>
         )}
 
-        {/* No accounts message */}
-        {emailAccounts.length === 0 && (
+        {/* No accounts message - Only show if no emails are loaded */}
+        {emailAccounts.length === 0 && emails.length === 0 && (
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-8 mb-6">
             <div className="max-w-2xl mx-auto text-center">
               <div className="flex justify-center mb-4">
@@ -516,7 +527,7 @@ export default function Mails() {
                       <div className="prose prose-sm max-w-none">
                         <div className="bg-gray-50 rounded-lg p-4">
                           <p className="text-gray-700 whitespace-pre-wrap">
-                            {emailContent || selectedEmail.snippet || 'Loading email content...'}
+                            {selectedEmail.snippet || emailContent || 'No preview available for this email.'}
                           </p>
                         </div>
                       </div>

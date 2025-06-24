@@ -65,8 +65,9 @@ export class MultiTenantGmailService {
     }
     
     // Fall back to environment variable (current approach)
+    // Don't show default@erp.com in the UI
     return {
-      emailAddress: 'default@erp.com',
+      emailAddress: process.env.GOOGLE_USER_EMAIL || 'saifraza@mspil.in',
       googleRefreshToken: process.env.GOOGLE_REFRESH_TOKEN,
       provider: 'google'
     }
