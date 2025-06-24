@@ -20,6 +20,7 @@ import emailAutomationRoutes from './routes/email-automation.js'
 import vendorsRoutes from './routes/vendors.js'
 import purchaseRequisitionsRoutes from './routes/purchase-requisitions.js'
 import rfqsRoutes from './routes/rfqs.js'
+import divisionsRoutes from './routes/divisions.js'
 
 const app = new Hono()
 
@@ -87,6 +88,7 @@ app.route('/api/email-automation', emailAutomationRoutes)
 app.route('/api/vendors', vendorsRoutes)
 app.route('/api/purchase-requisitions', purchaseRequisitionsRoutes)
 app.route('/api/rfqs', rfqsRoutes)
+app.route('/api/divisions', divisionsRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {

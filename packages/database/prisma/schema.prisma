@@ -38,6 +38,7 @@ model Company {
   // Relations
   farmers           Farmer[]
   vendors           Vendor[]
+  divisions         Division[]
   purchaseRequisitions PurchaseRequisition[]
   rfqs              RFQ[]
   quotations        Quotation[]
@@ -65,7 +66,11 @@ model Division {
   code              String
   
   // Relations
+  company           Company  @relation(fields: [companyId], references: [id])
   purchaseRequisitions PurchaseRequisition[]
+  
+  @@unique([companyId, code])
+  @@index([companyId])
 }
 
 // Farmer Management (Multi-tenant)

@@ -57,12 +57,24 @@ async function generatePRNumber(companyId: string): Promise<string> {
 
 // Get all PRs
 app.get('/', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const { status, divisionId, priority, from, to } = c.req.query()
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ success: true, prs: [] })
+    }
+    
     const where: any = {
-      companyId: user.companyId
+      companyId: companyId
     }
     
     if (status) where.status = status
@@ -98,14 +110,26 @@ app.get('/', async (c) => {
 
 // Get single PR
 app.get('/:id', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const prId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ success: false, error: 'Company not found' }, 404)
+    }
+    
     const pr = await prisma.purchaseRequisition.findFirst({
       where: {
         id: prId,
-        companyId: user.companyId
+        companyId: companyId
       },
       include: {
         division: true,
@@ -133,14 +157,30 @@ app.get('/:id', async (c) => {
 
 // Create new PR
 app.post('/', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
+  const userName = c.get('userEmail') || 'User'
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ 
+        success: false, 
+        error: 'User is not associated with a company' 
+      }, 400)
+    }
+    
     const body = await c.req.json()
     const validated = prSchema.parse(body)
     
     // Generate PR number
-    const prNumber = await generatePRNumber(user.companyId)
+    const prNumber = await generatePRNumber(companyId)
     
     // Parse required by date
     const requiredBy = new Date(validated.requiredBy)
@@ -153,11 +193,11 @@ app.post('/', async (c) => {
     
     const pr = await prisma.purchaseRequisition.create({
       data: {
-        companyId: user.companyId,
+        companyId: companyId,
         prNumber,
         divisionId: validated.divisionId,
         departmentId: validated.departmentId,
-        requestedBy: user.name,
+        requestedBy: userName,
         requestDate: new Date(),
         requiredBy,
         priority: validated.priority,
@@ -190,17 +230,32 @@ app.post('/', async (c) => {
 
 // Update PR
 app.put('/:id', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const prId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ 
+        success: false, 
+        error: 'User is not associated with a company' 
+      }, 400)
+    }
+    
     const body = await c.req.json()
     
     // Check if PR exists and is in draft status
     const existing = await prisma.purchaseRequisition.findFirst({
       where: {
         id: prId,
-        companyId: user.companyId
+        companyId: companyId
       }
     })
     
@@ -251,7 +306,7 @@ app.put('/:id', async (c) => {
 
 // Submit PR for approval
 app.post('/:id/submit', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const prId = c.req.param('id')
   
   try {
@@ -303,7 +358,7 @@ app.post('/:id/submit', async (c) => {
 
 // Approve/Reject PR
 app.post('/:id/approval', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const prId = c.req.param('id')
   
   try {
@@ -357,7 +412,7 @@ app.post('/:id/approval', async (c) => {
 
 // Convert PR to RFQ
 app.post('/:id/convert-to-rfq', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const prId = c.req.param('id')
   
   try {
