@@ -59,13 +59,26 @@ async function generateMaterialCode(companyId: string, category: string, divisio
   }[category] || 'MAT'
   
   // Get count of materials in this category and division
-  const materialCount = await prisma.material.count({
+  // Since division is stored in specifications JSON, we need to get all materials and filter
+  const materials = await prisma.material.findMany({
     where: {
       companyId,
-      category,
-      division
+      category
+    },
+    select: {
+      specifications: true
     }
   })
+  
+  // Filter by division in specifications
+  const materialCount = materials.filter(m => {
+    try {
+      const specs = m.specifications ? JSON.parse(m.specifications) : {}
+      return specs.division === division
+    } catch {
+      return false
+    }
+  }).length
   
   // Generate code with division, category and sequential number
   const paddedNumber = String(materialCount + 1).padStart(4, '0')
@@ -95,16 +108,13 @@ app.get('/', async (c) => {
     }
     
     if (category) where.category = category
-    if (division) where.division = division
-    if (industryCategory) where.industryCategory = industryCategory
-    if (criticalItem !== undefined) where.criticalItem = criticalItem === 'true'
+    if (criticalItem !== undefined) where.isCritical = criticalItem === 'true'
     if (isActive !== undefined) where.isActive = isActive === 'true'
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { code: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { hsnCode: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } }
       ]
     }
     
@@ -117,7 +127,7 @@ app.get('/', async (c) => {
     })
     
     // Parse specifications JSON and map to expected format
-    const formattedMaterials = materials.map(material => {
+    let formattedMaterials = materials.map(material => {
       let specs = null
       try {
         specs = material.specifications ? JSON.parse(material.specifications) : {}
@@ -155,6 +165,14 @@ app.get('/', async (c) => {
         updatedAt: material.updatedAt
       }
     })
+    
+    // Apply division and industryCategory filters after parsing
+    if (division) {
+      formattedMaterials = formattedMaterials.filter(m => m.division === division)
+    }
+    if (industryCategory) {
+      formattedMaterials = formattedMaterials.filter(m => m.industryCategory === industryCategory)
+    }
     
     return c.json({ success: true, materials: formattedMaterials })
   } catch (error: any) {
