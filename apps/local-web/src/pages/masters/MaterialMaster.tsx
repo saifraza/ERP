@@ -243,7 +243,9 @@ export default function MaterialMaster() {
         <div className="flex gap-3">
           <button 
             className="btn-secondary flex items-center gap-2"
-            onClick={() => toast.info('Import feature coming soon')}
+            onClick={() => toast('Import feature coming soon', {
+              icon: '🚧',
+            })}
           >
             <Upload className="h-4 w-4" />
             Import

@@ -181,6 +181,67 @@ app.get('/', async (c) => {
   }
 })
 
+// Get industry categories for a division and category
+app.get('/industry-categories', async (c) => {
+  const { division, category } = c.req.query()
+  
+  if (!division || !category) {
+    return c.json({ success: false, error: 'Division and category are required' }, 400)
+  }
+  
+  // This would typically come from the shared constants
+  // For now, returning a hardcoded response
+  const industryCategories = {
+    sugar: {
+      CHEMICAL: [
+        { value: 'juice_clarification', label: 'Juice Clarification Chemicals' },
+        { value: 'color_precipitant', label: 'Color Precipitants' },
+        { value: 'flocculant', label: 'Flocculants' },
+        { value: 'viscosity_reducer', label: 'Viscosity Reducers' },
+        { value: 'biocide', label: 'Biocides & Mill Sanitizers' },
+        { value: 'enzyme', label: 'Enzymes (Dextranase, Amylase)' },
+        { value: 'antiscalant', label: 'Antiscalants' },
+        { value: 'ph_modifier', label: 'pH Modifiers (Lime, Sulphur)' }
+      ]
+    },
+    ethanol: {
+      CHEMICAL: [
+        { value: 'yeast', label: 'Yeast Strains' },
+        { value: 'nutrient', label: 'Fermentation Nutrients' },
+        { value: 'antifoam', label: 'Antifoam Agents' },
+        { value: 'denaturant', label: 'Denaturants' },
+        { value: 'molecular_sieve', label: 'Molecular Sieves' },
+        { value: 'cleaning_cip', label: 'CIP Cleaning Chemicals' },
+        { value: 'ph_control', label: 'pH Control Chemicals' }
+      ]
+    },
+    power: {
+      CHEMICAL: [
+        { value: 'water_treatment', label: 'Boiler Water Treatment Chemicals' },
+        { value: 'dm_resin', label: 'DM Plant Resins' },
+        { value: 'cooling_chemical', label: 'Cooling Tower Chemicals' },
+        { value: 'descalant', label: 'Descaling Chemicals' },
+        { value: 'corrosion_inhibitor', label: 'Corrosion Inhibitors' }
+      ]
+    },
+    feed: {
+      CHEMICAL: [
+        { value: 'vitamin_premix', label: 'Vitamin Premixes' },
+        { value: 'mineral_premix', label: 'Mineral Premixes' },
+        { value: 'probiotic', label: 'Probiotics' },
+        { value: 'preservative', label: 'Feed Preservatives' },
+        { value: 'mycotoxin_binder', label: 'Mycotoxin Binders' },
+        { value: 'acidifier', label: 'Feed Acidifiers' }
+      ]
+    }
+  }
+  
+  const divisionCategories = industryCategories[division as keyof typeof industryCategories]
+  const categories = divisionCategories?.[category as keyof typeof divisionCategories] || []
+  
+  return c.json({ success: true, categories })
+})
+
 // Get single material
 app.get('/:id', async (c) => {
   const userId = c.get('userId')
@@ -440,67 +501,6 @@ app.delete('/:id', async (c) => {
     console.error('Error deleting material:', error)
     return c.json({ success: false, error: error.message }, 500)
   }
-})
-
-// Get industry categories for a division and category
-app.get('/industry-categories', async (c) => {
-  const { division, category } = c.req.query()
-  
-  if (!division || !category) {
-    return c.json({ success: false, error: 'Division and category are required' }, 400)
-  }
-  
-  // This would typically come from the shared constants
-  // For now, returning a hardcoded response
-  const industryCategories = {
-    sugar: {
-      chemical: [
-        { value: 'juice_clarification', label: 'Juice Clarification Chemicals' },
-        { value: 'color_precipitant', label: 'Color Precipitants' },
-        { value: 'flocculant', label: 'Flocculants' },
-        { value: 'viscosity_reducer', label: 'Viscosity Reducers' },
-        { value: 'biocide', label: 'Biocides & Mill Sanitizers' },
-        { value: 'enzyme', label: 'Enzymes (Dextranase, Amylase)' },
-        { value: 'antiscalant', label: 'Antiscalants' },
-        { value: 'ph_modifier', label: 'pH Modifiers (Lime, Sulphur)' }
-      ]
-    },
-    ethanol: {
-      chemical: [
-        { value: 'yeast', label: 'Yeast Strains' },
-        { value: 'nutrient', label: 'Fermentation Nutrients' },
-        { value: 'antifoam', label: 'Antifoam Agents' },
-        { value: 'denaturant', label: 'Denaturants' },
-        { value: 'molecular_sieve', label: 'Molecular Sieves' },
-        { value: 'cleaning_cip', label: 'CIP Cleaning Chemicals' },
-        { value: 'ph_control', label: 'pH Control Chemicals' }
-      ]
-    },
-    power: {
-      chemical: [
-        { value: 'water_treatment', label: 'Boiler Water Treatment Chemicals' },
-        { value: 'dm_resin', label: 'DM Plant Resins' },
-        { value: 'cooling_chemical', label: 'Cooling Tower Chemicals' },
-        { value: 'descalant', label: 'Descaling Chemicals' },
-        { value: 'corrosion_inhibitor', label: 'Corrosion Inhibitors' }
-      ]
-    },
-    feed: {
-      chemical: [
-        { value: 'vitamin_premix', label: 'Vitamin Premixes' },
-        { value: 'mineral_premix', label: 'Mineral Premixes' },
-        { value: 'probiotic', label: 'Probiotics' },
-        { value: 'preservative', label: 'Feed Preservatives' },
-        { value: 'mycotoxin_binder', label: 'Mycotoxin Binders' },
-        { value: 'acidifier', label: 'Feed Acidifiers' }
-      ]
-    }
-  }
-  
-  const divisionCategories = industryCategories[division as keyof typeof industryCategories]
-  const categories = divisionCategories?.[category as keyof typeof divisionCategories] || []
-  
-  return c.json({ success: true, categories })
 })
 
 export default app
