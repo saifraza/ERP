@@ -44,7 +44,12 @@ export default function Login() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
+      {/* Version indicator */}
+      <div className="absolute top-4 right-4 text-xs text-gray-500">
+        v1.1 - {new Date().toLocaleDateString()} | Vendor Module Added
+      </div>
+      
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
