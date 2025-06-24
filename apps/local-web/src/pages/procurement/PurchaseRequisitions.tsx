@@ -11,42 +11,54 @@ import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import AddRequisitionModal from '../../components/procurement/AddRequisitionModal'
 
-interface PRItem {
+interface RequisitionItem {
   id: string
-  itemCode: string
-  itemDescription: string
+  materialId: string
+  materialCode: string
+  materialName: string
+  materialDescription?: string
   quantity: number
   unit: string
-  estimatedPrice?: number
+  requiredDate: string
+  specification?: string
+  remarks?: string
 }
 
-interface PurchaseRequisition {
+interface Requisition {
   id: string
-  prNumber: string
-  division: { name: string }
+  requisitionNo: string
+  requisitionDate: string
+  factory: { name: string; code: string }
+  division?: { name: string; code: string }
+  department: string
   requestedBy: string
-  requestDate: string
-  requiredBy: string
+  approvedBy?: string
+  approvedDate?: string
   priority: string
+  purpose?: string
   status: string
-  items: PRItem[]
-  _count?: { rfqs: number }
+  items: RequisitionItem[]
+  totalItems: number
+  poCount: number
+  createdAt: string
+  updatedAt: string
+  remarks?: string
 }
 
 export default function PurchaseRequisitions() {
   const { token } = useAuthStore()
   const { currentCompany } = useCompanyStore()
-  const [prs, setPRs] = useState<PurchaseRequisition[]>([])
+  const [requisitions, setRequisitions] = useState<Requisition[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPriority, setSelectedPriority] = useState('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   useEffect(() => {
-    fetchPRs()
+    fetchRequisitions()
   }, [currentCompany, selectedStatus, selectedPriority])
 
-  const fetchPRs = async () => {
+  const fetchRequisitions = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -54,7 +66,7 @@ export default function PurchaseRequisitions() {
       if (selectedPriority !== 'all') params.append('priority', selectedPriority)
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/purchase-requisitions?${params}`,
+        `${import.meta.env.VITE_API_URL}/api/requisitions?${params}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -64,27 +76,31 @@ export default function PurchaseRequisitions() {
 
       if (response.ok) {
         const data = await response.json()
-        setPRs(data.prs || [])
+        setRequisitions(data.requisitions || [])
+      } else {
+        console.error('Error response:', response.status, response.statusText)
+        toast.error('Failed to load requisitions')
       }
     } catch (error) {
-      console.error('Error fetching PRs:', error)
-      toast.error('Failed to load purchase requisitions')
+      console.error('Error fetching requisitions:', error)
+      toast.error('Failed to load requisitions')
     } finally {
       setLoading(false)
     }
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'draft':
+    switch (status.toUpperCase()) {
+      case 'DRAFT':
         return <Clock className="h-4 w-4" />
-      case 'submitted':
+      case 'SUBMITTED':
         return <Send className="h-4 w-4" />
-      case 'approved':
+      case 'APPROVED':
         return <CheckCircle className="h-4 w-4" />
-      case 'rejected':
+      case 'CANCELLED':
         return <XCircle className="h-4 w-4" />
-      case 'converted':
+      case 'PARTIALLY_ORDERED':
+      case 'ORDERED':
         return <ArrowRight className="h-4 w-4" />
       default:
         return <AlertCircle className="h-4 w-4" />
@@ -92,31 +108,33 @@ export default function PurchaseRequisitions() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft':
+    switch (status.toUpperCase()) {
+      case 'DRAFT':
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-      case 'submitted':
+      case 'SUBMITTED':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-      case 'approved':
+      case 'APPROVED':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-      case 'rejected':
+      case 'REJECTED':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-      case 'converted':
+      case 'PARTIALLY_ORDERED':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+      case 'ORDERED':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
       default:
         return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
+    switch (priority.toUpperCase()) {
+      case 'URGENT':
         return 'text-red-600 dark:text-red-400'
-      case 'high':
+      case 'HIGH':
         return 'text-orange-600 dark:text-orange-400'
-      case 'normal':
+      case 'NORMAL':
         return 'text-blue-600 dark:text-blue-400'
-      case 'low':
+      case 'LOW':
         return 'text-gray-600 dark:text-gray-400'
       default:
         return 'text-gray-600'
@@ -126,7 +144,7 @@ export default function PurchaseRequisitions() {
   const handleSubmitPR = async (prId: string) => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/purchase-requisitions/${prId}/submit`,
+        `${import.meta.env.VITE_API_URL}/api/requisitions/${prId}/submit`,
         {
           method: 'POST',
           headers: {
@@ -137,7 +155,7 @@ export default function PurchaseRequisitions() {
 
       if (response.ok) {
         toast.success('PR submitted for approval')
-        fetchPRs()
+        fetchRequisitions()
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to submit PR')
@@ -171,7 +189,7 @@ export default function PurchaseRequisitions() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total PRs</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {prs.length}
+                {requisitions.length}
               </p>
             </div>
             <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -185,7 +203,7 @@ export default function PurchaseRequisitions() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Pending Approval</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {prs.filter(pr => pr.status === 'submitted').length}
+                {requisitions.filter(pr => pr.status.toUpperCase() === 'SUBMITTED').length}
               </p>
             </div>
             <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
@@ -199,7 +217,7 @@ export default function PurchaseRequisitions() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Approved</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {prs.filter(pr => pr.status === 'approved').length}
+                {requisitions.filter(pr => pr.status.toUpperCase() === 'APPROVED').length}
               </p>
             </div>
             <div className="h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -213,7 +231,7 @@ export default function PurchaseRequisitions() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Urgent PRs</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {prs.filter(pr => pr.priority === 'urgent').length}
+                {requisitions.filter(pr => pr.priority.toUpperCase() === 'URGENT').length}
               </p>
             </div>
             <div className="h-12 w-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
@@ -243,11 +261,12 @@ export default function PurchaseRequisitions() {
             className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="submitted">Submitted</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="converted">Converted</option>
+            <option value="DRAFT">Draft</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="PARTIALLY_ORDERED">Partially Ordered</option>
+            <option value="ORDERED">Fully Ordered</option>
           </select>
 
           <select
@@ -256,10 +275,10 @@ export default function PurchaseRequisitions() {
             className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="normal">Normal</option>
-            <option value="low">Low</option>
+            <option value="URGENT">Urgent</option>
+            <option value="HIGH">High</option>
+            <option value="NORMAL">Normal</option>
+            <option value="LOW">Low</option>
           </select>
         </div>
       </div>
@@ -273,7 +292,7 @@ export default function PurchaseRequisitions() {
               Loading purchase requisitions...
             </div>
           </div>
-        ) : prs.length === 0 ? (
+        ) : requisitions.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700">
             <ClipboardList className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
             <p className="text-gray-600 dark:text-gray-400">No purchase requisitions found</p>
@@ -285,7 +304,7 @@ export default function PurchaseRequisitions() {
             </button>
           </div>
         ) : (
-          prs.map((pr) => (
+          requisitions.map((pr) => (
             <div key={pr.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -296,11 +315,11 @@ export default function PurchaseRequisitions() {
                     <div>
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {pr.prNumber}
+                          {pr.requisitionNo}
                         </h3>
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(pr.status)}`}>
                           {getStatusIcon(pr.status)}
-                          {pr.status}
+                          {pr.status.toLowerCase()}
                         </span>
                         <span className={`text-xs font-medium ${getPriorityColor(pr.priority)}`}>
                           {pr.priority.toUpperCase()}
@@ -309,7 +328,7 @@ export default function PurchaseRequisitions() {
                       <div className="mt-1 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Building className="h-3 w-3" />
-                          {pr.division.name}
+                          {pr.division?.name || pr.factory?.name || 'N/A'}
                         </div>
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
@@ -317,13 +336,13 @@ export default function PurchaseRequisitions() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          Required by {new Date(pr.requiredBy).toLocaleDateString()}
+                          Created on {new Date(pr.requisitionDate).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {pr.status === 'draft' && (
+                    {pr.status.toUpperCase() === 'DRAFT' && (
                       <button 
                         onClick={() => handleSubmitPR(pr.id)}
                         className="btn-primary text-sm flex items-center gap-1"
@@ -332,7 +351,7 @@ export default function PurchaseRequisitions() {
                         Submit
                       </button>
                     )}
-                    {pr.status === 'approved' && pr._count?.rfqs === 0 && (
+                    {pr.status.toUpperCase() === 'APPROVED' && pr.poCount === 0 && (
                       <Link
                         to={`/procurement/requisitions/${pr.id}/convert-to-rfq`}
                         className="btn-primary text-sm flex items-center gap-1"
@@ -347,7 +366,7 @@ export default function PurchaseRequisitions() {
                     >
                       <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                     </Link>
-                    {pr.status === 'draft' && (
+                    {pr.status.toUpperCase() === 'DRAFT' && (
                       <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                         <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                       </button>
@@ -371,15 +390,15 @@ export default function PurchaseRequisitions() {
                       <div key={item.id} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600 dark:text-gray-400">{item.itemDescription}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{item.materialName || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-gray-600 dark:text-gray-400">
                             {item.quantity} {item.unit}
                           </span>
-                          {item.estimatedPrice && (
+                          {item.specification && (
                             <span className="text-gray-700 dark:text-gray-300 font-medium">
-                              ₹{item.estimatedPrice.toLocaleString()}
+                              {item.specification}
                             </span>
                           )}
                         </div>
@@ -394,12 +413,12 @@ export default function PurchaseRequisitions() {
                 </div>
 
                 {/* RFQ Status */}
-                {pr._count && pr._count.rfqs > 0 && (
+                {pr.poCount > 0 && (
                   <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       <span className="text-sm text-blue-700 dark:text-blue-300">
-                        {pr._count.rfqs} RFQ{pr._count.rfqs !== 1 ? 's' : ''} created
+                        {pr.poCount} PO{pr.poCount !== 1 ? 's' : ''} created
                       </span>
                     </div>
                   </div>
@@ -416,7 +435,7 @@ export default function PurchaseRequisitions() {
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => {
           setShowCreateModal(false)
-          fetchPRs()
+          fetchRequisitions()
         }}
       />
     </div>

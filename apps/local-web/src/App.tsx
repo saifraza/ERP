@@ -95,7 +95,7 @@ function App() {
                       <Route path="/storage" element={<Storage />} />
                     
                     {/* Store Module Routes */}
-                    <Route path="/store/requisitions" element={<div>Material Requisitions</div>} />
+                    <Route path="/store/requisitions" element={<PurchaseRequisitions />} />
                     <Route path="/store/purchase-orders" element={<div>Purchase Orders</div>} />
                     <Route path="/store/goods-receipt" element={<div>Goods Receipt</div>} />
                     <Route path="/store/inventory" element={<div>Inventory</div>} />
