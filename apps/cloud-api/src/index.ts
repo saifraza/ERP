@@ -21,6 +21,7 @@ import vendorsRoutes from './routes/vendors.js'
 import requisitionsRoutes from './routes/requisitions.js'
 import rfqsRoutes from './routes/rfqs.js'
 import divisionsRoutes from './routes/divisions.js'
+import setupDivisionsRoutes from './routes/setup-divisions.js'
 import materialsRoutes from './routes/materials.js'
 import factoriesRoutes from './routes/factories.js'
 
@@ -91,6 +92,7 @@ app.route('/api/vendors', vendorsRoutes)
 app.route('/api/requisitions', requisitionsRoutes)
 app.route('/api/rfqs', rfqsRoutes)
 app.route('/api/divisions', divisionsRoutes)
+app.route('/api/setup-divisions', setupDivisionsRoutes)
 app.route('/api/materials', materialsRoutes)
 app.route('/api/factories', factoriesRoutes)
 

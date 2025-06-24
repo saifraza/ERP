@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { BarChart3, Factory, Zap, Droplets, Package2, Bot } from 'lucide-react'
+import { BarChart3, Factory, Zap, Droplets, Package2, Bot, Settings, CheckCircle, AlertCircle } from 'lucide-react'
 import AIChat from '../components/AIChat'
+import { useAuthStore } from '../stores/authStore'
+import { toast } from 'react-hot-toast'
 
 const stats = [
   { name: 'Sugar Production', value: '2,450 MT', icon: Factory, color: 'bg-blue-500' },
@@ -10,7 +12,63 @@ const stats = [
 ]
 
 export default function Dashboard() {
+  const { token } = useAuthStore()
   const [showAIChat, setShowAIChat] = useState(false)
+  const [setupLoading, setSetupLoading] = useState(false)
+  const [setupStatus, setSetupStatus] = useState<{
+    divisions: boolean
+    factories: boolean
+  }>({ divisions: false, factories: false })
+
+  const handleSetupDivisions = async () => {
+    setSetupLoading(true)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/setup-divisions/create-defaults`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        toast.success(data.message || 'Default divisions created successfully!')
+        setSetupStatus(prev => ({ ...prev, divisions: true }))
+      } else {
+        toast.error(data.error || 'Failed to create divisions')
+      }
+    } catch (error) {
+      toast.error('Failed to create divisions')
+    } finally {
+      setSetupLoading(false)
+    }
+  }
+
+  const handleSetupFactories = async () => {
+    setSetupLoading(true)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/setup-divisions/create-default-factories`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        toast.success(data.message || 'Default factory created successfully!')
+        setSetupStatus(prev => ({ ...prev, factories: true }))
+      } else {
+        toast.error(data.error || 'Failed to create factory')
+      }
+    } catch (error) {
+      toast.error('Failed to create factory')
+    } finally {
+      setSetupLoading(false)
+    }
+  }
 
   return (
     <div className="relative">
@@ -77,6 +135,70 @@ export default function Dashboard() {
             </h3>
             <div className="h-48 flex items-center justify-center text-gray-400">
               Chart placeholder
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Setup Section */}
+      <div className="mt-8 bg-white overflow-hidden shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <Settings className="h-5 w-5 mr-2" />
+              Quick Setup
+            </h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                {setupStatus.divisions ? (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-500" />
+                )}
+                <div>
+                  <p className="font-medium text-gray-900">Business Divisions</p>
+                  <p className="text-sm text-gray-600">Sugar, Ethanol, Power, Feed, Common</p>
+                </div>
+              </div>
+              <button
+                onClick={handleSetupDivisions}
+                disabled={setupLoading || setupStatus.divisions}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  setupStatus.divisions
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+              >
+                {setupStatus.divisions ? 'Created' : 'Create Divisions'}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                {setupStatus.factories ? (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-500" />
+                )}
+                <div>
+                  <p className="font-medium text-gray-900">Main Factory</p>
+                  <p className="text-sm text-gray-600">Integrated factory with all divisions</p>
+                </div>
+              </div>
+              <button
+                onClick={handleSetupFactories}
+                disabled={setupLoading || setupStatus.factories}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  setupStatus.factories
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+              >
+                {setupStatus.factories ? 'Created' : 'Create Factory'}
+              </button>
             </div>
           </div>
         </div>
