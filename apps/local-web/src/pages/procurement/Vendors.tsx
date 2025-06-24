@@ -16,19 +16,18 @@ interface Vendor {
   code: string
   name: string
   type: string
-  category: string
-  email: string
+  email?: string
   phone: string
   city: string
   state: string
   creditLimit: number
   creditDays: number
-  rating: number
-  status: string
+  rating?: number
+  isActive: boolean
   _count?: {
-    quotations: number
-    purchaseOrders: number
-    invoices: number
+    quotations?: number
+    purchaseOrders?: number
+    invoices?: number
   }
 }
 
@@ -39,19 +38,17 @@ export default function Vendors() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
-  const [selectedCategory, setSelectedCategory] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
 
   useEffect(() => {
     fetchVendors()
-  }, [currentCompany, selectedStatus, selectedCategory])
+  }, [currentCompany, selectedStatus])
 
   const fetchVendors = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
-      if (selectedStatus !== 'all') params.append('status', selectedStatus)
-      if (selectedCategory !== 'all') params.append('category', selectedCategory)
+      if (selectedStatus !== 'all') params.append('isActive', selectedStatus === 'active' ? 'true' : 'false')
       if (searchQuery) params.append('search', searchQuery)
 
       const response = await fetch(
@@ -80,28 +77,19 @@ export default function Vendors() {
     fetchVendors()
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-      case 'blacklisted':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
+  const getStatusColor = (isActive: boolean) => {
+    return isActive
+      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
   }
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'chemicals':
-        return '🧪'
-      case 'spare_parts':
-        return '🔧'
-      case 'consumables':
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'SUPPLIER':
         return '📦'
-      case 'services':
+      case 'CONTRACTOR':
+        return '🔧'
+      case 'SERVICE_PROVIDER':
         return '🛠️'
       default:
         return '📋'
@@ -156,7 +144,7 @@ export default function Vendors() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Active Vendors</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {vendors.filter(v => v.status === 'active').length}
+                {vendors.filter(v => v.isActive).length}
               </p>
             </div>
             <div className="h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -171,7 +159,7 @@ export default function Vendors() {
               <p className="text-sm text-gray-600 dark:text-gray-400">Avg Rating</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                 {vendors.length > 0 
-                  ? (vendors.reduce((sum, v) => sum + v.rating, 0) / vendors.length).toFixed(1)
+                  ? (vendors.reduce((sum, v) => sum + (v.rating || 0), 0) / vendors.length).toFixed(1)
                   : '0.0'
                 }
               </p>
@@ -221,20 +209,8 @@ export default function Vendors() {
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="blacklisted">Blacklisted</option>
           </select>
 
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="all">All Categories</option>
-            <option value="chemicals">Chemicals</option>
-            <option value="spare_parts">Spare Parts</option>
-            <option value="consumables">Consumables</option>
-            <option value="services">Services</option>
-          </select>
         </div>
       </div>
 
@@ -267,7 +243,7 @@ export default function Vendors() {
                     Vendor
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Category
+                    Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Contact
@@ -305,18 +281,20 @@ export default function Vendors() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{getCategoryIcon(vendor.category)}</span>
+                        <span className="text-lg">{getTypeIcon(vendor.type)}</span>
                         <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                          {vendor.category.replace('_', ' ')}
+                          {vendor.type.replace(/_/g, ' ').toLowerCase()}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Mail className="h-3 w-3" />
-                          {vendor.email}
-                        </div>
+                        {vendor.email && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <Mail className="h-3 w-3" />
+                            {vendor.email}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <Phone className="h-3 w-3" />
                           {vendor.phone}
@@ -339,19 +317,25 @@ export default function Vendors() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < Math.floor(vendor.rating)
-                                ? 'text-yellow-500 fill-current'
-                                : 'text-gray-300 dark:text-gray-600'
-                            }`}
-                          />
-                        ))}
-                        <span className="ml-1 text-sm text-gray-600 dark:text-gray-400">
-                          {vendor.rating.toFixed(1)}
-                        </span>
+                        {vendor.rating ? (
+                          <>
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-4 w-4 ${
+                                  i < Math.floor(vendor.rating || 0)
+                                    ? 'text-yellow-500 fill-current'
+                                    : 'text-gray-300 dark:text-gray-600'
+                                }`}
+                              />
+                            ))}
+                            <span className="ml-1 text-sm text-gray-600 dark:text-gray-400">
+                              {vendor.rating.toFixed(1)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-400">Not rated</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -377,8 +361,8 @@ export default function Vendors() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(vendor.status)}`}>
-                        {vendor.status}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(vendor.isActive)}`}>
+                        {vendor.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">

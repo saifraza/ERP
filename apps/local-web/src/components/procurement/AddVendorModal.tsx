@@ -14,46 +14,42 @@ interface VendorFormData {
   code: string
   name: string
   type: string
-  category: string
   gstNumber: string
   panNumber: string
-  address: string
+  addressLine1: string
+  addressLine2: string
   city: string
   state: string
   pincode: string
   contactPerson: string
   email: string
   phone: string
-  alternatePhone: string
   bankName: string
   bankAccount: string
-  bankIfsc: string
+  bankIFSC: string
   creditLimit: number
   creditDays: number
-  notes: string
 }
 
 const initialFormData: VendorFormData = {
   code: '',
   name: '',
-  type: 'supplier',
-  category: 'chemicals',
+  type: 'SUPPLIER',
   gstNumber: '',
   panNumber: '',
-  address: '',
+  addressLine1: '',
+  addressLine2: '',
   city: '',
   state: '',
   pincode: '',
   contactPerson: '',
   email: '',
   phone: '',
-  alternatePhone: '',
   bankName: '',
   bankAccount: '',
-  bankIfsc: '',
+  bankIFSC: '',
   creditLimit: 0,
-  creditDays: 30,
-  notes: ''
+  creditDays: 30
 }
 
 const indianStates = [
@@ -94,12 +90,10 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
     // Basic validations
     if (!formData.code.trim()) newErrors.code = 'Vendor code is required'
     if (!formData.name.trim()) newErrors.name = 'Vendor name is required'
-    if (!formData.address.trim()) newErrors.address = 'Address is required'
+    if (!formData.addressLine1.trim()) newErrors.addressLine1 = 'Address is required'
     if (!formData.city.trim()) newErrors.city = 'City is required'
     if (!formData.state) newErrors.state = 'State is required'
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required'
-    if (!formData.contactPerson.trim()) newErrors.contactPerson = 'Contact person is required'
-    if (!formData.email.trim()) newErrors.email = 'Email is required'
     if (!formData.phone.trim()) newErrors.phone = 'Phone is required'
 
     // Format validations
@@ -285,28 +279,12 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
                         onChange={handleChange}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
-                        <option value="supplier">Supplier</option>
-                        <option value="contractor">Contractor</option>
-                        <option value="service_provider">Service Provider</option>
+                        <option value="SUPPLIER">Supplier</option>
+                        <option value="CONTRACTOR">Contractor</option>
+                        <option value="SERVICE_PROVIDER">Service Provider</option>
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Category *
-                      </label>
-                      <select
-                        name="category"
-                        value={formData.category}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      >
-                        <option value="chemicals">Chemicals</option>
-                        <option value="spare_parts">Spare Parts</option>
-                        <option value="consumables">Consumables</option>
-                        <option value="services">Services</option>
-                      </select>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -355,19 +333,6 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Notes
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleChange}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Any additional notes about this vendor..."
-                    />
-                  </div>
                 </div>
               )}
 
@@ -376,23 +341,37 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Address *
+                      Address Line 1 *
                     </label>
-                    <textarea
-                      name="address"
-                      value={formData.address}
+                    <input
+                      type="text"
+                      name="addressLine1"
+                      value={formData.addressLine1}
                       onChange={handleChange}
-                      rows={2}
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        errors.address 
+                        errors.addressLine1 
                           ? 'border-red-500' 
                           : 'border-gray-300 dark:border-gray-600'
                       } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                       placeholder="Street address, building, etc."
                     />
-                    {errors.address && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address}</p>
+                    {errors.addressLine1 && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.addressLine1}</p>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Address Line 2
+                    </label>
+                    <input
+                      type="text"
+                      name="addressLine2"
+                      value={formData.addressLine2}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Apartment, suite, etc. (optional)"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -534,14 +513,6 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Alternate Phone
                       </label>
-                      <input
-                        type="tel"
-                        name="alternatePhone"
-                        value={formData.alternatePhone}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        placeholder="e.g., 9876543211"
-                      />
                     </div>
                   </div>
                 </div>
@@ -585,8 +556,8 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
                       </label>
                       <input
                         type="text"
-                        name="bankIfsc"
-                        value={formData.bankIfsc}
+                        name="bankIFSC"
+                        value={formData.bankIFSC}
                         onChange={handleChange}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         placeholder="e.g., SBIN0001234"

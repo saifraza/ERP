@@ -12,24 +12,22 @@ app.use('*', authMiddleware)
 const vendorSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
-  type: z.enum(['supplier', 'contractor', 'service_provider']),
-  category: z.string().min(1),
+  type: z.enum(['SUPPLIER', 'CONTRACTOR', 'SERVICE_PROVIDER']),
   gstNumber: z.string().optional(),
   panNumber: z.string().optional(),
-  address: z.string().min(1),
+  addressLine1: z.string().min(1),
+  addressLine2: z.string().optional(),
   city: z.string().min(1),
   state: z.string().min(1),
   pincode: z.string().min(6).max(6),
-  contactPerson: z.string().min(1),
-  email: z.string().email(),
+  contactPerson: z.string().optional(),
+  email: z.string().email().optional(),
   phone: z.string().min(10),
-  alternatePhone: z.string().optional(),
   bankName: z.string().optional(),
   bankAccount: z.string().optional(),
-  bankIfsc: z.string().optional(),
+  bankIFSC: z.string().optional(),
   creditLimit: z.number().default(0),
-  creditDays: z.number().default(30),
-  notes: z.string().optional()
+  creditDays: z.number().default(30)
 })
 
 // Get all vendors for a company
