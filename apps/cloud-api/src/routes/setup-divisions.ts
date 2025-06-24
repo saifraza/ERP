@@ -22,7 +22,6 @@ app.post('/create-defaults', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -30,7 +29,6 @@ app.post('/create-defaults', async (c) => {
     // Check if user is admin
     if (companyUser.role !== 'ADMIN' && companyUser.role !== 'OWNER') {
       return c.json({ 
-        success: false, 
         error: 'Only admin or owner can create default divisions' 
       }, 403)
     }
@@ -42,7 +40,6 @@ app.post('/create-defaults', async (c) => {
     
     if (existingDivisions > 0) {
       return c.json({ 
-        success: false, 
         error: 'Divisions already exist for this company' 
       }, 400)
     }
@@ -70,13 +67,12 @@ app.post('/create-defaults', async (c) => {
     )
     
     return c.json({ 
-      success: true, 
       message: `Created ${divisions.length} default divisions`,
       divisions 
     })
   } catch (error: any) {
     console.error('Error creating default divisions:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -95,7 +91,6 @@ app.post('/create-default-factories', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -103,7 +98,6 @@ app.post('/create-default-factories', async (c) => {
     // Check if user is admin
     if (companyUser.role !== 'ADMIN' && companyUser.role !== 'OWNER') {
       return c.json({ 
-        success: false, 
         error: 'Only admin or owner can create default factories' 
       }, 403)
     }
@@ -115,7 +109,6 @@ app.post('/create-default-factories', async (c) => {
     
     if (existingFactories > 0) {
       return c.json({ 
-        success: false, 
         error: 'Factories already exist for this company' 
       }, 400)
     }
@@ -127,7 +120,6 @@ app.post('/create-default-factories', async (c) => {
     
     if (!company) {
       return c.json({ 
-        success: false, 
         error: 'Company not found' 
       }, 404)
     }
@@ -154,13 +146,12 @@ app.post('/create-default-factories', async (c) => {
     })
     
     return c.json({ 
-      success: true, 
       message: 'Created default factory',
       factory 
     })
   } catch (error: any) {
     console.error('Error creating default factory:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 

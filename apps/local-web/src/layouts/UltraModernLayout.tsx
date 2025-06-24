@@ -196,6 +196,7 @@ const navigation = [
         icon: Database,
         children: [
           { name: 'Companies', href: '/masters/companies', icon: Building2 },
+          { name: 'Divisions', href: '/masters/divisions', icon: Building2 },
           { name: 'Materials', href: '/masters/materials', icon: Package },
           { name: 'Vendors', href: '/masters/vendors', icon: Users },
           { name: 'Customers', href: '/masters/customers', icon: UserCheck },

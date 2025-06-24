@@ -28,7 +28,7 @@ app.get('/', async (c) => {
     const companyId = companyUser?.companyId
     
     if (!companyId) {
-      return c.json({ success: true, divisions: [] })
+      return c.json({ divisions: [] })
     }
     
     const divisions = await prisma.division.findMany({
@@ -36,10 +36,10 @@ app.get('/', async (c) => {
       orderBy: { name: 'asc' }
     })
     
-    return c.json({ success: true, divisions })
+    return c.json({ divisions })
   } catch (error: any) {
     console.error('Error fetching divisions:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -58,7 +58,6 @@ app.post('/', async (c) => {
     
     if (!companyId) {
       return c.json({ 
-        success: false, 
         error: 'User is not associated with a company' 
       }, 400)
     }
@@ -76,7 +75,6 @@ app.post('/', async (c) => {
     
     if (existing) {
       return c.json({ 
-        success: false, 
         error: 'Division code already exists' 
       }, 400)
     }
@@ -88,18 +86,17 @@ app.post('/', async (c) => {
       }
     })
     
-    return c.json({ success: true, division })
+    return c.json({ division })
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return c.json({ 
-        success: false, 
         error: 'Validation failed', 
         details: error.errors 
       }, 400)
     }
     
     console.error('Error creating division:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    return c.json({ error: error.message }, 500)
   }
 })
 

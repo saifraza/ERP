@@ -47,6 +47,7 @@ const navigation = [
     icon: Grid,
     children: [
       { name: 'Companies', href: '/masters/companies' },
+      { name: 'Divisions', href: '/masters/divisions' },
       { name: 'Materials', href: '/masters/materials' },
       { name: 'Vendors', href: '/masters/vendors' },
       { name: 'Customers', href: '/masters/customers' },
