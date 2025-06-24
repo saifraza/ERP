@@ -12,22 +12,41 @@ app.use('*', authMiddleware)
 app.get('/health', async (c) => {
   try {
     // Check if we can access Gmail
-    const emails = await multiTenantGmail.listEmails(undefined, 1)
+    let gmailStatus = 'unknown'
+    let emailCount = 0
+    try {
+      const emails = await multiTenantGmail.listEmails(undefined, 1)
+      emailCount = emails.length
+      gmailStatus = 'connected'
+    } catch (e: any) {
+      gmailStatus = 'error: ' + e.message
+    }
     
     // Check if Gemini is available
     let geminiStatus = 'not configured'
     try {
       const gemini = emailAutomation['getGemini']()
       if (gemini) geminiStatus = 'available'
-    } catch (e) {
+    } catch (e: any) {
       geminiStatus = 'error: ' + e.message
     }
+    
+    // Check environment variables
+    const hasGoogleCreds = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+    const hasRefreshToken = !!process.env.GOOGLE_REFRESH_TOKEN
+    const hasGeminiKey = !!process.env.GEMINI_API_KEY
     
     return c.json({
       success: true,
       status: 'healthy',
-      gmail: emails.length >= 0 ? 'connected' : 'error',
+      gmail: gmailStatus,
+      emailCount,
       gemini: geminiStatus,
+      environment: {
+        hasGoogleCreds,
+        hasRefreshToken,
+        hasGeminiKey
+      },
       timestamp: new Date().toISOString()
     })
   } catch (error: any) {
@@ -35,7 +54,24 @@ app.get('/health', async (c) => {
       success: false,
       status: 'unhealthy',
       error: error?.message,
+      stack: error?.stack,
       timestamp: new Date().toISOString()
+    })
+  }
+})
+
+// Simple test endpoint
+app.get('/test', async (c) => {
+  try {
+    return c.json({
+      success: true,
+      message: 'Email automation routes are working',
+      auth: c.get('user') ? 'authenticated' : 'not authenticated'
+    })
+  } catch (error: any) {
+    return c.json({
+      success: false,
+      error: error?.message
     })
   }
 })
@@ -111,10 +147,12 @@ app.post('/process-batch', async (c) => {
     
   } catch (error: any) {
     console.error('Batch processing error:', error)
+    console.error('Error stack:', error?.stack)
     return c.json({
       success: false,
       error: 'Failed to process emails',
-      details: error?.message
+      details: error?.message || 'Unknown error',
+      type: error?.constructor?.name || 'Error'
     }, 500)
   }
 })
