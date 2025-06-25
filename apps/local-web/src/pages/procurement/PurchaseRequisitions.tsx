@@ -328,7 +328,7 @@ export default function PurchaseRequisitions() {
                       <div className="mt-1 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Building className="h-3 w-3" />
-                          {pr.division?.name || pr.factory?.name || 'N/A'}
+                          {pr.division?.name || pr.department || 'N/A'}
                         </div>
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />

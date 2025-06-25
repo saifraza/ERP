@@ -19,7 +19,7 @@ const requisitionItemSchema = z.object({
 
 const requisitionSchema = z.object({
   factoryId: z.string().uuid(),
-  divisionId: z.string().uuid(),
+  divisionId: z.string().uuid().optional(),
   department: z.string().min(1),
   priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
   purpose: z.string().optional(),
@@ -138,7 +138,7 @@ app.get('/', async (c) => {
       approvedDate: req.approvedDate,
       remarks: req.remarks,
       factory: req.factory,
-      division: req.division,
+      division: req.division || null,
       items: req.items.map(item => ({
         id: item.id,
         materialId: item.materialId,
@@ -245,7 +245,7 @@ app.get('/:id', async (c) => {
       approvedDate: requisition.approvedDate,
       remarks: requisition.remarks,
       factory: requisition.factory,
-      division: requisition.division,
+      division: requisition.division || null,
       items: requisition.items.map(item => ({
         id: item.id,
         material: {
@@ -336,7 +336,7 @@ app.post('/', async (c) => {
     const requisition = await prisma.requisition.create({
       data: {
         factoryId: validated.factoryId,
-        divisionId: validated.divisionId,
+        divisionId: validated.divisionId || null,
         requisitionNo,
         requisitionDate: new Date(),
         department: validated.department,
