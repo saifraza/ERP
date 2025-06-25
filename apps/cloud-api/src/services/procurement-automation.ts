@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma.js'
 import { multiTenantGmail } from './multi-tenant-gmail.js'
 import { getGeminiService } from './gemini.js'
-import { rfqPDFGenerator } from './rfq-pdf-generator.js'
+import { rfqPDFGeneratorV2 } from './rfq-pdf-generator-v2.js'
 
 export class ProcurementAutomationService {
   private gemini: any = null
@@ -670,7 +670,7 @@ Accounts Team
         console.log(`Sending RFQ to vendor: ${vendor.name} (${vendor.email})`)
         
         // Generate vendor-specific PDF
-        const pdfBuffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendor.id)
+        const pdfBuffer = await rfqPDFGeneratorV2.generateVendorRFQPDF(rfqId, vendor.id)
         const pdfFilename = `RFQ_${rfq.rfqNumber}_${vendor.code}.pdf`
         
         // Prepare email body - use custom body if provided
