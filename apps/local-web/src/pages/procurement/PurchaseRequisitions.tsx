@@ -12,7 +12,7 @@ import { toast } from 'react-hot-toast'
 import AddRequisitionModal from '../../components/procurement/AddRequisitionModal'
 import PRWorkflowInfo from '../../components/procurement/PRWorkflowInfo'
 import PRStatusSummary from '../../components/procurement/PRStatusSummary'
-import { useKeyboardShortcuts, useListNavigation } from '../../hooks/useKeyboardShortcuts'
+import { useKeyboardShortcuts, useListNavigation, type KeyboardShortcut } from '../../hooks/useKeyboardShortcuts'
 
 interface RequisitionItem {
   id: string
@@ -241,7 +241,7 @@ export default function PurchaseRequisitions() {
   }
 
   // Simple shortcuts without command key
-  const workflowShortcuts = []
+  const workflowShortcuts: KeyboardShortcut[] = []
 
   // Common shortcuts for all users
   const pageShortcuts = [
