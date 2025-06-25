@@ -93,17 +93,7 @@ export default function CompanyEdit() {
         ...data
       }
 
-      // Update in localStorage
-      const updatedCompanies = companies.map(c => 
-        c.id === currentCompany.id ? updatedCompany : c
-      )
-      localStorage.setItem('erp-companies', JSON.stringify(updatedCompanies))
-
-      // Update the store
-      setCompanies(updatedCompanies)
-      setCurrentCompany(updatedCompany)
-
-      // Try to update via API
+      // Try to update via API first
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
         const response = await fetch(`${apiUrl}/api/companies/${currentCompany.id}`, {
@@ -117,7 +107,7 @@ export default function CompanyEdit() {
 
         if (response.ok) {
           const result = await response.json()
-          // Update with server response to ensure consistency
+          // Update with server response
           if (result.company) {
             const serverUpdatedCompanies = companies.map(c => 
               c.id === currentCompany.id ? result.company : c
@@ -125,16 +115,23 @@ export default function CompanyEdit() {
             localStorage.setItem('erp-companies', JSON.stringify(serverUpdatedCompanies))
             setCompanies(serverUpdatedCompanies)
             setCurrentCompany(result.company)
+            toast.success('Company details updated successfully')
+            navigate('/masters/companies')
           }
         } else {
-          console.warn('API update failed, but local storage updated')
+          const errorData = await response.json()
+          if (errorData.error?.includes('Admin role required')) {
+            toast.error('You need Admin role to update company details')
+          } else {
+            toast.error(errorData.error || 'Failed to update company details')
+          }
+          // Don't update local storage if API fails
         }
       } catch (apiError) {
-        console.warn('API not available, using local storage:', apiError)
+        console.error('API error:', apiError)
+        toast.error('Failed to connect to server. Please try again.')
+        // Don't update local storage if API fails
       }
-
-      toast.success('Company details updated successfully')
-      navigate('/masters/companies')
     } catch (error) {
       console.error('Update error:', error)
       toast.error('Failed to update company details')

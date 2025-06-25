@@ -101,7 +101,16 @@ app.put('/:id', authMiddleware, async (c) => {
     })
     
     if (!companyUser) {
-      return c.json({ error: 'Access denied. Admin role required.' }, 403)
+      // Check what role the user actually has
+      const userRole = await prisma.companyUser.findFirst({
+        where: { userId, companyId },
+        select: { role: true }
+      })
+      
+      console.log(`User ${userId} has role ${userRole?.role} for company ${companyId}`)
+      return c.json({ 
+        error: `Access denied. Admin role required. Your role: ${userRole?.role || 'none'}` 
+      }, 403)
     }
     
     // Update company
@@ -109,8 +118,7 @@ app.put('/:id', authMiddleware, async (c) => {
       where: { id: companyId },
       data: {
         ...data,
-        updatedAt: new Date(),
-        updatedBy: userId
+        updatedAt: new Date()
       },
       include: {
         factories: true
@@ -151,8 +159,7 @@ app.delete('/:id', authMiddleware, async (c) => {
       where: { id: companyId },
       data: {
         isActive: false,
-        updatedAt: new Date(),
-        updatedBy: userId
+        updatedAt: new Date()
       }
     })
     
