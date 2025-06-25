@@ -31,12 +31,24 @@ const createRFQSchema = z.object({
 
 // Get all RFQs
 app.get('/', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const { status, from, to } = c.req.query()
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
+    console.log('Fetching RFQs for user:', userId, 'company:', companyUser.companyId)
+    
     const where: any = {
-      companyId: user.companyId
+      companyId: companyUser.companyId
     }
     
     if (status) where.status = status
@@ -71,6 +83,8 @@ app.get('/', async (c) => {
       },
       orderBy: { createdAt: 'desc' }
     })
+    
+    console.log('Found RFQs:', rfqs.length)
     
     return c.json({ success: true, rfqs })
   } catch (error: any) {
@@ -196,14 +210,15 @@ app.post('/', async (c) => {
       }
     })
     
-    // Update requisition status to indicate RFQ created
-    await prisma.requisition.update({
-      where: { id: validated.requisitionId },
-      data: { 
-        status: 'PARTIALLY_ORDERED',
-        updatedAt: new Date()
-      }
-    })
+    // Keep requisition status as APPROVED since RFQ is just a quotation request
+    // Status will change to ORDERED only when PO is created
+    // await prisma.requisition.update({
+    //   where: { id: validated.requisitionId },
+    //   data: { 
+    //     status: 'PARTIALLY_ORDERED',
+    //     updatedAt: new Date()
+    //   }
+    // })
     
     return c.json({ 
       success: true,
@@ -224,14 +239,24 @@ app.post('/', async (c) => {
 
 // Get single RFQ
 app.get('/:id', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const rfqId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: user.companyId
+        companyId: companyUser.companyId
       },
       include: {
         requisition: {
@@ -268,14 +293,24 @@ app.get('/:id', async (c) => {
 
 // Send RFQ to vendors
 app.post('/:id/send', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const rfqId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: user.companyId,
+        companyId: companyUser.companyId,
         status: 'OPEN'
       }
     })
@@ -303,7 +338,7 @@ app.post('/:id/send', async (c) => {
 
 // Close RFQ
 app.post('/:id/close', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const rfqId = c.req.param('id')
   
   try {
@@ -343,7 +378,7 @@ app.post('/:id/close', async (c) => {
 
 // Compare quotations for an RFQ
 app.get('/:id/comparison', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const rfqId = c.req.param('id')
   
   try {
@@ -440,7 +475,7 @@ app.get('/:id/comparison', async (c) => {
 
 // Select vendor for RFQ items
 app.post('/:id/select-vendors', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const rfqId = c.req.param('id')
   
   try {
@@ -493,7 +528,7 @@ app.post('/:id/select-vendors', async (c) => {
 
 // Generate RFQ PDF
 app.get('/:id/pdf', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const rfqId = c.req.param('id')
   
   try {
@@ -529,7 +564,7 @@ app.get('/:id/pdf', async (c) => {
 
 // Generate vendor-specific RFQ PDF
 app.get('/:id/pdf/:vendorId', async (c) => {
-  const user = c.get('user')
+  const userId = c.get('userId')
   const rfqId = c.req.param('id')
   const vendorId = c.req.param('vendorId')
   
