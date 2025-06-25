@@ -16,11 +16,6 @@ app.get('/', authMiddleware, async (c) => {
         companyId: user.companyId,
       },
       include: {
-        requisition: {
-          include: {
-            division: true,
-          }
-        },
         vendors: {
           include: {
             vendor: {
@@ -33,12 +28,6 @@ app.get('/', authMiddleware, async (c) => {
             }
           }
         }
-        // quotations: {
-        //   select: {
-        //     id: true,
-        //     status: true,
-        //   }
-        // }
       },
       orderBy: {
         createdAt: 'desc'
@@ -53,8 +42,7 @@ app.get('/', authMiddleware, async (c) => {
         issueDate: rfq.issueDate,
         submissionDeadline: rfq.submissionDeadline,
         vendors: rfq.vendors,
-        quotationCount: 0, // rfq.quotations.length,
-        requisition: rfq.requisition
+        quotationCount: 0
       }))
     })
   } catch (error) {
