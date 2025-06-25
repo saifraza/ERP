@@ -4,7 +4,51 @@ import { prisma } from '../lib/prisma.js'
 
 const app = new Hono()
 
-// Apply auth middleware to all routes
+// Setup endpoint to update user role to ADMIN (no auth required for initial setup)
+app.post('/setup-user-admin', async (c) => {
+  try {
+    // Find the user
+    const user = await prisma.user.findUnique({
+      where: { email: 'saif' }
+    })
+    
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404)
+    }
+    
+    // Update all CompanyUser entries for this user to ADMIN role
+    const result = await prisma.companyUser.updateMany({
+      where: { userId: user.id },
+      data: { role: 'ADMIN' }
+    })
+    
+    // Verify the update
+    const companyUsers = await prisma.companyUser.findMany({
+      where: { userId: user.id },
+      include: {
+        company: {
+          select: { name: true }
+        }
+      }
+    })
+    
+    const roles = companyUsers.map(cu => ({
+      company: cu.company.name,
+      role: cu.role
+    }))
+    
+    return c.json({
+      success: true,
+      message: `Updated ${result.count} company-user associations to ADMIN role`,
+      roles
+    })
+  } catch (error: any) {
+    console.error('Error updating user role:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// Apply auth middleware to all routes except setup-user-admin
 app.use('*', authMiddleware)
 
 // Create default divisions for a company
