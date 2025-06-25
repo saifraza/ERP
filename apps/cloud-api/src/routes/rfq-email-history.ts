@@ -8,12 +8,22 @@ const app = new Hono()
 // Get all RFQs with email statistics
 app.get('/', authMiddleware, async (c) => {
   try {
-    const user = c.get('user')
+    const userId = c.get('userId')
+    
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
     
     // Fetch all RFQs with vendor email information
     const rfqs = await prisma.rFQ.findMany({
       where: {
-        companyId: user.companyId,
+        companyId: companyUser.companyId,
       },
       include: {
         vendors: {
@@ -55,7 +65,7 @@ app.get('/', authMiddleware, async (c) => {
 app.get('/:rfqId/logs', authMiddleware, async (c) => {
   try {
     const rfqId = c.req.param('rfqId')
-    const user = c.get('user')
+    const userId = c.get('userId')
     
     // For now, return mock data since the email log tables don't exist yet
     // TODO: Uncomment when tables are created
@@ -95,7 +105,7 @@ app.get('/:rfqId/logs', authMiddleware, async (c) => {
 // Process RFQ emails
 app.post('/process', authMiddleware, async (c) => {
   try {
-    const user = c.get('user')
+    const userId = c.get('userId')
     
     // TODO: Implement email processing logic
     // For now, return a success message
