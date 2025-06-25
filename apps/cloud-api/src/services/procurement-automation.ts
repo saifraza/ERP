@@ -518,6 +518,9 @@ Accounts Team
    * Send RFQ to vendors
    */
   async sendRFQToVendors(rfqId: string) {
+    console.log('=== sendRFQToVendors START ===')
+    console.log('RFQ ID:', rfqId)
+    
     const rfq = await prisma.rFQ.findUnique({
       where: { id: rfqId },
       include: {
@@ -535,6 +538,13 @@ Accounts Team
     if (!rfq) {
       throw new Error('RFQ not found')
     }
+    
+    console.log('RFQ Details:', {
+      rfqNumber: rfq.rfqNumber,
+      companyId: rfq.companyId,
+      companyName: rfq.company.name,
+      vendorsCount: rfq.vendors.length
+    })
     
     // Email template with professional formatting
     const emailTemplate = `
@@ -625,19 +635,27 @@ This is an automated email. Please do not reply to this email address.
         
         // Send email with PDF attachment
         const subject = `Request for Quotation - ${rfq.rfqNumber} - ${rfq.company.name}`
-        const result = await multiTenantGmail.sendEmailWithAttachment(
-          rfq.companyId,
-          vendor.email,
-          subject,
-          emailBody,
-          [
-            {
-              filename: pdfFilename,
-              content: pdfBuffer,
-              contentType: 'application/pdf'
-            }
-          ]
-        )
+        console.log(`Sending email to ${vendor.email} with subject: ${subject}`)
+        
+        try {
+          const result = await multiTenantGmail.sendEmailWithAttachment(
+            rfq.companyId,
+            vendor.email,
+            subject,
+            emailBody,
+            [
+              {
+                filename: pdfFilename,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+              }
+            ]
+          )
+          console.log(`Email sent successfully to ${vendor.email}:`, result)
+        } catch (emailError: any) {
+          console.error(`Failed to send email to ${vendor.email}:`, emailError)
+          throw emailError
+        }
         
         // TODO: Uncomment after database migration
         // Create email log
@@ -705,9 +723,10 @@ This is an automated email. Please do not reply to this email address.
     }
     
     // Update RFQ status
+    console.log('Updating RFQ status to SENT')
     await prisma.rFQ.update({
       where: { id: rfqId },
-      data: { status: 'sent' }
+      data: { status: 'SENT' }
     })
     
     return {

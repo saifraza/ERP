@@ -324,6 +324,10 @@ app.post('/:id/send', async (c) => {
   const userId = c.get('userId')
   const rfqId = c.req.param('id')
   
+  console.log('=== RFQ Send Request ===')
+  console.log('User ID:', userId)
+  console.log('RFQ ID:', rfqId)
+  
   try {
     // Get user's company
     const companyUser = await prisma.companyUser.findFirst({
@@ -361,8 +365,18 @@ app.post('/:id/send', async (c) => {
       }, 400)
     }
     
+    console.log('RFQ found:', {
+      id: rfq.id,
+      rfqNumber: rfq.rfqNumber,
+      status: rfq.status,
+      vendorCount: rfq.vendors.length,
+      vendors: rfq.vendors.map(v => ({ id: v.vendorId, emailSent: v.emailSent }))
+    })
+    
     // Send emails to vendors
+    console.log('Calling sendRFQToVendors...')
     const result = await procurementAutomation.sendRFQToVendors(rfqId)
+    console.log('Send result:', result)
     
     return c.json({
       success: true,
