@@ -12,6 +12,7 @@ Solo-developed complete ERP system for ethanol and sugar factory operations with
 - Integrated resource sharing and optimization
 - Cloud analytics and reporting
 - AI-powered insights via MCP server
+- **Comprehensive keyboard navigation system for power users**
 
 ## Technology Stack
 
@@ -180,6 +181,60 @@ ERP/
 - [x] Auto-process invoices with PO matching
 - [x] Send RFQs to multiple vendors via email
 - [x] Vendor rating and evaluation system
+
+### ✅ Keyboard Navigation System (NEW! 2025-01-25)
+- [x] **Command Palette** (⌘P) - VS Code style command palette with fuzzy search
+- [x] **Global Search** (⌘K) - Quick search across the application
+- [x] **Keyboard Shortcuts Help** (?) - Interactive help modal showing all shortcuts
+- [x] **Vim-style List Navigation** - Navigate lists with j/k keys
+- [x] **Context-aware Shortcuts** - Different shortcuts for different pages
+- [x] **Quick Navigation** (G + key) - Jump to any module quickly
+- [x] **Module Quick Access** (Alt + 1-9) - Direct access to major modules
+
+#### Global Keyboard Shortcuts
+- **⌘K** - Open global search
+- **⌘P** - Open command palette (search for any action)
+- **⌘N** - Create new (context-aware based on current page)
+- **?** - Show keyboard shortcuts help
+- **ESC** - Close modals/dialogs
+- **G then H** - Go to Home
+- **G then P** - Go to Procurement
+- **G then R** - Go to RFQ Management
+- **G then Q** - Go to Purchase Requisitions
+- **G then V** - Go to Vendors
+- **G then M** - Go to Mails & AI
+- **Alt + 1-9** - Quick access to modules
+
+#### List Navigation (Vim-style)
+- **J** - Move down in list
+- **K** - Move up in list
+- **X** - Select/deselect current item
+- **Enter** - Open selected item
+- **/** - Focus search in current list
+
+#### Page-Specific Shortcuts
+
+**RFQ Management Page**
+- **N** - Create new RFQ
+- **S** - Send selected RFQ to vendors
+- **C** - Compare quotations
+- **M** - View email history
+
+**Purchase Requisitions Page**
+- **N** - Create new requisition
+- **A** - Approve selected PR (managers only)
+- **R** - Reject selected PR (managers only)
+- **S** - Submit selected PR for approval
+- **C** - Convert approved PR to RFQ
+
+#### Implementation Details
+- **useKeyboardShortcuts Hook** - Central hook for managing keyboard shortcuts
+- **useListNavigation Hook** - Specialized hook for list navigation
+- **CommandPalette Component** - VS Code inspired command palette
+- **KeyboardShortcutsHelp Component** - Interactive help modal
+- **Visual Indicators** - Selected items highlighted with primary color ring
+- **Accessibility** - Shortcuts disabled when typing in inputs
+- **Performance** - Smooth scrolling and instant response
 
 ### 🚀 Ready for Phase 2
 - [ ] Business logic implementation
@@ -551,9 +606,22 @@ Common causes and fixes:
 
 ## Contact
 Solo Developer Project
-Last Updated: 2024-12-26
+Last Updated: 2025-01-25
 
-## Recent Updates (December 2024)
+## Recent Updates
+
+### January 2025
+- ✅ **Comprehensive Keyboard Navigation System** (2025-01-25)
+  - Command Palette (⌘P) for VS Code-like experience
+  - Global keyboard shortcuts for all major actions
+  - Vim-style list navigation (j/k/x)
+  - Context-aware shortcuts for each page
+  - Interactive help modal (?)
+  - Quick navigation with G + key combinations
+  - Module quick access with Alt + 1-9
+  - Full accessibility support
+
+### December 2024
 - ✅ Consolidated APIs (removed backend-api, kept cloud-api)
 - ✅ Fixed authentication to accept username "saif"
 - ✅ Database migrated with seed data
