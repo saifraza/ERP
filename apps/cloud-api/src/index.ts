@@ -31,6 +31,7 @@ import procurementStatsRoutes from './routes/procurement-stats.js'
 import debugRfqRoutes from './routes/debug-rfq.js'
 import rfqEmailHistoryRoutes from './routes/rfq-email-history.js'
 import dbFixRoutes from './routes/db-fix.js'
+import simpleFixRoutes from './routes/simple-fix.js'
 
 const app = new Hono()
 
@@ -118,6 +119,7 @@ app.route('/api/procurement/stats', procurementStatsRoutes)
 app.route('/api/debug-rfq', debugRfqRoutes)
 app.route('/api/rfq-email-history', rfqEmailHistoryRoutes)
 app.route('/api/db-fix', dbFixRoutes)
+app.route('/api/simple-fix', simpleFixRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {
