@@ -517,9 +517,19 @@ Accounts Team
   /**
    * Send RFQ to vendors
    */
-  async sendRFQToVendors(rfqId: string) {
+  async sendRFQToVendors(
+    rfqId: string, 
+    vendorIds?: string[],
+    emailOptions?: {
+      customSubject?: string
+      customBody?: string
+      ccEmails?: string[]
+    }
+  ) {
     console.log('=== sendRFQToVendors START ===')
     console.log('RFQ ID:', rfqId)
+    console.log('Vendor IDs:', vendorIds)
+    console.log('Email Options:', emailOptions)
     
     const rfq = await prisma.rFQ.findUnique({
       where: { id: rfqId },
@@ -592,7 +602,14 @@ This is an automated email. Please do not reply to this email address.
     
     const results = []
     
-    for (const rfqVendor of rfq.vendors) {
+    // Filter vendors if specific vendorIds provided
+    const vendorsToProcess = vendorIds 
+      ? rfq.vendors.filter(v => vendorIds.includes(v.vendorId))
+      : rfq.vendors
+    
+    console.log(`Processing ${vendorsToProcess.length} vendors`)
+    
+    for (const rfqVendor of vendorsToProcess) {
       try {
         const vendor = await prisma.vendor.findUnique({
           where: { id: rfqVendor.vendorId }
@@ -620,24 +637,39 @@ This is an automated email. Please do not reply to this email address.
         const pdfBuffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendor.id)
         const pdfFilename = `RFQ_${rfq.rfqNumber}_${vendor.code}.pdf`
         
-        // Prepare email body
-        const emailBody = emailTemplate
-          .replace(/{vendorName}/g, vendor.contactPerson || vendor.name)
-          .replace(/{companyName}/g, rfq.company.name)
-          .replace(/{rfqNumber}/g, rfq.rfqNumber)
-          .replace(/{issueDate}/g, new Date(rfq.issueDate).toLocaleDateString('en-IN'))
-          .replace(/{dueDate}/g, new Date(rfq.submissionDeadline).toLocaleDateString('en-IN'))
-          .replace(/{division}/g, rfq.requisition?.division?.name || 'General')
-          .replace(/{signatoryName}/g, 'Procurement Team')
-          .replace(/{signatoryDesignation}/g, 'Purchase Department')
-          .replace(/{companyEmail}/g, rfq.company.email)
-          .replace(/{companyPhone}/g, rfq.company.phone)
+        // Prepare email body - use custom body if provided
+        const emailBody = emailOptions?.customBody 
+          ? emailOptions.customBody
+              .replace(/{vendorName}/g, vendor.contactPerson || vendor.name)
+              .replace(/{companyName}/g, rfq.company.name)
+              .replace(/{rfqNumber}/g, rfq.rfqNumber)
+              .replace(/{issueDate}/g, new Date(rfq.issueDate).toLocaleDateString('en-IN'))
+              .replace(/{dueDate}/g, new Date(rfq.submissionDeadline).toLocaleDateString('en-IN'))
+              .replace(/{division}/g, rfq.requisition?.division?.name || 'General')
+              .replace(/{signatoryName}/g, 'Procurement Team')
+              .replace(/{signatoryDesignation}/g, 'Purchase Department')
+              .replace(/{companyEmail}/g, rfq.company.email)
+              .replace(/{companyPhone}/g, rfq.company.phone)
+          : emailTemplate
+              .replace(/{vendorName}/g, vendor.contactPerson || vendor.name)
+              .replace(/{companyName}/g, rfq.company.name)
+              .replace(/{rfqNumber}/g, rfq.rfqNumber)
+              .replace(/{issueDate}/g, new Date(rfq.issueDate).toLocaleDateString('en-IN'))
+              .replace(/{dueDate}/g, new Date(rfq.submissionDeadline).toLocaleDateString('en-IN'))
+              .replace(/{division}/g, rfq.requisition?.division?.name || 'General')
+              .replace(/{signatoryName}/g, 'Procurement Team')
+              .replace(/{signatoryDesignation}/g, 'Purchase Department')
+              .replace(/{companyEmail}/g, rfq.company.email)
+              .replace(/{companyPhone}/g, rfq.company.phone)
         
-        // Send email with PDF attachment
-        const subject = `Request for Quotation - ${rfq.rfqNumber} - ${rfq.company.name}`
+        // Send email with PDF attachment - use custom subject if provided
+        const subject = emailOptions?.customSubject || `Request for Quotation - ${rfq.rfqNumber} - ${rfq.company.name}`
         console.log(`Sending email to ${vendor.email} with subject: ${subject}`)
         
         try {
+          // Prepare CC emails if provided
+          const ccEmails = emailOptions?.ccEmails?.join(', ') || undefined
+          
           const result = await multiTenantGmail.sendEmailWithAttachment(
             rfq.companyId,
             vendor.email,
@@ -649,7 +681,8 @@ This is an automated email. Please do not reply to this email address.
                 content: pdfBuffer,
                 contentType: 'application/pdf'
               }
-            ]
+            ],
+            ccEmails  // Pass CC emails
           )
           console.log(`Email sent successfully to ${vendor.email}:`, result)
         } catch (emailError: any) {
@@ -732,7 +765,7 @@ This is an automated email. Please do not reply to this email address.
     return {
       success: true,
       rfqNumber: rfq.rfqNumber,
-      totalVendors: rfq.vendors.length,
+      totalVendors: vendorsToProcess.length,
       sentCount: results.filter(r => r.success).length,
       failedCount: results.filter(r => !r.success).length,
       results

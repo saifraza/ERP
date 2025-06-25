@@ -328,6 +328,16 @@ app.post('/:id/send', async (c) => {
   console.log('User ID:', userId)
   console.log('RFQ ID:', rfqId)
   
+  // Get request body if provided
+  let body: any = {}
+  try {
+    body = await c.req.json()
+    console.log('Request body:', body)
+  } catch (e) {
+    // No body provided, use defaults
+    console.log('No request body provided')
+  }
+  
   try {
     // Get user's company
     const companyUser = await prisma.companyUser.findFirst({
@@ -375,7 +385,16 @@ app.post('/:id/send', async (c) => {
     
     // Send emails to vendors
     console.log('Calling sendRFQToVendors...')
-    const result = await procurementAutomation.sendRFQToVendors(rfqId)
+    // If specific vendorIds provided, pass them to the service
+    const result = await procurementAutomation.sendRFQToVendors(
+      rfqId, 
+      body.vendorIds || undefined,
+      {
+        customSubject: body.customSubject,
+        customBody: body.customBody,
+        ccEmails: body.ccEmails
+      }
+    )
     console.log('Send result:', result)
     
     return c.json({
