@@ -342,11 +342,21 @@ app.post('/:id/close', async (c) => {
   const rfqId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: user.companyId,
-        status: 'sent'
+        companyId: companyUser.companyId,
+        status: 'SENT'
       }
     })
     
@@ -360,7 +370,7 @@ app.post('/:id/close', async (c) => {
     const updated = await prisma.rFQ.update({
       where: { id: rfqId },
       data: { 
-        status: 'closed',
+        status: 'CLOSED',
         updatedAt: new Date()
       }
     })
@@ -382,10 +392,20 @@ app.get('/:id/comparison', async (c) => {
   const rfqId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: user.companyId
+        companyId: companyUser.companyId
       },
       include: {
         items: true,
@@ -479,6 +499,16 @@ app.post('/:id/select-vendors', async (c) => {
   const rfqId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
     const { selections } = await c.req.json()
     
     if (!Array.isArray(selections)) {
@@ -491,7 +521,7 @@ app.post('/:id/select-vendors', async (c) => {
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: user.companyId
+        companyId: companyUser.companyId
       }
     })
     
@@ -508,7 +538,7 @@ app.post('/:id/select-vendors', async (c) => {
             itemCode: selection.itemCode,
             selectedVendorId: selection.vendorId,
             selectionReason: selection.reason,
-            comparedBy: user.name,
+            comparedBy: userId,
             comparedAt: new Date()
           }
         })
@@ -532,11 +562,21 @@ app.get('/:id/pdf', async (c) => {
   const rfqId = c.req.param('id')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
     // Check if RFQ belongs to user's company
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: user.companyId
+        companyId: companyUser.companyId
       },
       select: {
         rfqNumber: true
@@ -569,11 +609,21 @@ app.get('/:id/pdf/:vendorId', async (c) => {
   const vendorId = c.req.param('vendorId')
   
   try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
     // Check if RFQ belongs to user's company
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: user.companyId
+        companyId: companyUser.companyId
       },
       select: {
         rfqNumber: true
