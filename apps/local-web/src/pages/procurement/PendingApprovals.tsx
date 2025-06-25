@@ -38,6 +38,17 @@ export default function PendingApprovals() {
   const [selectedPriority, setSelectedPriority] = useState('all')
   const [showApprovalModal, setShowApprovalModal] = useState(false)
   const [selectedPR, setSelectedPR] = useState<PendingRequisition | null>(null)
+  const [stats, setStats] = useState<{
+    totalPending: number
+    urgentCount: number
+    highCount: number
+    oldestDate: string | null
+  }>({
+    totalPending: 0,
+    urgentCount: 0,
+    highCount: 0,
+    oldestDate: null
+  })
 
   // Check if user is a manager
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
@@ -66,7 +77,20 @@ export default function PendingApprovals() {
 
       if (response.ok) {
         const data = await response.json()
-        setRequisitions(data.requisitions || [])
+        const pendingReqs = data.requisitions || []
+        setRequisitions(pendingReqs)
+        
+        // Calculate stats from the fetched data
+        const urgentPRs = pendingReqs.filter((pr: PendingRequisition) => pr.priority.toUpperCase() === 'URGENT')
+        const highPRs = pendingReqs.filter((pr: PendingRequisition) => pr.priority.toUpperCase() === 'HIGH')
+        const oldestPR = pendingReqs.length > 0 ? pendingReqs[pendingReqs.length - 1].createdAt : null
+        
+        setStats({
+          totalPending: pendingReqs.length,
+          urgentCount: urgentPRs.length,
+          highCount: highPRs.length,
+          oldestDate: oldestPR
+        })
       } else {
         toast.error('Failed to load pending approvals')
       }
@@ -130,7 +154,7 @@ export default function PendingApprovals() {
         </div>
         <div className="flex items-center gap-3">
           <span className="px-3 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full text-sm font-medium">
-            {requisitions.length} pending
+            {stats.totalPending} pending
           </span>
         </div>
       </div>
@@ -142,7 +166,7 @@ export default function PendingApprovals() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Pending</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {requisitions.length}
+                {stats.totalPending}
               </p>
             </div>
             <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
@@ -156,7 +180,7 @@ export default function PendingApprovals() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Urgent PRs</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {requisitions.filter(pr => pr.priority.toUpperCase() === 'URGENT').length}
+                {stats.urgentCount}
               </p>
             </div>
             <div className="h-12 w-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
@@ -170,7 +194,7 @@ export default function PendingApprovals() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">High Priority</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {requisitions.filter(pr => pr.priority.toUpperCase() === 'HIGH').length}
+                {stats.highCount}
               </p>
             </div>
             <div className="h-12 w-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
@@ -184,7 +208,7 @@ export default function PendingApprovals() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Oldest PR</p>
               <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">
-                {requisitions.length > 0 ? getDaysAgo(requisitions[requisitions.length - 1].createdAt) : '-'}
+                {stats.oldestDate ? getDaysAgo(stats.oldestDate) : '-'}
               </p>
             </div>
             <div className="h-12 w-12 bg-gray-100 dark:bg-gray-900/30 rounded-lg flex items-center justify-center">

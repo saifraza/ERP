@@ -11,6 +11,7 @@ import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import AddRequisitionModal from '../../components/procurement/AddRequisitionModal'
 import PRWorkflowInfo from '../../components/procurement/PRWorkflowInfo'
+import PRStatusSummary from '../../components/procurement/PRStatusSummary'
 
 interface RequisitionItem {
   id: string
@@ -198,8 +199,11 @@ export default function PurchaseRequisitions() {
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Stats Cards */}
+        <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
@@ -260,6 +264,13 @@ export default function PurchaseRequisitions() {
               <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
           </div>
+        </div>
+          </div>
+        </div>
+        
+        {/* Status Summary */}
+        <div className="lg:col-span-1">
+          <PRStatusSummary />
         </div>
       </div>
 
