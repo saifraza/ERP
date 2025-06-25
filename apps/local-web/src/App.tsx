@@ -32,6 +32,7 @@ import PurchaseRequisitionDetail from './pages/procurement/PurchaseRequisitionDe
 import RFQManagement from './pages/procurement/RFQManagement'
 import ProcurementDashboard from './pages/procurement/ProcurementDashboard'
 import PendingApprovals from './pages/procurement/PendingApprovals'
+import ConvertToRFQ from './pages/procurement/ConvertToRFQ'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -119,6 +120,7 @@ function App() {
                     <Route path="/procurement/vendors/:id" element={<VendorDetail />} />
                     <Route path="/procurement/requisitions" element={<PurchaseRequisitions />} />
                     <Route path="/procurement/requisitions/:id" element={<PurchaseRequisitionDetail />} />
+                    <Route path="/procurement/requisitions/:id/convert-to-rfq" element={<ConvertToRFQ />} />
                     <Route path="/procurement/approvals" element={<PendingApprovals />} />
                     <Route path="/procurement/rfqs" element={<RFQManagement />} />
                     <Route path="/procurement/purchase-orders" element={<div>Purchase Orders</div>} />
