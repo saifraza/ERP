@@ -168,7 +168,7 @@ export function useGlobalKeyboardShortcuts() {
                 newButton.click()
                 toast.success('Create action triggered')
               } else {
-                toast.info('No create action available on this page')
+                toast('No create action available on this page')
               }
             } else {
               // Normal navigation

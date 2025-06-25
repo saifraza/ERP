@@ -174,7 +174,7 @@ export default function RFQManagement() {
           const sendButton = document.querySelector(`[data-rfq-send="${firstOpenRFQ.id}"]`) as HTMLElement
           sendButton?.click()
         } else {
-          toast.info('No open RFQs to send')
+          toast('No open RFQs to send')
         }
       }
     },

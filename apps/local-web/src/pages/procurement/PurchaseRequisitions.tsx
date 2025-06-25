@@ -251,7 +251,7 @@ export default function PurchaseRequisitions() {
         if (pendingPR) {
           handleApprovePR(pendingPR.id)
         } else {
-          toast.info('No pending PRs to approve')
+          toast('No pending PRs to approve')
         }
       }
     },
@@ -264,7 +264,7 @@ export default function PurchaseRequisitions() {
         if (pendingPR) {
           handleRejectPR(pendingPR.id)
         } else {
-          toast.info('No pending PRs to reject')
+          toast('No pending PRs to reject')
         }
       }
     }
