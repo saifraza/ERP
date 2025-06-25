@@ -30,10 +30,10 @@ interface RFQ {
   id: string
   rfqNumber: string
   issueDate: string
-  dueDate: string
+  submissionDeadline: string
   status: string
-  pr?: {
-    prNumber: string
+  requisition?: {
+    requisitionNo: string
     division: { name: string }
   }
   vendors: RFQVendor[]
@@ -132,21 +132,21 @@ export default function RFQManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-      case 'sent':
+      case 'OPEN':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-      case 'closed':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-      case 'cancelled':
+      case 'SENT':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      case 'CLOSED':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+      case 'CANCELLED':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
       default:
         return 'bg-gray-100 text-gray-800'
     }
   }
 
-  const getDaysRemaining = (dueDate: string) => {
-    const due = new Date(dueDate)
+  const getDaysRemaining = (submissionDeadline: string) => {
+    const due = new Date(submissionDeadline)
     const today = new Date()
     const diff = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     return diff
@@ -192,7 +192,7 @@ export default function RFQManagement() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Active RFQs</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {rfqs.filter(rfq => rfq.status === 'sent').length}
+                {rfqs.filter(rfq => rfq.status === 'SENT').length}
               </p>
             </div>
             <div className="h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -221,7 +221,7 @@ export default function RFQManagement() {
               <p className="text-sm text-gray-600 dark:text-gray-400">Due Soon</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                 {rfqs.filter(rfq => 
-                  rfq.status === 'sent' && getDaysRemaining(rfq.dueDate) <= 3
+                  rfq.status === 'SENT' && getDaysRemaining(rfq.submissionDeadline) <= 3
                 ).length}
               </p>
             </div>
@@ -241,10 +241,10 @@ export default function RFQManagement() {
             className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="sent">Sent</option>
-            <option value="closed">Closed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="OPEN">Open</option>
+            <option value="SENT">Sent</option>
+            <option value="CLOSED">Closed</option>
+            <option value="CANCELLED">Cancelled</option>
           </select>
         </div>
       </div>
@@ -287,12 +287,12 @@ export default function RFQManagement() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(rfq.status)}`}>
                           {rfq.status}
                         </span>
-                        {rfq.pr && (
+                        {rfq.requisition && (
                           <Link
-                            to={`/procurement/requisitions/${rfq.pr.prNumber}`}
+                            to={`/procurement/requisitions/${rfq.requisition.prNumber}`}
                             className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
-                            From {rfq.pr.prNumber}
+                            From {rfq.requisition.requisitionNo}
                           </Link>
                         )}
                       </div>
@@ -303,14 +303,14 @@ export default function RFQManagement() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Due {new Date(rfq.dueDate).toLocaleDateString()}
-                          {rfq.status === 'sent' && (
+                          Due {new Date(rfq.submissionDeadline).toLocaleDateString()}
+                          {rfq.status === 'SENT' && (
                             <span className={`ml-1 font-medium ${
-                              getDaysRemaining(rfq.dueDate) <= 3 
+                              getDaysRemaining(rfq.submissionDeadline) <= 3 
                                 ? 'text-red-600 dark:text-red-400' 
                                 : 'text-gray-600 dark:text-gray-400'
                             }`}>
-                              ({getDaysRemaining(rfq.dueDate)} days)
+                              ({getDaysRemaining(rfq.submissionDeadline)} days)
                             </span>
                           )}
                         </div>
@@ -323,7 +323,7 @@ export default function RFQManagement() {
                       rfqNumber={rfq.rfqNumber}
                       onEmailSent={fetchRFQs}
                     />
-                    {rfq.status === 'sent' && rfq._count.quotations > 0 && (
+                    {rfq.status === 'SENT' && rfq._count.quotations > 0 && (
                       <Link
                         to={`/procurement/rfqs/${rfq.id}/comparison`}
                         className="btn-secondary text-sm flex items-center gap-1"
@@ -332,7 +332,7 @@ export default function RFQManagement() {
                         Compare
                       </Link>
                     )}
-                    {rfq.status === 'sent' && (
+                    {rfq.status === 'SENT' && (
                       <button 
                         onClick={() => handleCloseRFQ(rfq.id)}
                         className="btn-secondary text-sm"

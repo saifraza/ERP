@@ -33,6 +33,7 @@ import RFQManagement from './pages/procurement/RFQManagement'
 import ProcurementDashboard from './pages/procurement/ProcurementDashboard'
 import PendingApprovals from './pages/procurement/PendingApprovals'
 import ConvertToRFQ from './pages/procurement/ConvertToRFQ'
+import RFQDetail from './pages/procurement/RFQDetail'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -123,6 +124,7 @@ function App() {
                     <Route path="/procurement/requisitions/:id/convert-to-rfq" element={<ConvertToRFQ />} />
                     <Route path="/procurement/approvals" element={<PendingApprovals />} />
                     <Route path="/procurement/rfqs" element={<RFQManagement />} />
+                    <Route path="/procurement/rfqs/:id" element={<RFQDetail />} />
                     <Route path="/procurement/purchase-orders" element={<div>Purchase Orders</div>} />
                     <Route path="/procurement/quotations" element={<div>Quotation Comparison</div>} />
                     <Route path="/procurement/grn" element={<div>Goods Receipt</div>} />

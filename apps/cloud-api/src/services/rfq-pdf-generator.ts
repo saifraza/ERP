@@ -198,16 +198,16 @@ const RFQDocument = ({ data }: { data: RFQPDFData }) => {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Issue Date:</Text>
-            <Text style={styles.value}>{new Date(rfq.issuedDate).toLocaleDateString('en-IN')}</Text>
+            <Text style={styles.value}>{new Date(rfq.issueDate).toLocaleDateString('en-IN')}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Due Date:</Text>
-            <Text style={styles.value}>{new Date(rfq.dueDate).toLocaleDateString('en-IN')}</Text>
+            <Text style={styles.value}>{new Date(rfq.submissionDeadline).toLocaleDateString('en-IN')}</Text>
           </View>
           {pr && (
             <View style={styles.row}>
               <Text style={styles.label}>PR Reference:</Text>
-              <Text style={styles.value}>{pr.prNumber}</Text>
+              <Text style={styles.value}>{pr.requisitionNo}</Text>
             </View>
           )}
           <View style={styles.row}>
@@ -258,19 +258,19 @@ const RFQDocument = ({ data }: { data: RFQPDFData }) => {
                   <Text style={styles.tableCell}>{index + 1}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: '40%' }]}>
-                  <Text style={styles.tableCell}>{item.itemDescription}</Text>
+                  <Text style={styles.tableCell}>{item.material?.name || item.itemDescription || '-'}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: '15%' }]}>
-                  <Text style={styles.tableCell}>{item.specification || '-'}</Text>
+                  <Text style={styles.tableCell}>{item.specifications || item.specification || '-'}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: '10%' }]}>
-                  <Text style={styles.tableCell}>{item.unit}</Text>
+                  <Text style={styles.tableCell}>{item.material?.uom?.code || item.unit || '-'}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: '15%' }]}>
                   <Text style={styles.tableCell}>{item.quantity}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: '10%' }]}>
-                  <Text style={styles.tableCell}>{item.deliveryDays || 'ASAP'}</Text>
+                  <Text style={styles.tableCell}>{item.requiredDate ? new Date(item.requiredDate).toLocaleDateString('en-IN') : 'ASAP'}</Text>
                 </View>
               </View>
             ))}
@@ -368,12 +368,20 @@ export class RFQPDFGenerator {
       where: { id: rfqId },
       include: {
         company: true,
-        pr: {
+        requisition: {
           include: {
             division: true,
           }
         },
-        items: true,
+        items: {
+          include: {
+            material: {
+              include: {
+                uom: true
+              }
+            }
+          }
+        },
         vendors: {
           include: {
             vendor: true
@@ -395,7 +403,7 @@ export class RFQPDFGenerator {
       company: rfq.company,
       vendors,
       items: rfq.items,
-      pr: rfq.pr
+      pr: rfq.requisition
     }
 
     // Generate PDF
@@ -409,7 +417,7 @@ export class RFQPDFGenerator {
    */
   async generateCustomRFQPDF(data: RFQPDFData): Promise<Buffer> {
     const pdfDoc = <RFQDocument data={data} />
-    const pdfBuffer = await pdf(pdfDoc).toBuffer()
+    const pdfBuffer = await ReactPDF.renderToBuffer(pdfDoc)
     return pdfBuffer
   }
 
@@ -439,12 +447,20 @@ export class RFQPDFGenerator {
       where: { id: rfqId },
       include: {
         company: true,
-        pr: {
+        requisition: {
           include: {
             division: true,
           }
         },
-        items: true,
+        items: {
+          include: {
+            material: {
+              include: {
+                uom: true
+              }
+            }
+          }
+        },
       }
     })
 
@@ -467,7 +483,7 @@ export class RFQPDFGenerator {
       company: rfq.company,
       vendors: [vendor],
       items: rfq.items,
-      pr: rfq.pr
+      pr: rfq.requisition
     }
 
     // Generate PDF

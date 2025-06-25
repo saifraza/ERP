@@ -15,7 +15,7 @@ interface RequisitionItem {
     code: string
     name: string
     description?: string
-    unit: string
+    uom?: { code: string }
   }
   quantity: number
   requiredDate: string
@@ -391,7 +391,7 @@ export default function ConvertToRFQ() {
                       <div className="flex items-center gap-4 mt-2 ml-6 text-sm">
                         <span className="text-gray-600 dark:text-gray-400">
                           Qty: <span className="font-medium text-gray-900 dark:text-white">
-                            {item.quantity} {item.material.unit}
+                            {item.quantity} {item.material.uom?.code || 'NOS'}
                           </span>
                         </span>
                         <span className="text-gray-600 dark:text-gray-400">

@@ -50,9 +50,9 @@ app.get('/', async (c) => {
     const rfqs = await prisma.rFQ.findMany({
       where,
       include: {
-        pr: {
+        requisition: {
           select: {
-            prNumber: true,
+            requisitionNo: true,
             division: { select: { name: true } }
           }
         },
@@ -231,7 +231,7 @@ app.get('/:id', async (c) => {
         companyId: user.companyId
       },
       include: {
-        pr: {
+        requisition: {
           include: {
             division: true,
             items: true
@@ -273,7 +273,7 @@ app.post('/:id/send', async (c) => {
       where: {
         id: rfqId,
         companyId: user.companyId,
-        status: 'draft'
+        status: 'OPEN'
       }
     })
     
