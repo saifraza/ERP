@@ -1,0 +1,324 @@
+/* ERP Density System - SAP-inspired dense layouts */
+
+/* Density Mode Variables */
+:root {
+  /* Compact Mode (Default) - SAP Fiori Compact */
+  --row-height-compact: 32px;
+  --padding-y-compact: 4px;
+  --padding-x-compact: 8px;
+  --font-size-compact: 13px;
+  --spacing-compact: 8px;
+  
+  /* Condensed Mode - SAP GUI Dense */
+  --row-height-condensed: 26px;
+  --padding-y-condensed: 2px;
+  --padding-x-condensed: 6px;
+  --font-size-condensed: 12px;
+  --spacing-condensed: 4px;
+  
+  /* Comfortable Mode - Modern spacing */
+  --row-height-comfortable: 44px;
+  --padding-y-comfortable: 8px;
+  --padding-x-comfortable: 12px;
+  --font-size-comfortable: 14px;
+  --spacing-comfortable: 16px;
+}
+
+/* Density Classes */
+.density-compact {
+  --row-height: var(--row-height-compact);
+  --padding-y: var(--padding-y-compact);
+  --padding-x: var(--padding-x-compact);
+  --font-size: var(--font-size-compact);
+  --spacing: var(--spacing-compact);
+}
+
+.density-condensed {
+  --row-height: var(--row-height-condensed);
+  --padding-y: var(--padding-y-condensed);
+  --padding-x: var(--padding-x-condensed);
+  --font-size: var(--font-size-condensed);
+  --spacing: var(--spacing-condensed);
+}
+
+.density-comfortable {
+  --row-height: var(--row-height-comfortable);
+  --padding-y: var(--padding-y-comfortable);
+  --padding-x: var(--padding-x-comfortable);
+  --font-size: var(--font-size-comfortable);
+  --spacing: var(--spacing-comfortable);
+}
+
+/* Table Density Styles */
+.dense-table {
+  font-size: var(--font-size);
+}
+
+.dense-table th {
+  height: var(--row-height);
+  padding: var(--padding-y) var(--padding-x);
+  font-size: calc(var(--font-size) - 1px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dense-table td {
+  height: var(--row-height);
+  padding: var(--padding-y) var(--padding-x);
+}
+
+.dense-table tr {
+  transition: background-color 0.1s;
+}
+
+/* Compact Cell Content */
+.dense-table .cell-primary {
+  font-weight: 500;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.dense-table .cell-secondary {
+  font-size: calc(var(--font-size) - 1px);
+  color: #64748b;
+  line-height: 1.2;
+}
+
+/* Inline Actions */
+.dense-table .row-actions {
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.dense-table tr:hover .row-actions {
+  opacity: 1;
+}
+
+/* Status Pills - Compact */
+.status-pill {
+  padding: 1px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Form Density */
+.dense-form {
+  font-size: var(--font-size);
+}
+
+.dense-form label {
+  font-size: calc(var(--font-size) - 1px);
+  margin-bottom: 2px;
+  font-weight: 500;
+}
+
+.dense-form input,
+.dense-form select,
+.dense-form textarea {
+  height: calc(var(--row-height) - 2px);
+  padding: var(--padding-y) var(--padding-x);
+  font-size: var(--font-size);
+}
+
+/* Multi-column Form Layout */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing);
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing);
+}
+
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing);
+}
+
+/* Toolbar Density */
+.dense-toolbar {
+  padding: var(--padding-y) var(--padding-x);
+  gap: var(--spacing);
+  min-height: var(--row-height);
+}
+
+.dense-toolbar button {
+  height: calc(var(--row-height) - 4px);
+  padding: 0 var(--padding-x);
+  font-size: var(--font-size);
+}
+
+/* Card to Table Conversion */
+.table-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0;
+  margin-bottom: 1px;
+}
+
+.table-card:hover {
+  background: #f8fafc;
+  z-index: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Sticky Headers */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Inline Editing */
+.inline-edit {
+  border: 1px solid transparent;
+  background: transparent;
+  width: 100%;
+  padding: 2px 4px;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.inline-edit:hover {
+  background: #f1f5f9;
+}
+
+.inline-edit:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+}
+
+/* Data Grid Features */
+.data-grid {
+  display: grid;
+  font-size: var(--font-size);
+  border: 1px solid #e2e8f0;
+}
+
+.data-grid-header {
+  display: contents;
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.data-grid-row {
+  display: contents;
+}
+
+.data-grid-cell {
+  padding: var(--padding-y) var(--padding-x);
+  border-bottom: 1px solid #f1f5f9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive Density */
+@media (max-width: 768px) {
+  :root {
+    --row-height-compact: 36px;
+    --row-height-condensed: 32px;
+    --row-height-comfortable: 48px;
+  }
+  
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .dense-table .cell-primary {
+    color: #f8fafc;
+  }
+  
+  .table-card {
+    background: #1e293b;
+    border-color: #334155;
+  }
+  
+  .table-card:hover {
+    background: #334155;
+  }
+  
+  .sticky-header {
+    background: #1e293b;
+    border-bottom-color: #475569;
+  }
+  
+  .inline-edit:hover {
+    background: #334155;
+  }
+  
+  .inline-edit:focus {
+    background: #1e293b;
+  }
+  
+  .data-grid {
+    border-color: #334155;
+  }
+  
+  .data-grid-header {
+    background: #334155;
+  }
+  
+  .data-grid-cell {
+    border-bottom-color: #334155;
+  }
+}
+
+/* Utility Classes */
+.text-xs { font-size: 11px; }
+.text-sm { font-size: 12px; }
+.text-base { font-size: var(--font-size); }
+
+.gap-xs { gap: 4px; }
+.gap-sm { gap: 8px; }
+.gap-base { gap: var(--spacing); }
+
+.p-xs { padding: var(--padding-y) var(--padding-x); }
+.py-xs { padding-top: var(--padding-y); padding-bottom: var(--padding-y); }
+.px-xs { padding-left: var(--padding-x); padding-right: var(--padding-x); }
+
+/* SAP-style List Report */
+.list-report {
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.list-report-header {
+  padding: var(--spacing);
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.list-report-filters {
+  display: flex;
+  gap: var(--spacing);
+  flex-wrap: wrap;
+}
+
+.list-report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.list-report-footer {
+  padding: var(--spacing);
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size);
+}

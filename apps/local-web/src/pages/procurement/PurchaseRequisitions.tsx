@@ -4,7 +4,8 @@ import {
   ClipboardList, Plus, Search, Filter, Calendar,
   Clock, AlertCircle, CheckCircle, XCircle, Send,
   Eye, Edit, MoreVertical, Package, Building,
-  TrendingUp, FileText, ArrowRight, User, Shield
+  TrendingUp, FileText, ArrowRight, User, Shield,
+  MoreHorizontal
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
@@ -13,6 +14,7 @@ import AddRequisitionModal from '../../components/procurement/AddRequisitionModa
 import PRWorkflowInfo from '../../components/procurement/PRWorkflowInfo'
 import PRStatusSummary from '../../components/procurement/PRStatusSummary'
 import { useKeyboardShortcuts, useListNavigation, type KeyboardShortcut } from '../../hooks/useKeyboardShortcuts'
+import DenseTable, { Column } from '../../components/DenseTable'
 
 interface RequisitionItem {
   id: string
@@ -240,36 +242,107 @@ export default function PurchaseRequisitions() {
     }
   }
 
-  // Simple shortcuts without command key
-  const workflowShortcuts: KeyboardShortcut[] = []
-
-  // Common shortcuts for all users
-  const pageShortcuts = [
-    ...workflowShortcuts,
+  const prColumns: Column<Requisition>[] = [
     {
-      key: '/',
-      description: 'Focus search',
-      action: () => {
-        const searchInput = document.querySelector('[data-search-pr]') as HTMLInputElement
-        searchInput?.focus()
-      }
-    }
-  ]
-  
-  useKeyboardShortcuts(pageShortcuts, [selectedPRs, requisitions, isManager])
-  
-  // List navigation
-  const { selectedIndex } = useListNavigation(
-    requisitions,
-    (pr, index) => {
-      setSelectedPRs(prev => 
-        prev.includes(pr.id) 
-          ? prev.filter(id => id !== pr.id)
-          : [...prev, pr.id]
+      key: 'requisition',
+      header: 'Requisition',
+      width: '20%',
+      sortable: true,
+      render: (pr) => (
+        <div>
+          <p className="cell-primary">{pr.requisitionNo}</p>
+          <p className="cell-secondary">{new Date(pr.requisitionDate).toLocaleDateString()}</p>
+        </div>
       )
     },
-    (pr) => navigate(`/procurement/requisitions/${pr.id}`)
-  )
+    {
+      key: 'status',
+      header: 'Status',
+      width: '12%',
+      render: (pr) => (
+        <div className="flex items-center gap-2">
+          <span className={`status-pill ${getStatusColor(pr.status)}`}>
+            {getStatusIcon(pr.status)}
+            <span className="ml-1">{pr.status.toLowerCase()}</span>
+          </span>
+          {pr.status.toUpperCase() === 'SUBMITTED' && isManager && (
+            <span className="status-pill bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+              <Shield className="h-3 w-3" />
+            </span>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      width: '8%',
+      sortable: true,
+      render: (pr) => (
+        <span className={`text-xs font-medium ${getPriorityColor(pr.priority)}`}>
+          {pr.priority.toUpperCase()}
+        </span>
+      )
+    },
+    {
+      key: 'division',
+      header: 'Division',
+      width: '15%',
+      render: (pr) => (
+        <div className="flex items-center gap-1">
+          <Building className="h-3 w-3 text-gray-400" />
+          <span className="text-xs">{pr.division?.name || pr.department || 'N/A'}</span>
+        </div>
+      )
+    },
+    {
+      key: 'requestedBy',
+      header: 'Requested By',
+      width: '12%',
+      render: (pr) => (
+        <div className="flex items-center gap-1">
+          <User className="h-3 w-3 text-gray-400" />
+          <span className="text-xs">{pr.requestedBy}</span>
+        </div>
+      )
+    },
+    {
+      key: 'items',
+      header: 'Items',
+      width: '25%',
+      render: (pr) => (
+        <div className="space-y-0.5">
+          {pr.items.slice(0, 2).map((item, idx) => (
+            <div key={idx} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+              <Package className="h-3 w-3" />
+              <span className="truncate">
+                {item.materialCode} - {item.quantity} {item.unit}
+              </span>
+            </div>
+          ))}
+          {pr.items.length > 2 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              +{pr.items.length - 2} more
+            </p>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'poStatus',
+      header: 'PO Status',
+      width: '8%',
+      render: (pr) => (
+        pr.poCount > 0 ? (
+          <span className="text-xs text-blue-600 dark:text-blue-400">
+            {pr.poCount} PO{pr.poCount !== 1 ? 's' : ''}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-400">-</span>
+        )
+      )
+    }
+  ]
 
   return (
     <div className="space-y-6">
@@ -408,161 +481,92 @@ export default function PurchaseRequisitions() {
       </div>
 
       {/* PRs List */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700">
-            <div className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
-              Loading purchase requisitions...
-            </div>
-          </div>
-        ) : requisitions.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700">
-            <ClipboardList className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-600 dark:text-gray-400">No purchase requisitions found</p>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="mt-4 btn-primary"
-            >
-              Create First PR
-            </button>
-          </div>
-        ) : (
-          requisitions.map((pr, index) => (
-            <div 
-              key={pr.id} 
-              data-row-index={index}
-              className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow ${
-                selectedPRs.includes(pr.id) ? 'ring-2 ring-primary-500' : ''
-              }`}
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
-                      <ClipboardList className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {pr.requisitionNo}
-                        </h3>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(pr.status)}`}>
-                          {getStatusIcon(pr.status)}
-                          {pr.status.toLowerCase()}
-                        </span>
-                        <span className={`text-xs font-medium ${getPriorityColor(pr.priority)}`}>
-                          {pr.priority.toUpperCase()}
-                        </span>
-                        {pr.status.toUpperCase() === 'SUBMITTED' && isManager && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                            <Shield className="h-3 w-3" />
-                            Needs approval
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Building className="h-3 w-3" />
-                          {pr.division?.name || pr.department || 'N/A'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {pr.requestedBy}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Created on {new Date(pr.requisitionDate).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {pr.status.toUpperCase() === 'DRAFT' && (
-                      <button 
-                        onClick={() => handleSubmitPR(pr.id)}
-                        className="btn-primary text-sm flex items-center gap-1"
-                      >
-                        <Send className="h-3 w-3" />
-                        Submit
-                      </button>
-                    )}
-                    {pr.status.toUpperCase() === 'APPROVED' && pr.poCount === 0 && (
-                      <Link
-                        to={`/procurement/requisitions/${pr.id}/convert-to-rfq`}
-                        className="btn-primary text-sm flex items-center gap-1"
-                      >
-                        <ArrowRight className="h-3 w-3" />
-                        Convert to RFQ
-                      </Link>
-                    )}
-                    <Link
-                      to={`/procurement/requisitions/${pr.id}`}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                    >
-                      <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                    </Link>
-                    {pr.status.toUpperCase() === 'DRAFT' && (
-                      <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                        <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                      </button>
-                    )}
-                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                      <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Items Summary */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Items</h4>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {pr.items.length} item{pr.items.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {pr.items.slice(0, 3).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-gray-400" />
-                          <div>
-                            <span className="text-gray-600 dark:text-gray-400">
-                              {item.materialCode} {item.materialName ? `- ${item.materialName}` : ''}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-600 dark:text-gray-400">
-                            {item.quantity} {item.unit}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    {pr.items.length > 3 && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        +{pr.items.length - 3} more items
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* RFQ Status */}
-                {pr.poCount > 0 && (
-                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm text-blue-700 dark:text-blue-300">
-                        {pr.poCount} PO{pr.poCount !== 1 ? 's' : ''} created
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
+      <DenseTable<Requisition>
+        data={requisitions}
+        columns={prColumns}
+        loading={loading}
+        rowKey={(pr) => pr.id}
+        onRowClick={(pr) => navigate(`/procurement/requisitions/${pr.id}`)}
+        selectedRows={selectedPRs}
+        onSelectRow={(id) => setSelectedPRs(prev => 
+          prev.includes(id) ? prev.filter(prId => prId !== id) : [...prev, id]
         )}
-      </div>
+        onSelectAll={(selected) => setSelectedPRs(selected ? requisitions.map(pr => pr.id) : [])}
+        rowActions={(pr) => (
+          <>
+            {pr.status.toUpperCase() === 'DRAFT' && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleSubmitPR(pr.id)
+                }}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                title="Submit for approval"
+              >
+                <Send className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+              </button>
+            )}
+            {pr.status.toUpperCase() === 'SUBMITTED' && isManager && (
+              <>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleApprovePR(pr.id)
+                  }}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  title="Approve"
+                >
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRejectPR(pr.id)
+                  }}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  title="Reject"
+                >
+                  <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                </button>
+              </>
+            )}
+            {pr.status.toUpperCase() === 'APPROVED' && pr.poCount === 0 && (
+              <Link
+                to={`/procurement/requisitions/${pr.id}/convert-to-rfq`}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                onClick={(e) => e.stopPropagation()}
+                title="Convert to RFQ"
+              >
+                <ArrowRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </Link>
+            )}
+            <Link
+              to={`/procurement/requisitions/${pr.id}`}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              onClick={(e) => e.stopPropagation()}
+              title="View details"
+            >
+              <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </Link>
+            {pr.status.toUpperCase() === 'DRAFT' && (
+              <button 
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                onClick={(e) => e.stopPropagation()}
+                title="Edit"
+              >
+                <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </button>
+            )}
+            <button 
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </button>
+          </>
+        )}
+        emptyMessage="No purchase requisitions found"
+      />
 
       {/* Workflow Information */}
       {requisitions.some(pr => pr.status.toUpperCase() === 'DRAFT' || pr.status.toUpperCase() === 'SUBMITTED') && (

@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Initialize default density mode */
+body {
+  @apply density-compact;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

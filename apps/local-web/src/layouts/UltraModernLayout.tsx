@@ -19,6 +19,7 @@ import CompanySelector from '../components/CompanySelector'
 import CommandPalette from '../components/CommandPalette'
 import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp'
 import { useGlobalKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+import DensityToggle from '../components/DensityToggle'
 
 interface UltraModernLayoutProps {
   children: React.ReactNode
@@ -410,6 +411,9 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
                   <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                   <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full" />
                 </button>
+
+                {/* Density toggle */}
+                <DensityToggle />
 
                 {/* Theme toggle */}
                 <button

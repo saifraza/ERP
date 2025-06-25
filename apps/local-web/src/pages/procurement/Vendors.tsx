@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   Users, Plus, Search, Filter, Download, Upload, 
   Phone, Mail, MapPin, Star, TrendingUp, IndianRupee,
   Edit, Eye, MoreVertical, Building2, CreditCard,
   FileText, Package, AlertCircle, CheckCircle,
-  Ban, Power, Copy, Send
+  Ban, Power, Copy, Send, MoreHorizontal
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import AddVendorModal from '../../components/procurement/AddVendorModal'
 import EditVendorModal from '../../components/procurement/EditVendorModal'
+import DenseTable, { Column } from '../../components/DenseTable'
 
 interface Vendor {
   id: string
@@ -35,6 +36,7 @@ interface Vendor {
 export default function Vendors() {
   const { token } = useAuthStore()
   const { currentCompany } = useCompanyStore()
+  const navigate = useNavigate()
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -43,6 +45,7 @@ export default function Vendors() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [showDropdown, setShowDropdown] = useState<string | null>(null)
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([])
 
   useEffect(() => {
     fetchVendors()
@@ -114,6 +117,109 @@ export default function Vendors() {
         return '📋'
     }
   }
+
+  const vendorColumns: Column<Vendor>[] = [
+    {
+      key: 'vendor',
+      header: 'Vendor',
+      width: '25%',
+      render: (vendor) => (
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center flex-shrink-0">
+            <Building2 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="cell-primary truncate">{vendor.name}</p>
+            <p className="cell-secondary">{vendor.code}</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      width: '15%',
+      render: (vendor) => (
+        <div className="flex items-center gap-1">
+          <span className="text-base">{getTypeIcon(vendor.type)}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+            {vendor.type.replace(/_/g, ' ').toLowerCase()}
+          </span>
+        </div>
+      )
+    },
+    {
+      key: 'contact',
+      header: 'Contact',
+      width: '20%',
+      render: (vendor) => (
+        <div className="space-y-0.5">
+          {vendor.email && (
+            <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+              <Mail className="h-3 w-3" />
+              <span className="truncate">{vendor.email}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+            <Phone className="h-3 w-3" />
+            {vendor.phone}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+            <MapPin className="h-3 w-3" />
+            {vendor.city}, {vendor.state}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'credit',
+      header: 'Credit',
+      width: '10%',
+      render: (vendor) => (
+        <div>
+          <p className="cell-primary">₹{(vendor.creditLimit / 100000).toFixed(1)}L</p>
+          <p className="cell-secondary">{vendor.creditDays} days</p>
+        </div>
+      )
+    },
+    {
+      key: 'business',
+      header: 'Business',
+      width: '15%',
+      render: (vendor) => (
+        <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-0.5">
+            <Package className="h-3 w-3 text-gray-400" />
+            <span className="text-gray-600 dark:text-gray-400">
+              {vendor._count?.purchaseOrders || 0}
+            </span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <FileText className="h-3 w-3 text-gray-400" />
+            <span className="text-gray-600 dark:text-gray-400">
+              {vendor._count?.invoices || 0}
+            </span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <IndianRupee className="h-3 w-3 text-gray-400" />
+            <span className="text-gray-600 dark:text-gray-400">
+              {vendor._count?.payments || 0}
+            </span>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: '10%',
+      render: (vendor) => (
+        <span className={`status-pill ${getStatusColor(vendor.isActive)}`}>
+          {vendor.isActive ? 'Active' : 'Inactive'}
+        </span>
+      )
+    }
+  ]
 
   return (
     <div className="space-y-6">
@@ -231,226 +337,113 @@ export default function Vendors() {
       </div>
 
       {/* Vendors Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
-              Loading vendors...
-            </div>
-          </div>
-        ) : vendors.length === 0 ? (
-          <div className="p-8 text-center">
-            <Users className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-600 dark:text-gray-400">No vendors found</p>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="mt-4 btn-primary"
-            >
-              Add First Vendor
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Vendor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Credit
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Business
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {vendors.map((vendor) => (
-                  <tr key={vendor.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                          <Building2 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">{vendor.name}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{vendor.code}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{getTypeIcon(vendor.type)}</span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                          {vendor.type.replace(/_/g, ' ').toLowerCase()}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        {vendor.email && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Mail className="h-3 w-3" />
-                            {vendor.email}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Phone className="h-3 w-3" />
-                          {vendor.phone}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <MapPin className="h-3 w-3" />
-                          {vendor.city}, {vendor.state}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          ₹{(vendor.creditLimit / 100000).toFixed(1)}L
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {vendor.creditDays} days
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <IndianRupee className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600 dark:text-gray-400">
-                            {vendor._count?.payments || 0}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Package className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600 dark:text-gray-400">
-                            {vendor._count?.purchaseOrders || 0}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <IndianRupee className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600 dark:text-gray-400">
-                            {vendor._count?.invoices || 0}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(vendor.isActive)}`}>
-                        {vendor.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          to={`/procurement/vendors/${vendor.id}`}
-                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                        >
-                          <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </Link>
-                        <button 
-                          onClick={() => {
-                            setSelectedVendor(vendor)
-                            setShowEditModal(true)
-                          }}
-                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                          title="Edit vendor"
-                        >
-                          <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <div className="relative">
-                          <button 
-                            onClick={() => setShowDropdown(showDropdown === vendor.id ? null : vendor.id)}
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                          >
-                            <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                          </button>
-                          {showDropdown === vendor.id && (
-                            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(vendor.email || '')
-                                  toast.success('Email copied to clipboard')
-                                  setShowDropdown(null)
-                                }}
-                                disabled={!vendor.email}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <Copy className="h-4 w-4" />
-                                Copy Email
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (vendor.email) {
-                                    window.location.href = `mailto:${vendor.email}`
-                                  }
-                                  setShowDropdown(null)
-                                }}
-                                disabled={!vendor.email}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <Send className="h-4 w-4" />
-                                Send Email
-                              </button>
-                              <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const response = await fetch(
-                                      `${import.meta.env.VITE_API_URL}/api/vendors/${vendor.id}`,
-                                      {
-                                        method: 'PUT',
-                                        headers: {
-                                          'Content-Type': 'application/json',
-                                          Authorization: `Bearer ${token}`,
-                                        },
-                                        body: JSON.stringify({ isActive: !vendor.isActive })
-                                      }
-                                    )
-                                    if (response.ok) {
-                                      toast.success(`Vendor ${vendor.isActive ? 'deactivated' : 'activated'} successfully`)
-                                      fetchVendors()
-                                    }
-                                  } catch (error) {
-                                    toast.error('Failed to update vendor status')
-                                  }
-                                  setShowDropdown(null)
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                              >
-                                {vendor.isActive ? (
-                                  <><Ban className="h-4 w-4" /> Deactivate</>
-                                ) : (
-                                  <><Power className="h-4 w-4" /> Activate</>
-                                )}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <DenseTable<Vendor>
+        data={vendors}
+        columns={vendorColumns}
+        loading={loading}
+        rowKey={(vendor) => vendor.id}
+        onRowClick={(vendor) => navigate(`/procurement/vendors/${vendor.id}`)}
+        selectedRows={selectedVendors}
+        onSelectRow={(id) => setSelectedVendors(prev => 
+          prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
         )}
-      </div>
+        onSelectAll={(selected) => setSelectedVendors(selected ? vendors.map(v => v.id) : [])}
+        rowActions={(vendor) => (
+          <>
+            <Link
+              to={`/procurement/vendors/${vendor.id}`}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </Link>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedVendor(vendor)
+                setShowEditModal(true)
+              }}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              title="Edit vendor"
+            >
+              <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </button>
+            <div className="relative">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowDropdown(showDropdown === vendor.id ? null : vendor.id)
+                }}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <MoreHorizontal className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </button>
+              {showDropdown === vendor.id && (
+                <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(vendor.email || '')
+                      toast.success('Email copied to clipboard')
+                      setShowDropdown(null)
+                    }}
+                    disabled={!vendor.email}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy Email
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (vendor.email) {
+                        window.location.href = `mailto:${vendor.email}`
+                      }
+                      setShowDropdown(null)
+                    }}
+                    disabled={!vendor.email}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-4 w-4" />
+                    Send Email
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(
+                          `${import.meta.env.VITE_API_URL}/api/vendors/${vendor.id}`,
+                          {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({ isActive: !vendor.isActive })
+                          }
+                        )
+                        if (response.ok) {
+                          toast.success(`Vendor ${vendor.isActive ? 'deactivated' : 'activated'} successfully`)
+                          fetchVendors()
+                        }
+                      } catch (error) {
+                        toast.error('Failed to update vendor status')
+                      }
+                      setShowDropdown(null)
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    {vendor.isActive ? (
+                      <><Ban className="h-4 w-4" /> Deactivate</>
+                    ) : (
+                      <><Power className="h-4 w-4" /> Activate</>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+        emptyMessage="No vendors found"
+      />
 
       {/* Add Vendor Modal */}
       <AddVendorModal

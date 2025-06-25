@@ -77,26 +77,24 @@ export default function Dashboard() {
         <p className="mt-2 text-gray-600">Overview of all divisions</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((item) => (
           <div
             key={item.name}
-            className="relative bg-white overflow-hidden shadow rounded-lg"
+            className="relative bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700"
           >
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className={`flex-shrink-0 ${item.color} rounded-md p-3`}>
-                  <item.icon className="h-6 w-6 text-white" />
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex-shrink-0 ${item.color} rounded p-2`}>
+                  <item.icon className="h-5 w-5 text-white" />
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      {item.name}
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {item.value}
-                    </dd>
-                  </dl>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
+                    {item.name}
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white mt-0.5">
+                    {item.value}
+                  </p>
                 </div>
               </div>
             </div>
@@ -104,36 +102,36 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
               Recent Activities
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-center text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">New cane delivery: 145 MT from Farmer #2341</span>
+            <div className="space-y-2">
+              <div className="flex items-center text-xs">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 flex-shrink-0"></div>
+                <span className="text-gray-600 dark:text-gray-400">New cane delivery: 145 MT from Farmer #2341</span>
               </div>
-              <div className="flex items-center text-sm">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">Sugar batch #789 completed: 125 MT</span>
+              <div className="flex items-center text-xs">
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 flex-shrink-0"></div>
+                <span className="text-gray-600 dark:text-gray-400">Sugar batch #789 completed: 125 MT</span>
               </div>
-              <div className="flex items-center text-sm">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">Power export to grid: 8.5 MW</span>
+              <div className="flex items-center text-xs">
+                <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-2 flex-shrink-0"></div>
+                <span className="text-gray-600 dark:text-gray-400">Power export to grid: 8.5 MW</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2" />
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+              <BarChart3 className="h-4 w-4 mr-1.5" />
               Production Trends
             </h3>
-            <div className="h-48 flex items-center justify-center text-gray-400">
+            <div className="h-32 flex items-center justify-center text-gray-400 dark:text-gray-600">
               Chart placeholder
             </div>
           </div>
@@ -141,34 +139,34 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Setup Section */}
-      <div className="mt-8 bg-white overflow-hidden shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 flex items-center">
-              <Settings className="h-5 w-5 mr-2" />
+      <div className="mt-6 bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+              <Settings className="h-4 w-4 mr-1.5" />
               Quick Setup
             </h3>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded">
+              <div className="flex items-center gap-2">
                 {setupStatus.divisions ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-green-500" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 text-yellow-500" />
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
                 )}
                 <div>
-                  <p className="font-medium text-gray-900">Business Divisions</p>
-                  <p className="text-sm text-gray-600">Sugar, Ethanol, Power, Feed, Common</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Business Divisions</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Sugar, Ethanol, Power, Feed, Common</p>
                 </div>
               </div>
               <button
                 onClick={handleSetupDivisions}
                 disabled={setupLoading || setupStatus.divisions}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded font-medium transition-colors ${
                   setupStatus.divisions
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                     : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
               >
@@ -176,24 +174,24 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded">
+              <div className="flex items-center gap-2">
                 {setupStatus.factories ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-green-500" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 text-yellow-500" />
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
                 )}
                 <div>
-                  <p className="font-medium text-gray-900">Main Factory</p>
-                  <p className="text-sm text-gray-600">Integrated factory with all divisions</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Main Factory</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Integrated factory with all divisions</p>
                 </div>
               </div>
               <button
                 onClick={handleSetupFactories}
                 disabled={setupLoading || setupStatus.factories}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded font-medium transition-colors ${
                   setupStatus.factories
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                     : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
               >

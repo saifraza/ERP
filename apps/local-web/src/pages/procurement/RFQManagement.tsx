@@ -4,13 +4,14 @@ import {
   Calculator, Send, Clock, CheckCircle, XCircle,
   Eye, Mail, Calendar, Users, Package, FileText,
   BarChart3, AlertCircle, Building2, IndianRupee,
-  TrendingUp, ArrowRight, MoreVertical
+  TrendingUp, ArrowRight, MoreVertical, MoreHorizontal
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import { RFQPDFViewer } from '../../components/procurement/RFQPDFViewer'
 import { useKeyboardShortcuts, useListNavigation } from '../../hooks/useKeyboardShortcuts'
+import DenseTable, { Column } from '../../components/DenseTable'
 
 interface RFQItem {
   id: string
@@ -155,32 +156,124 @@ export default function RFQManagement() {
     return diff
   }
   
-  // Simple shortcuts without command key
-  const pageShortcuts = [
+  const rfqColumns: Column<RFQ>[] = [
     {
-      key: '/',
-      description: 'Focus search',
-      action: () => {
-        const searchInput = document.querySelector('[data-search-rfq]') as HTMLInputElement
-        searchInput?.focus()
-      }
-    }
-  ]
-  
-  useKeyboardShortcuts(pageShortcuts, [selectedRFQs, rfqs, navigate])
-  
-  // List navigation
-  const { selectedIndex } = useListNavigation(
-    rfqs,
-    (rfq, index) => {
-      setSelectedRFQs(prev => 
-        prev.includes(rfq.id) 
-          ? prev.filter(id => id !== rfq.id)
-          : [...prev, rfq.id]
+      key: 'rfq',
+      header: 'RFQ Number',
+      width: '15%',
+      sortable: true,
+      render: (rfq) => (
+        <div>
+          <p className="cell-primary">{rfq.rfqNumber}</p>
+          {rfq.requisition && (
+            <p className="cell-secondary text-xs">
+              From {rfq.requisition.requisitionNo}
+            </p>
+          )}
+        </div>
       )
     },
-    (rfq) => navigate(`/procurement/rfqs/${rfq.id}`)
-  )
+    {
+      key: 'status',
+      header: 'Status',
+      width: '10%',
+      render: (rfq) => (
+        <span className={`status-pill ${getStatusColor(rfq.status)}`}>
+          {rfq.status.toLowerCase()}
+        </span>
+      )
+    },
+    {
+      key: 'dates',
+      header: 'Timeline',
+      width: '18%',
+      render: (rfq) => (
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+            <Calendar className="h-3 w-3" />
+            <span>Issued: {new Date(rfq.issueDate).toLocaleDateString()}</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+            <Clock className="h-3 w-3" />
+            <span>Due: {new Date(rfq.submissionDeadline).toLocaleDateString()}</span>
+            {rfq.status === 'SENT' && (
+              <span className={`ml-1 font-medium ${
+                getDaysRemaining(rfq.submissionDeadline) <= 3 
+                  ? 'text-red-600 dark:text-red-400' 
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}>
+                ({getDaysRemaining(rfq.submissionDeadline)} days)
+              </span>
+            )}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'vendors',
+      header: 'Vendors',
+      width: '20%',
+      render: (rfq) => (
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <Users className="h-3 w-3 text-gray-400" />
+            <span className="text-xs">{rfq.vendors.length} vendors</span>
+          </div>
+          {rfq.vendors.length > 0 && (
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {rfq.vendors.slice(0, 2).map((v: any, idx: number) => (
+                <div key={idx} className="truncate">
+                  {v.vendor?.name || v.vendor?.email || 'Unknown'}
+                </div>
+              ))}
+              {rfq.vendors.length > 2 && (
+                <div>+{rfq.vendors.length - 2} more</div>
+              )}
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'responses',
+      header: 'Responses',
+      width: '12%',
+      render: (rfq) => (
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1">
+            <Mail className="h-3 w-3 text-gray-400" />
+            <span className="text-xs">{rfq.vendors.filter(v => v.emailSent).length} sent</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <FileText className="h-3 w-3 text-gray-400" />
+            <span className="text-xs">{rfq._count.quotations} received</span>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'items',
+      header: 'Items',
+      width: '25%',
+      render: (rfq) => (
+        <div className="space-y-0.5">
+          {rfq.items.slice(0, 2).map((item, idx) => (
+            <div key={idx} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+              <Package className="h-3 w-3" />
+              <span className="truncate">
+                {item.itemDescription} - {item.quantity} {item.unit}
+              </span>
+            </div>
+          ))}
+          {rfq.items.length > 2 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              +{rfq.items.length - 2} more
+            </p>
+          )}
+        </div>
+      )
+    }
+  ]
 
   return (
     <div className="space-y-6">
@@ -280,196 +373,75 @@ export default function RFQManagement() {
       </div>
 
       {/* RFQs List */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700">
-            <div className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
-              Loading RFQs...
-            </div>
-          </div>
-        ) : rfqs.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700">
-            <Calculator className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-600 dark:text-gray-400">No RFQs found</p>
-            <Link 
-              to="/procurement/requisitions"
-              className="mt-4 btn-primary inline-flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Create from PR
-            </Link>
-          </div>
-        ) : (
-          rfqs.map((rfq) => (
-            <div key={rfq.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-                      <Calculator className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {rfq.rfqNumber}
-                        </h3>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(rfq.status)}`}>
-                          {rfq.status}
-                        </span>
-                        {rfq.requisition && (
-                          <Link
-                            to={`/procurement/requisitions/${rfq.requisition.requisitionNo}`}
-                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            From {rfq.requisition.requisitionNo}
-                          </Link>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Issued {new Date(rfq.issueDate).toLocaleDateString()}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Due {new Date(rfq.submissionDeadline).toLocaleDateString()}
-                          {rfq.status === 'SENT' && (
-                            <span className={`ml-1 font-medium ${
-                              getDaysRemaining(rfq.submissionDeadline) <= 3 
-                                ? 'text-red-600 dark:text-red-400' 
-                                : 'text-gray-600 dark:text-gray-400'
-                            }`}>
-                              ({getDaysRemaining(rfq.submissionDeadline)} days)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RFQPDFViewer 
-                      rfqId={rfq.id}
-                      rfqNumber={rfq.rfqNumber}
-                      onEmailSent={fetchRFQs}
-                      rfqData={rfq}
-                    />
-                    {rfq.status === 'SENT' && rfq._count.quotations > 0 && (
-                      <Link
-                        to={`/procurement/rfqs/${rfq.id}/comparison`}
-                        className="btn-secondary text-sm flex items-center gap-1"
-                      >
-                        <BarChart3 className="h-3 w-3" />
-                        Compare
-                      </Link>
-                    )}
-                    {rfq.status === 'SENT' && (
-                      <button 
-                        onClick={() => handleCloseRFQ(rfq.id)}
-                        className="btn-secondary text-sm"
-                      >
-                        Close RFQ
-                      </button>
-                    )}
-                    <Link
-                      to={`/procurement/rfqs/${rfq.id}`}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                      title="View Details"
-                    >
-                      <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                    </Link>
-                    {(rfq.status === 'SENT' || rfq.status === 'sent') && (
-                      <Link
-                        to={`/procurement/rfqs/${rfq.id}/email-history`}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                        title="Email History"
-                      >
-                        <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                      </Link>
-                    )}
-                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                      <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Vendor Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Vendors</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {rfq.vendors.length}
-                      </p>
-                      {rfq.vendors.length > 0 && (
-                        <div className="mt-1 space-y-0.5">
-                          {rfq.vendors.slice(0, 2).map((v: any, idx: number) => (
-                            <p key={idx} className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {v.vendor?.email || 'No email'}
-                            </p>
-                          ))}
-                          {rfq.vendors.length > 2 && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              +{rfq.vendors.length - 2} more
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <Mail className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Emails Sent</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {rfq.vendors.filter(v => v.emailSent).length}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <FileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Responses</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {rfq._count.quotations}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Items Summary */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Items</h4>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {rfq.items.length} item{rfq.items.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {rfq.items.slice(0, 2).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600 dark:text-gray-400">{item.itemDescription}</span>
-                        </div>
-                        <span className="text-gray-600 dark:text-gray-400">
-                          {item.quantity} {item.unit}
-                        </span>
-                      </div>
-                    ))}
-                    {rfq.items.length > 2 && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        +{rfq.items.length - 2} more items
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
+      <DenseTable<RFQ>
+        data={rfqs}
+        columns={rfqColumns}
+        loading={loading}
+        rowKey={(rfq) => rfq.id}
+        onRowClick={(rfq) => navigate(`/procurement/rfqs/${rfq.id}`)}
+        selectedRows={selectedRFQs}
+        onSelectRow={(id) => setSelectedRFQs(prev => 
+          prev.includes(id) ? prev.filter(rfqId => rfqId !== id) : [...prev, id]
         )}
-      </div>
+        onSelectAll={(selected) => setSelectedRFQs(selected ? rfqs.map(rfq => rfq.id) : [])}
+        rowActions={(rfq) => (
+          <>
+            <RFQPDFViewer 
+              rfqId={rfq.id}
+              rfqNumber={rfq.rfqNumber}
+              onEmailSent={fetchRFQs}
+              rfqData={rfq}
+            />
+            {rfq.status === 'SENT' && rfq._count.quotations > 0 && (
+              <Link
+                to={`/procurement/rfqs/${rfq.id}/comparison`}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                onClick={(e) => e.stopPropagation()}
+                title="Compare quotations"
+              >
+                <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </Link>
+            )}
+            {rfq.status === 'SENT' && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleCloseRFQ(rfq.id)
+                }}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                title="Close RFQ"
+              >
+                <XCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </button>
+            )}
+            <Link
+              to={`/procurement/rfqs/${rfq.id}`}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              onClick={(e) => e.stopPropagation()}
+              title="View Details"
+            >
+              <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </Link>
+            {(rfq.status === 'SENT' || rfq.status === 'sent') && (
+              <Link
+                to={`/procurement/rfqs/${rfq.id}/email-history`}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                onClick={(e) => e.stopPropagation()}
+                title="Email History"
+              >
+                <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Link>
+            )}
+            <button 
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </button>
+          </>
+        )}
+        emptyMessage="No RFQs found"
+      />
     </div>
   )
 }
