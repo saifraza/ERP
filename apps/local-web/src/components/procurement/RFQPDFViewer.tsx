@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   X, 
   Mail, 
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useAuthStore } from '../../stores/authStore'
+import RFQEmailPreview from './RFQEmailPreview'
 
 interface RFQPDFViewerProps {
   rfqId: string
@@ -29,6 +30,8 @@ export function RFQPDFViewer({
   const [loading, setLoading] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [showEmailPreview, setShowEmailPreview] = useState(false)
+  const [rfqData, setRfqData] = useState<any>(null)
   const { token } = useAuthStore()
 
   const downloadPDF = async () => {
@@ -119,32 +122,31 @@ export function RFQPDFViewer({
     }
   }
 
-  const sendEmail = async () => {
+  // Fetch RFQ data for email preview
+  const fetchRFQData = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/send`, {
-        method: 'POST',
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to send RFQ')
-      }
+      if (!response.ok) throw new Error('Failed to fetch RFQ data')
       
-      toast.success("RFQ sent to vendors successfully")
-      
-      if (onEmailSent) {
-        onEmailSent()
-      }
+      const data = await response.json()
+      setRfqData(data.rfq)
     } catch (error: any) {
-      console.error('Error sending RFQ:', error)
-      toast.error(error.message || "Failed to send RFQ")
+      console.error('Error fetching RFQ data:', error)
+      toast.error('Failed to load RFQ data')
     } finally {
       setLoading(false)
     }
+  }
+  
+  const handleSendEmail = () => {
+    fetchRFQData()
+    setShowEmailPreview(true)
   }
 
   return (
@@ -178,15 +180,11 @@ export function RFQPDFViewer({
         
         {!vendorId && (
           <button
-            onClick={sendEmail}
+            onClick={handleSendEmail}
             disabled={loading}
             className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+            <Send className="h-4 w-4" />
             Send to Vendors
           </button>
         )}
@@ -242,6 +240,26 @@ export function RFQPDFViewer({
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Email Preview Modal */}
+      {showEmailPreview && rfqData && (
+        <RFQEmailPreview
+          rfqId={rfqId}
+          rfqNumber={rfqNumber}
+          vendors={rfqData.vendors.map((v: any) => ({
+            id: v.vendor.id,
+            name: v.vendor.name,
+            email: v.vendor.email,
+            code: v.vendor.code,
+            contactPerson: v.vendor.contactPerson
+          }))}
+          onClose={() => setShowEmailPreview(false)}
+          onEmailSent={() => {
+            setShowEmailPreview(false)
+            if (onEmailSent) onEmailSent()
+          }}
+        />
       )}
     </>
   )
