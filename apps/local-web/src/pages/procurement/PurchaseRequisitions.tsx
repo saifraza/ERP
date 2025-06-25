@@ -240,35 +240,8 @@ export default function PurchaseRequisitions() {
     }
   }
 
-  // Focused workflow shortcuts - only critical actions for managers
-  const workflowShortcuts = isManager ? [
-    {
-      key: 'a',
-      cmd: true,
-      description: 'Approve first pending PR',
-      action: () => {
-        const pendingPR = requisitions.find(r => r.status.toUpperCase() === 'SUBMITTED')
-        if (pendingPR) {
-          handleApprovePR(pendingPR.id)
-        } else {
-          toast('No pending PRs to approve')
-        }
-      }
-    },
-    {
-      key: 'r',
-      cmd: true,
-      description: 'Reject first pending PR',
-      action: () => {
-        const pendingPR = requisitions.find(r => r.status.toUpperCase() === 'SUBMITTED')
-        if (pendingPR) {
-          handleRejectPR(pendingPR.id)
-        } else {
-          toast('No pending PRs to reject')
-        }
-      }
-    }
-  ] : []
+  // Simple shortcuts without command key
+  const workflowShortcuts = []
 
   // Common shortcuts for all users
   const pageShortcuts = [

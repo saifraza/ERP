@@ -155,29 +155,8 @@ export default function RFQManagement() {
     return diff
   }
   
-  // Focused workflow shortcuts - only the most important actions
+  // Simple shortcuts without command key
   const pageShortcuts = [
-    {
-      key: 'c',
-      cmd: true,
-      description: 'Convert to RFQ (when PR selected)',
-      action: () => navigate('/procurement/requisitions')
-    },
-    {
-      key: 's',
-      cmd: true,
-      description: 'Send RFQ to vendors',
-      action: () => {
-        const firstOpenRFQ = rfqs.find(r => r.status === 'OPEN')
-        if (firstOpenRFQ) {
-          // Find and click the send button for this RFQ
-          const sendButton = document.querySelector(`[data-rfq-send="${firstOpenRFQ.id}"]`) as HTMLElement
-          sendButton?.click()
-        } else {
-          toast('No open RFQs to send')
-        }
-      }
-    },
     {
       key: '/',
       description: 'Focus search',
