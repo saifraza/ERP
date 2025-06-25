@@ -242,6 +242,7 @@ export function useListNavigation(
       key: 'j',
       description: 'Move down in list',
       action: () => {
+        if (items.length === 0) return
         selectedIndex.current = Math.min(selectedIndex.current + 1, items.length - 1)
         highlightRow(selectedIndex.current)
       }
@@ -250,6 +251,7 @@ export function useListNavigation(
       key: 'k', 
       description: 'Move up in list',
       action: () => {
+        if (items.length === 0) return
         selectedIndex.current = Math.max(selectedIndex.current - 1, 0)
         highlightRow(selectedIndex.current)
       }
@@ -258,8 +260,8 @@ export function useListNavigation(
       key: 'Enter',
       description: 'Open selected item',
       action: () => {
-        if (selectedIndex.current >= 0 && selectedIndex.current < items.length) {
-          onOpen?.(items[selectedIndex.current], selectedIndex.current)
+        if (selectedIndex.current >= 0 && selectedIndex.current < items.length && onOpen) {
+          onOpen(items[selectedIndex.current], selectedIndex.current)
         }
       }
     },
@@ -274,7 +276,7 @@ export function useListNavigation(
     }
   ]
 
-  const highlightRow = (index: number) => {
+  const highlightRow = useCallback((index: number) => {
     // Remove previous highlights
     document.querySelectorAll('[data-row-index]').forEach(row => {
       row.classList.remove('ring-2', 'ring-primary-500', 'bg-primary-50')
@@ -286,9 +288,15 @@ export function useListNavigation(
       row.classList.add('ring-2', 'ring-primary-500', 'bg-primary-50')
       row.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
-  }
+  }, [])
 
-  useKeyboardShortcuts(shortcuts, [items, onSelect, onOpen])
+  // Only enable shortcuts if there are items
+  const enabledShortcuts = shortcuts.map(s => ({
+    ...s,
+    enabled: items.length > 0
+  }))
+
+  useKeyboardShortcuts(enabledShortcuts, [items.length])
 
   return { selectedIndex: selectedIndex.current }
 }
