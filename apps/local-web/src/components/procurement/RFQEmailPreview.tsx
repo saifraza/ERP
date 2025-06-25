@@ -225,17 +225,27 @@ This is an automated email. Please do not reply to this email address.`
                       className="h-4 w-4 text-primary-600 rounded"
                     />
                     <div className="ml-3 flex-1">
-                      <span className="text-sm font-medium text-gray-900">
-                        {vendor.name} ({vendor.code})
-                      </span>
-                      <span className="text-sm text-gray-500 ml-2">
-                        {vendor.email}
-                      </span>
-                      {vendor.contactPerson && (
-                        <span className="text-sm text-gray-500 ml-2">
-                          - {vendor.contactPerson}
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-900">
+                          {vendor.name} ({vendor.code})
                         </span>
-                      )}
+                        <div className="text-sm text-gray-600">
+                          {vendor.email ? (
+                            <span className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {vendor.email}
+                            </span>
+                          ) : (
+                            <span className="text-red-600 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              No email address
+                            </span>
+                          )}
+                          {vendor.contactPerson && (
+                            <span className="ml-4">• {vendor.contactPerson}</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     {sentVendors.includes(vendor.id) && (
                       <Check className="h-4 w-4 text-green-600 ml-2" />
@@ -251,6 +261,11 @@ This is an automated email. Please do not reply to this email address.`
               </div>
               <p className="mt-1 text-sm text-gray-500">
                 {selectedVendors.length} vendor(s) selected
+                {selectedVendors.length > 0 && (
+                  <span className="ml-2">
+                    • {vendors.filter(v => selectedVendors.includes(v.id) && v.email).length} with valid email(s)
+                  </span>
+                )}
               </p>
             </div>
 

@@ -297,13 +297,17 @@ export function RFQPDFViewer({
         <RFQEmailPreview
           rfqId={rfqId}
           rfqNumber={rfqNumber}
-          vendors={rfqData.vendors?.map((v: any) => ({
-            id: v.vendor?.id || v.id,
-            name: v.vendor?.name || v.name,
-            email: v.vendor?.email || v.email,
-            code: v.vendor?.code || v.code,
-            contactPerson: v.vendor?.contactPerson || v.contactPerson
-          })) || []}
+          vendors={rfqData.vendors?.map((v: any) => {
+            // Handle nested vendor structure from RFQVendor relation
+            const vendorData = v.vendor || v;
+            return {
+              id: vendorData.id,
+              name: vendorData.name,
+              email: vendorData.email || '',
+              code: vendorData.code,
+              contactPerson: vendorData.contactPerson || ''
+            };
+          }) || []}
           onClose={() => setShowEmailPreview(false)}
           onEmailSent={() => {
             setShowEmailPreview(false)
