@@ -11,7 +11,6 @@ export class RFQPDFGenerator {
           requisition: {
             include: {
               division: true,
-              department: true,
             }
           },
           items: {
@@ -54,7 +53,6 @@ export class RFQPDFGenerator {
           requisition: {
             include: {
               division: true,
-              department: true,
             }
           },
           items: {
