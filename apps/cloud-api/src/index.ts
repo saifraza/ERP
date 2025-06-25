@@ -25,6 +25,7 @@ import setupDivisionsRoutes from './routes/setup-divisions.js'
 import departmentsRoutes from './routes/departments.js'
 import materialsRoutes from './routes/materials.js'
 import factoriesRoutes from './routes/factories.js'
+import procurementDashboardRoutes from './routes/procurement-dashboard.js'
 
 const app = new Hono()
 
@@ -97,6 +98,7 @@ app.route('/api/setup-divisions', setupDivisionsRoutes)
 app.route('/api/departments', departmentsRoutes)
 app.route('/api/materials', materialsRoutes)
 app.route('/api/factories', factoriesRoutes)
+app.route('/api/procurement/dashboard', procurementDashboardRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {

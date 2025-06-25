@@ -79,11 +79,22 @@ export default function ProcurementDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      // Simulate API call - replace with actual API endpoint
-      // const response = await fetch(`${import.meta.env.VITE_API_URL}/api/procurement/dashboard?range=${timeRange}`)
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/procurement/dashboard?range=${timeRange}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
       
-      // Mock data for now
-      setStats({
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data.stats)
+        setRecentDocs(data.recentDocs)
+      } else {
+        // Fallback to mock data if API fails
+        setStats({
         requisitions: {
           total: 156,
           draft: 12,
@@ -128,13 +139,14 @@ export default function ProcurementDashboard() {
         }
       })
 
-      setRecentDocs([
-        { id: '1', type: 'PR', documentNo: 'REQ-202412-0001', date: '2024-12-26', status: 'Submitted', vendor: 'ABC Chemicals' },
-        { id: '2', type: 'PO', documentNo: 'PO-202412-0045', date: '2024-12-26', status: 'Confirmed', amount: 125000, vendor: 'XYZ Industries' },
-        { id: '3', type: 'Invoice', documentNo: 'INV-2024-0234', date: '2024-12-25', status: 'Pending', amount: 89000, vendor: 'DEF Supplies' },
-        { id: '4', type: 'RFQ', documentNo: 'RFQ-202412-0023', date: '2024-12-25', status: 'Open', vendor: 'Multiple' },
-        { id: '5', type: 'GRN', documentNo: 'GRN-202412-0067', date: '2024-12-24', status: 'Completed', vendor: 'PQR Trading' }
-      ])
+        setRecentDocs([
+          { id: '1', type: 'PR', documentNo: 'REQ-202412-0001', date: '2024-12-26', status: 'Submitted', vendor: 'ABC Chemicals' },
+          { id: '2', type: 'PO', documentNo: 'PO-202412-0045', date: '2024-12-26', status: 'Confirmed', amount: 125000, vendor: 'XYZ Industries' },
+          { id: '3', type: 'Invoice', documentNo: 'INV-2024-0234', date: '2024-12-25', status: 'Pending', amount: 89000, vendor: 'DEF Supplies' },
+          { id: '4', type: 'RFQ', documentNo: 'RFQ-202412-0023', date: '2024-12-25', status: 'Open', vendor: 'Multiple' },
+          { id: '5', type: 'GRN', documentNo: 'GRN-202412-0067', date: '2024-12-24', status: 'Completed', vendor: 'PQR Trading' }
+        ])
+      }
     } catch (error) {
       toast.error('Failed to load dashboard data')
     } finally {
