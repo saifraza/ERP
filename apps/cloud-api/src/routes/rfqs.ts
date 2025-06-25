@@ -76,10 +76,10 @@ app.get('/', async (c) => {
             responseReceived: true
           }
         },
-        items: true
-        // _count: {
-        //   select: { quotations: true }
-        // }
+        items: true,
+        _count: {
+          select: { quotations: true }
+        }
       },
       orderBy: { createdAt: 'desc' }
     })
