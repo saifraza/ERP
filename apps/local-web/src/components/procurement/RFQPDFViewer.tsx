@@ -18,6 +18,7 @@ interface RFQPDFViewerProps {
   vendorId?: string
   vendorName?: string
   onEmailSent?: () => void
+  rfqData?: any // Pass RFQ data from parent to avoid refetch
 }
 
 export function RFQPDFViewer({ 
@@ -25,7 +26,8 @@ export function RFQPDFViewer({
   rfqNumber, 
   vendorId, 
   vendorName,
-  onEmailSent 
+  onEmailSent,
+  rfqData: parentRfqData 
 }: RFQPDFViewerProps) {
   const [loading, setLoading] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -145,8 +147,13 @@ export function RFQPDFViewer({
   }
   
   const handleSendEmail = () => {
-    fetchRFQData()
-    setShowEmailPreview(true)
+    if (parentRfqData) {
+      setRfqData(parentRfqData)
+      setShowEmailPreview(true)
+    } else {
+      fetchRFQData()
+      setShowEmailPreview(true)
+    }
   }
 
   return (

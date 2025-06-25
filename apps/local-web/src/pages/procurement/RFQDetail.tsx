@@ -173,6 +173,7 @@ export default function RFQDetail() {
             rfqId={rfq.id} 
             rfqNumber={rfq.rfqNumber}
             onEmailSent={fetchRFQDetail}
+            rfqData={rfq}
           />
         </div>
       </div>
