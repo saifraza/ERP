@@ -4,10 +4,12 @@ import {
   ArrowLeft, Package, Calendar, User, Building,
   FileText, Check, X, Clock, Edit, Trash,
   Send, AlertCircle, Download,
-  Printer, MessageSquare, History, ShoppingCart
+  Printer, MessageSquare, History, ShoppingCart,
+  Shield
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'react-hot-toast'
+import PRApprovalModal from '../../components/procurement/PRApprovalModal'
 
 interface PRItem {
   id: string
@@ -61,13 +63,11 @@ interface PurchaseRequisition {
 export default function PurchaseRequisitionDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const [pr, setPr] = useState<PurchaseRequisition | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
-  const [approvalComment, setApprovalComment] = useState('')
   const [showApprovalModal, setShowApprovalModal] = useState(false)
-  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve')
 
   useEffect(() => {
     fetchPRDetails()
@@ -99,38 +99,8 @@ export default function PurchaseRequisitionDetail() {
     }
   }
 
-  const handleApprovalAction = async () => {
-    if (!pr) return
-
-    setActionLoading(true)
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/requisitions/${id}/${approvalAction}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(approvalAction === 'approve' ? { remarks: approvalComment } : { reason: approvalComment })
-        }
-      )
-
-      if (response.ok) {
-        toast.success(`PR ${approvalAction === 'approve' ? 'approved' : 'rejected'} successfully`)
-        setShowApprovalModal(false)
-        setApprovalComment('')
-        fetchPRDetails()
-      } else {
-        toast.error(`Failed to ${approvalAction} PR`)
-      }
-    } catch (error) {
-      console.error(`Error ${approvalAction}ing PR:`, error)
-      toast.error(`Failed to ${approvalAction} PR`)
-    } finally {
-      setActionLoading(false)
-    }
-  }
+  // Check if user has permission to approve
+  const canUserApprove = user?.role === 'ADMIN' || user?.role === 'MANAGER'
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -171,7 +141,7 @@ export default function PurchaseRequisitionDetail() {
     }
   }
 
-  const canApprove = pr?.status.toUpperCase() === 'SUBMITTED'
+  const canApprove = pr?.status.toUpperCase() === 'SUBMITTED' && canUserApprove
   const canEdit = pr?.status.toUpperCase() === 'DRAFT'
   const canConvertToPO = pr?.status.toUpperCase() === 'APPROVED' && (!pr.purchaseOrders || pr.purchaseOrders.length === 0)
 
@@ -238,29 +208,23 @@ export default function PurchaseRequisitionDetail() {
               </button>
             </>
           )}
-          {canApprove && (
-            <>
+          {pr?.status.toUpperCase() === 'SUBMITTED' && (
+            canUserApprove ? (
               <button
-                onClick={() => {
-                  setApprovalAction('reject')
-                  setShowApprovalModal(true)
-                }}
-                className="btn-secondary flex items-center gap-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10"
-              >
-                <X className="h-4 w-4" />
-                Reject
-              </button>
-              <button
-                onClick={() => {
-                  setApprovalAction('approve')
-                  setShowApprovalModal(true)
-                }}
+                onClick={() => setShowApprovalModal(true)}
                 className="btn-primary flex items-center gap-2"
               >
-                <Check className="h-4 w-4" />
-                Approve
+                <Shield className="h-4 w-4" />
+                Review & Approve
               </button>
-            </>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <span className="text-sm text-yellow-800 dark:text-yellow-300">
+                  Pending approval from manager
+                </span>
+              </div>
+            )
           )}
           {canConvertToPO && (
             <button className="btn-primary flex items-center gap-2">
@@ -401,24 +365,37 @@ export default function PurchaseRequisitionDetail() {
         </div>
       </div>
 
-      {/* Approval Information */}
-      {pr.approvedBy && (
+      {/* Approval History */}
+      {(pr.approvedBy || pr.status.toUpperCase() === 'CANCELLED') && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <History className="h-5 w-5" />
-              Approval Information
+              Approval History
             </h2>
           </div>
           <div className="p-6">
             <div className="flex items-start gap-4">
-              <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center bg-green-100 dark:bg-green-900/30`}>
-                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center ${
+                pr.status.toUpperCase() === 'APPROVED' 
+                  ? 'bg-green-100 dark:bg-green-900/30' 
+                  : 'bg-red-100 dark:bg-red-900/30'
+              }`}>
+                {pr.status.toUpperCase() === 'APPROVED' ? (
+                  <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : (
+                  <X className="h-4 w-4 text-red-600 dark:text-red-400" />
+                )}
               </div>
               <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">
-                  Approved by {pr.approvedBy}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {pr.status.toUpperCase() === 'APPROVED' ? 'Approved' : 'Rejected'} by {pr.approvedBy || 'Manager'}
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                    Manager
+                  </span>
+                </div>
                 {pr.approvedDate && (
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {new Date(pr.approvedDate).toLocaleString()}
@@ -429,9 +406,9 @@ export default function PurchaseRequisitionDetail() {
                     <p className="text-sm text-gray-700 dark:text-gray-300">
                       <MessageSquare className="h-3 w-3 inline mr-1" />
                       {pr.remarks}
-                      </p>
-                    </div>
-                  )}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -439,59 +416,14 @@ export default function PurchaseRequisitionDetail() {
       )}
 
       {/* Approval Modal */}
-      {showApprovalModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="fixed inset-0 bg-gray-900/75 transition-opacity" onClick={() => setShowApprovalModal(false)} />
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  {approvalAction === 'approve' ? 'Approve' : 'Reject'} Purchase Requisition
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Comments {approvalAction === 'reject' && '*'}
-                    </label>
-                    <textarea
-                      value={approvalComment}
-                      onChange={(e) => setApprovalComment(e.target.value)}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder={approvalAction === 'approve' ? 'Optional comments...' : 'Please provide rejection reason...'}
-                    />
-                  </div>
-                </div>
-                <div className="mt-6 flex gap-3 justify-end">
-                  <button
-                    onClick={() => setShowApprovalModal(false)}
-                    className="btn-secondary"
-                    disabled={actionLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleApprovalAction}
-                    className={`${approvalAction === 'approve' ? 'btn-primary' : 'btn-danger'} flex items-center gap-2`}
-                    disabled={actionLoading || (approvalAction === 'reject' && !approvalComment.trim())}
-                  >
-                    {actionLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        {approvalAction === 'approve' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                        {approvalAction === 'approve' ? 'Approve' : 'Reject'}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {pr && (
+        <PRApprovalModal
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          pr={pr}
+          token={token || ''}
+          onSuccess={fetchPRDetails}
+        />
       )}
     </div>
   )

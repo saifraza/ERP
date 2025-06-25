@@ -31,6 +31,7 @@ import PurchaseRequisitions from './pages/procurement/PurchaseRequisitions'
 import PurchaseRequisitionDetail from './pages/procurement/PurchaseRequisitionDetail'
 import RFQManagement from './pages/procurement/RFQManagement'
 import ProcurementDashboard from './pages/procurement/ProcurementDashboard'
+import PendingApprovals from './pages/procurement/PendingApprovals'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -118,6 +119,7 @@ function App() {
                     <Route path="/procurement/vendors/:id" element={<VendorDetail />} />
                     <Route path="/procurement/requisitions" element={<PurchaseRequisitions />} />
                     <Route path="/procurement/requisitions/:id" element={<PurchaseRequisitionDetail />} />
+                    <Route path="/procurement/approvals" element={<PendingApprovals />} />
                     <Route path="/procurement/rfqs" element={<RFQManagement />} />
                     <Route path="/procurement/purchase-orders" element={<div>Purchase Orders</div>} />
                     <Route path="/procurement/quotations" element={<div>Quotation Comparison</div>} />

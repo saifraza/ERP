@@ -4,7 +4,7 @@ import {
   ClipboardList, Plus, Search, Filter, Calendar,
   Clock, AlertCircle, CheckCircle, XCircle, Send,
   Eye, Edit, MoreVertical, Package, Building,
-  TrendingUp, FileText, ArrowRight, User
+  TrendingUp, FileText, ArrowRight, User, Shield
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
@@ -47,13 +47,15 @@ interface Requisition {
 }
 
 export default function PurchaseRequisitions() {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const { currentCompany } = useCompanyStore()
   const [requisitions, setRequisitions] = useState<Requisition[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPriority, setSelectedPriority] = useState('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  
+  const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
 
   useEffect(() => {
     fetchRequisitions()
@@ -215,13 +217,19 @@ export default function PurchaseRequisitions() {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Pending Approval</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {isManager ? 'Awaiting Your Approval' : 'Pending Approval'}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                 {requisitions.filter(pr => pr.status.toUpperCase() === 'SUBMITTED').length}
               </p>
             </div>
             <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-              <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              {isManager ? (
+                <Shield className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              ) : (
+                <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              )}
             </div>
           </div>
         </div>
@@ -338,6 +346,12 @@ export default function PurchaseRequisitions() {
                         <span className={`text-xs font-medium ${getPriorityColor(pr.priority)}`}>
                           {pr.priority.toUpperCase()}
                         </span>
+                        {pr.status.toUpperCase() === 'SUBMITTED' && isManager && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                            <Shield className="h-3 w-3" />
+                            Needs approval
+                          </span>
+                        )}
                       </div>
                       <div className="mt-1 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1">
