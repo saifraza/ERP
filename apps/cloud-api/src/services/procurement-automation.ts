@@ -666,11 +666,12 @@ This is an automated email. Please do not reply to this email address.
         const subject = emailOptions?.customSubject || `Request for Quotation - ${rfq.rfqNumber} - ${rfq.company.name}`
         console.log(`Sending email to ${vendor.email} with subject: ${subject}`)
         
+        let emailResult: any
         try {
           // Prepare CC emails if provided
           const ccEmails = emailOptions?.ccEmails?.join(', ') || undefined
           
-          const result = await multiTenantGmail.sendEmailWithAttachment(
+          emailResult = await multiTenantGmail.sendEmailWithAttachment(
             rfq.companyId,
             vendor.email,
             subject,
@@ -684,7 +685,7 @@ This is an automated email. Please do not reply to this email address.
             ],
             ccEmails  // Pass CC emails
           )
-          console.log(`Email sent successfully to ${vendor.email}:`, result)
+          console.log(`Email sent successfully to ${vendor.email}:`, emailResult)
         } catch (emailError: any) {
           console.error(`Failed to send email to ${vendor.email}:`, emailError)
           throw emailError
@@ -697,7 +698,7 @@ This is an automated email. Please do not reply to this email address.
         //     rfqId: rfq.id,
         //     vendorId: vendor.id,
         //     emailType: 'rfq_sent',
-        //     emailId: result.messageId,
+        //     emailId: emailResult.messageId,
         //     subject: subject,
         //     toEmail: vendor.email,
         //     attachments: JSON.stringify([pdfFilename]),
@@ -717,7 +718,7 @@ This is an automated email. Please do not reply to this email address.
         //   create: {
         //     rfqId: rfq.id,
         //     vendorId: vendor.id,
-        //     threadId: result.threadId,
+        //     threadId: emailResult.threadId,
         //     messageCount: 1,
         //     lastMessageAt: new Date(),
         //     status: 'active'
@@ -743,7 +744,7 @@ This is an automated email. Please do not reply to this email address.
           vendorName: vendor.name,
           email: vendor.email,
           success: true,
-          messageId: result.messageId
+          messageId: emailResult.messageId
         })
       } catch (error: any) {
         console.error(`Failed to send RFQ to vendor ${rfqVendor.vendorId}:`, error)
