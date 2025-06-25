@@ -1,7 +1,14 @@
-import PDFDocument from 'pdfkit'
 import { prisma } from '../lib/prisma.js'
-import { promises as fs } from 'fs'
-import path from 'path'
+let PDFDocument: any
+
+// Dynamic import for PDFKit to handle ESM/CJS compatibility
+async function getPDFDocument() {
+  if (!PDFDocument) {
+    const pdfkit = await import('pdfkit')
+    PDFDocument = pdfkit.default || pdfkit
+  }
+  return PDFDocument
+}
 
 export class RFQPDFGenerator {
   /**
@@ -41,10 +48,13 @@ export class RFQPDFGenerator {
       throw new Error('RFQ not found')
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
+        // Get PDFDocument class
+        const PDFDoc = await getPDFDocument()
+        
         // Create PDF document
-        const doc = new PDFDocument({
+        const doc = new PDFDoc({
           size: 'A4',
           margin: 50,
           bufferPages: true
@@ -299,10 +309,13 @@ export class RFQPDFGenerator {
       throw new Error('Vendor not found')
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
+        // Get PDFDocument class
+        const PDFDoc = await getPDFDocument()
+        
         // Create PDF document
-        const doc = new PDFDocument({
+        const doc = new PDFDoc({
           size: 'A4',
           margin: 50,
           bufferPages: true
