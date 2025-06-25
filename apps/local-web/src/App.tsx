@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import MainLayout from './layouts/MainLayout'
 import ModernLayout from './layouts/ModernLayout'
 import UltraModernLayout from './layouts/UltraModernLayout'
+import ShortcutProvider from './components/shortcuts/ShortcutProvider'
 import Dashboard from './pages/Dashboard'
 import DashboardModern from './pages/DashboardModern'
 import DashboardUltra from './pages/DashboardUltra'
@@ -72,8 +73,9 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
+      <ShortcutProvider>
+        <BrowserRouter>
+          <Routes>
           <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
           <Route path="/setup" element={
             isAuthenticated ? (
@@ -160,8 +162,9 @@ function App() {
               )
             }
           />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </ShortcutProvider>
       <Toaster 
         position="top-right"
         toastOptions={{

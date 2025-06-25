@@ -236,4 +236,52 @@
     @apply selection:bg-primary-200 selection:text-primary-900 
            dark:selection:bg-primary-800 dark:selection:text-primary-100;
   }
+  
+  /* Keyboard shortcut indicators */
+  .shortcut-underline {
+    @apply underline decoration-2 decoration-primary-500 underline-offset-2;
+  }
+  
+  .shortcut-badge {
+    @apply inline-flex items-center justify-center ml-2 px-1.5 py-0.5 
+           text-xs font-bold bg-gray-200 dark:bg-gray-700 text-gray-700 
+           dark:text-gray-300 rounded;
+  }
+  
+  .shortcut-superscript {
+    @apply ml-1 text-xs text-primary-600 dark:text-primary-400 font-bold;
+  }
+  
+  /* Shortcut activation animation */
+  .shortcut-activated {
+    @apply ring-2 ring-primary-500 ring-offset-2 scale-95;
+    animation: shortcut-activate 0.2s ease-out;
+  }
+  
+  @keyframes shortcut-activate {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.95);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  /* Shortcut overlay styles */
+  [data-shortcut-key] {
+    position: relative;
+  }
+  
+  /* Show shortcut hints on hover */
+  [data-shortcut-key]:hover::after {
+    content: attr(data-shortcut-key);
+    @apply absolute -top-8 left-1/2 transform -translate-x-1/2 
+           bg-gray-900 text-white text-xs px-2 py-1 rounded 
+           whitespace-nowrap opacity-0 animate-fade-in;
+    animation-delay: 0.5s;
+    animation-fill-mode: forwards;
+  }
 }

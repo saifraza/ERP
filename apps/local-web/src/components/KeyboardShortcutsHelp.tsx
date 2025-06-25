@@ -11,6 +11,13 @@ interface ShortcutGroup {
 
 const shortcutGroups: ShortcutGroup[] = [
   {
+    name: 'Automatic Button Shortcuts',
+    shortcuts: [
+      { keys: ['Alt', '+', 'Letter'], description: 'Activate any button (letter shown when holding Alt)' },
+      { keys: ['Alt'], description: 'Hold to see all available button shortcuts' },
+    ]
+  },
+  {
     name: 'Global Navigation',
     shortcuts: [
       { keys: ['⌘', 'K'], description: 'Open global search' },
@@ -189,6 +196,8 @@ export default function KeyboardShortcutsHelp() {
               Pro Tips
             </h4>
             <ul className="space-y-1 text-sm text-primary-700 dark:text-primary-300">
+              <li>• <strong>NEW:</strong> Every button automatically gets a keyboard shortcut!</li>
+              <li>• Hold Alt to see shortcuts for all buttons on the page</li>
               <li>• Use ⌘P to open command palette for all actions</li>
               <li>• Use ⌘K to quickly search and navigate anywhere</li>
               <li>• Press G followed by a letter for quick navigation</li>
