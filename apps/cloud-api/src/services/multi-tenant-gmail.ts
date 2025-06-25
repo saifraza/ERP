@@ -334,12 +334,12 @@ export class MultiTenantGmailService {
       `--${boundary}`
     )
     
-    // Email body
+    // Email body - use 7bit encoding for better compatibility
     messageParts.push(
       'Content-Type: text/html; charset=utf-8',
-      'Content-Transfer-Encoding: base64',
+      'Content-Transfer-Encoding: 7bit',
       '',
-      Buffer.from(body).toString('base64'),
+      body,
       ''
     )
     
@@ -379,6 +379,21 @@ export class MultiTenantGmailService {
       message: `Email with attachments sent successfully from ${email}`,
       account: email
     }
+  }
+  
+  /**
+   * Encode string as quoted-printable
+   */
+  private encodeQuotedPrintable(str: string): string {
+    // Replace non-ASCII characters and special characters
+    return str
+      .replace(/([^\x20-\x7E])/g, (match) => {
+        return '=' + match.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')
+      })
+      .replace(/([=])/g, '=3D')
+      // Ensure lines don't exceed 76 characters
+      .replace(/(.{1,72})/g, '$1=\r\n')
+      .replace(/=\r\n$/, '') // Remove trailing soft line break
   }
   
   /**

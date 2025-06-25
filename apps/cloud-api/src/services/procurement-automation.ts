@@ -556,49 +556,85 @@ Accounts Team
       vendorsCount: rfq.vendors.length
     })
     
-    // Email template with professional formatting
-    const emailTemplate = `
-Dear {vendorName},
-
-Greetings from {companyName}!
-
-We are pleased to invite you to submit your competitive quotation for our requirement as per the attached Request for Quotation (RFQ) document.
-
-RFQ Details:
-- RFQ Number: {rfqNumber}
-- Issue Date: {issueDate}
-- Due Date: {dueDate}
-- Division: {division}
-
-Please find attached the detailed RFQ document which contains:
-• Complete item specifications and quantities
-• Commercial terms and conditions
-• Technical requirements
-• Submission guidelines
-• Evaluation criteria
-
-Important Instructions:
-1. Please submit your quotation on or before {dueDate}
-2. Quote your best prices in INR inclusive of all taxes (show GST separately)
-3. Mention delivery period for each item
-4. Quotation should be valid for minimum 90 days
-5. Send your quotation via email reply with "Quotation for RFQ {rfqNumber}" in subject line
-
-For any clarifications, please feel free to contact us.
-
-We look forward to receiving your competitive quotation and establishing a long-term business relationship.
-
-Best regards,
-
-{signatoryName}
-{signatoryDesignation}
-{companyName}
-Email: {companyEmail}
-Phone: {companyPhone}
-
----
-This is an automated email. Please do not reply to this email address.
-    `
+    // Email template with HTML formatting
+    const emailTemplate = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { margin-bottom: 20px; }
+    .details { background-color: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .details h3 { margin-top: 0; color: #2c3e50; }
+    .details ul { margin: 10px 0; padding-left: 20px; }
+    .instructions { background-color: #e8f4f8; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .instructions h3 { margin-top: 0; color: #2980b9; }
+    .instructions ol { margin: 10px 0; padding-left: 20px; }
+    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+    .signature { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p>Dear {vendorName},</p>
+      <p>Greetings from <strong>{companyName}</strong>!</p>
+    </div>
+    
+    <p>We are pleased to invite you to submit your competitive quotation for our requirement as per the attached Request for Quotation (RFQ) document.</p>
+    
+    <div class="details">
+      <h3>RFQ Details:</h3>
+      <ul>
+        <li><strong>RFQ Number:</strong> {rfqNumber}</li>
+        <li><strong>Issue Date:</strong> {issueDate}</li>
+        <li><strong>Due Date:</strong> {dueDate}</li>
+        <li><strong>Division:</strong> {division}</li>
+      </ul>
+    </div>
+    
+    <p>Please find attached the detailed RFQ document which contains:</p>
+    <ul>
+      <li>Complete item specifications and quantities</li>
+      <li>Commercial terms and conditions</li>
+      <li>Technical requirements</li>
+      <li>Submission guidelines</li>
+      <li>Evaluation criteria</li>
+    </ul>
+    
+    <div class="instructions">
+      <h3>Important Instructions:</h3>
+      <ol>
+        <li>Please submit your quotation on or before <strong>{dueDate}</strong></li>
+        <li>Quote your best prices in INR inclusive of all taxes (show GST separately)</li>
+        <li>Mention delivery period for each item</li>
+        <li>Quotation should be valid for minimum 90 days</li>
+        <li>Send your quotation via email reply with "Quotation for RFQ {rfqNumber}" in subject line</li>
+      </ol>
+    </div>
+    
+    <p>For any clarifications, please feel free to contact us.</p>
+    
+    <p>We look forward to receiving your competitive quotation and establishing a long-term business relationship.</p>
+    
+    <div class="signature">
+      <p>Best regards,</p>
+      <p>
+        <strong>{signatoryName}</strong><br>
+        {signatoryDesignation}<br>
+        {companyName}<br>
+        Email: {companyEmail}<br>
+        Phone: {companyPhone}
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>This is an automated email. Please do not reply to this email address.</p>
+    </div>
+  </div>
+</body>
+</html>`
     
     const results = []
     
