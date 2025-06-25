@@ -481,7 +481,7 @@ app.get('/:id/comparison', async (c) => {
         id: rfq.id,
         rfqNumber: rfq.rfqNumber,
         issueDate: rfq.issueDate,
-        dueDate: rfq.dueDate
+        submissionDeadline: rfq.submissionDeadline
       },
       itemComparison: comparison,
       overallComparison,
