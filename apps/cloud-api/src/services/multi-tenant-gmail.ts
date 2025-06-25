@@ -295,6 +295,91 @@ export class MultiTenantGmailService {
       account: email
     }
   }
+
+  /**
+   * Send email with attachments from a specific company account
+   */
+  async sendEmailWithAttachment(
+    companyId: string | undefined,
+    to: string,
+    subject: string,
+    body: string,
+    attachments: Array<{
+      filename: string,
+      content: Buffer,
+      contentType: string
+    }>,
+    cc?: string,
+    bcc?: string
+  ) {
+    const { client, email } = await this.getClient(companyId)
+    const gmail = google.gmail({ version: 'v1', auth: client })
+    
+    console.log(`Sending email with ${attachments.length} attachment(s) from ${email} to ${to}`)
+    
+    // Create a multipart message
+    const boundary = `boundary_${Date.now()}`
+    const messageParts = []
+    
+    // Email headers
+    messageParts.push(
+      'MIME-Version: 1.0',
+      `From: ${email}`,
+      `To: ${to}`,
+      cc ? `Cc: ${cc}` : '',
+      bcc ? `Bcc: ${bcc}` : '',
+      `Subject: ${subject}`,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      '',
+      `--${boundary}`
+    )
+    
+    // Email body
+    messageParts.push(
+      'Content-Type: text/html; charset=utf-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      Buffer.from(body).toString('base64'),
+      ''
+    )
+    
+    // Add attachments
+    for (const attachment of attachments) {
+      messageParts.push(
+        `--${boundary}`,
+        `Content-Type: ${attachment.contentType}; name="${attachment.filename}"`,
+        'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${attachment.filename}"`,
+        '',
+        attachment.content.toString('base64'),
+        ''
+      )
+    }
+    
+    // End boundary
+    messageParts.push(`--${boundary}--`)
+    
+    const message = messageParts.filter(part => part !== undefined).join('\r\n')
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+    
+    const response = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage
+      }
+    })
+    
+    return {
+      success: true,
+      messageId: response.data.id,
+      message: `Email with attachments sent successfully from ${email}`,
+      account: email
+    }
+  }
   
   /**
    * Store OAuth credentials for a company

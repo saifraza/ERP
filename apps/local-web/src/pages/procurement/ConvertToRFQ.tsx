@@ -168,7 +168,7 @@ export default function ConvertToRFQ() {
             ...rfqData,
             vendorIds: selectedVendors,
             items: requisition?.items.map(item => ({
-              materialId: item.material.code, // This might need to be the material ID
+              materialId: item.material.id,
               quantity: item.quantity,
               requiredDate: item.requiredDate,
               specification: item.specification
@@ -179,10 +179,11 @@ export default function ConvertToRFQ() {
 
       if (response.ok) {
         const data = await response.json()
-        toast.success('RFQ created successfully')
+        toast.success(data.message || 'RFQ created successfully')
         navigate(`/procurement/rfqs/${data.rfq.id}`)
       } else {
         const error = await response.json()
+        console.error('RFQ creation error:', error)
         toast.error(error.error || 'Failed to create RFQ')
       }
     } catch (error) {

@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js'
 import { multiTenantGmail } from './multi-tenant-gmail.js'
 import { getGeminiService } from './gemini.js'
+import { rfqPDFGenerator } from './rfq-pdf-generator.js'
 
 export class ProcurementAutomationService {
   private gemini: any = null
@@ -523,7 +524,11 @@ Accounts Team
         company: true,
         vendors: true,
         items: true,
-        pr: true
+        pr: {
+          include: {
+            division: true
+          }
+        }
       }
     })
     
@@ -531,37 +536,49 @@ Accounts Team
       throw new Error('RFQ not found')
     }
     
-    // Email template
+    // Email template with professional formatting
     const emailTemplate = `
 Dear {vendorName},
 
-We invite you to submit your quotation for the following items:
+Greetings from {companyName}!
 
-RFQ Number: {rfqNumber}
-Due Date: {dueDate}
+We are pleased to invite you to submit your competitive quotation for our requirement as per the attached Request for Quotation (RFQ) document.
 
-Items Required:
-{items}
+RFQ Details:
+- RFQ Number: {rfqNumber}
+- Issue Date: {issueDate}
+- Due Date: {dueDate}
+- Division: {division}
 
-Terms & Conditions:
-{terms}
+Please find attached the detailed RFQ document which contains:
+• Complete item specifications and quantities
+• Commercial terms and conditions
+• Technical requirements
+• Submission guidelines
+• Evaluation criteria
 
-Please submit your best quotation before the due date. Include the following in your quotation:
-- Unit prices for each item
-- Total amount including taxes
-- Delivery schedule
-- Payment terms
-- Validity period
+Important Instructions:
+1. Please submit your quotation on or before {dueDate}
+2. Quote your best prices in INR inclusive of all taxes (show GST separately)
+3. Mention delivery period for each item
+4. Quotation should be valid for minimum 90 days
+5. Send your quotation via email reply with "Quotation for RFQ {rfqNumber}" in subject line
 
-You can send your quotation via email reply or through our vendor portal.
+For any clarifications, please feel free to contact us.
+
+We look forward to receiving your competitive quotation and establishing a long-term business relationship.
 
 Best regards,
-{companyName} Procurement Team
+
+{signatoryName}
+{signatoryDesignation}
+{companyName}
+Email: {companyEmail}
+Phone: {companyPhone}
+
+---
+This is an automated email. Please do not reply to this email address.
     `
-    
-    const itemsList = rfq.items.map(item => 
-      `- ${item.itemDescription} - Qty: ${item.quantity} ${item.unit}`
-    ).join('\n')
     
     const results = []
     
@@ -573,19 +590,36 @@ Best regards,
         
         if (!vendor) continue
         
-        const emailBody = emailTemplate
-          .replace('{vendorName}', vendor.contactPerson)
-          .replace('{rfqNumber}', rfq.rfqNumber)
-          .replace('{dueDate}', rfq.dueDate.toLocaleDateString())
-          .replace('{items}', itemsList)
-          .replace('{terms}', rfq.terms || 'Standard terms apply')
-          .replace('{companyName}', rfq.company.name)
+        // Generate vendor-specific PDF
+        const pdfBuffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendor.id)
+        const pdfFilename = `RFQ_${rfq.rfqNumber}_${vendor.code}.pdf`
         
-        const result = await multiTenantGmail.sendEmail(
+        // Prepare email body
+        const emailBody = emailTemplate
+          .replace(/{vendorName}/g, vendor.contactPerson || vendor.name)
+          .replace(/{companyName}/g, rfq.company.name)
+          .replace(/{rfqNumber}/g, rfq.rfqNumber)
+          .replace(/{issueDate}/g, new Date(rfq.issueDate).toLocaleDateString('en-IN'))
+          .replace(/{dueDate}/g, new Date(rfq.dueDate).toLocaleDateString('en-IN'))
+          .replace(/{division}/g, rfq.pr?.division?.name || 'General')
+          .replace(/{signatoryName}/g, 'Procurement Team')
+          .replace(/{signatoryDesignation}/g, 'Purchase Department')
+          .replace(/{companyEmail}/g, rfq.company.email)
+          .replace(/{companyPhone}/g, rfq.company.phone)
+        
+        // Send email with PDF attachment
+        const result = await multiTenantGmail.sendEmailWithAttachment(
           rfq.companyId,
           vendor.email,
-          `Request for Quotation - ${rfq.rfqNumber}`,
-          emailBody
+          `Request for Quotation - ${rfq.rfqNumber} - ${rfq.company.name}`,
+          emailBody,
+          [
+            {
+              filename: pdfFilename,
+              content: pdfBuffer,
+              contentType: 'application/pdf'
+            }
+          ]
         )
         
         // Update RFQ vendor status
@@ -601,9 +635,11 @@ Best regards,
           vendorId: vendor.id,
           vendorName: vendor.name,
           email: vendor.email,
-          success: true
+          success: true,
+          messageId: result.messageId
         })
-      } catch (error) {
+      } catch (error: any) {
+        console.error(`Failed to send RFQ to vendor ${rfqVendor.vendorId}:`, error)
         results.push({
           vendorId: rfqVendor.vendorId,
           success: false,
@@ -621,6 +657,9 @@ Best regards,
     return {
       success: true,
       rfqNumber: rfq.rfqNumber,
+      totalVendors: rfq.vendors.length,
+      sentCount: results.filter(r => r.success).length,
+      failedCount: results.filter(r => !r.success).length,
       results
     }
   }

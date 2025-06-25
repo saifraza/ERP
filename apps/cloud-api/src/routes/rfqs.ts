@@ -2,12 +2,32 @@ import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
 import { procurementAutomation } from '../services/procurement-automation.js'
+import { rfqPDFGenerator } from '../services/rfq-pdf-generator.js'
 import { z } from 'zod'
 
 const app = new Hono()
 
 // Apply auth middleware to all routes
 app.use('*', authMiddleware)
+
+// Create RFQ schema
+const createRFQSchema = z.object({
+  requisitionId: z.string().uuid(),
+  rfqDate: z.string(),
+  submissionDeadline: z.string(),
+  deliveryDate: z.string(),
+  deliveryTerms: z.string(),
+  paymentTerms: z.string(),
+  specialInstructions: z.string().optional(),
+  validityDays: z.number().default(30),
+  vendorIds: z.array(z.string().uuid()).min(1),
+  items: z.array(z.object({
+    materialId: z.string(),
+    quantity: z.number(),
+    requiredDate: z.string(),
+    specification: z.string().optional()
+  }))
+})
 
 // Get all RFQs
 app.get('/', async (c) => {
@@ -56,6 +76,146 @@ app.get('/', async (c) => {
   } catch (error: any) {
     console.error('Error fetching RFQs:', error)
     return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Create new RFQ
+app.post('/', async (c) => {
+  const userId = c.get('userId')
+  
+  try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
+    const companyId = companyUser.companyId
+    const body = await c.req.json()
+    
+    // Validate request body
+    const validated = createRFQSchema.parse(body)
+    
+    // Get the requisition
+    const requisition = await prisma.requisition.findFirst({
+      where: {
+        id: validated.requisitionId,
+        factory: { companyId },
+        status: 'APPROVED'
+      },
+      include: {
+        factory: true,
+        items: {
+          include: {
+            material: true
+          }
+        }
+      }
+    })
+    
+    if (!requisition) {
+      return c.json({ error: 'Approved requisition not found' }, 404)
+    }
+    
+    // Generate RFQ number
+    const count = await prisma.rFQ.count({
+      where: { companyId }
+    })
+    const rfqNumber = `RFQ-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(count + 1).padStart(4, '0')}`
+    
+    // Create RFQ with items and vendors
+    const rfq = await prisma.rFQ.create({
+      data: {
+        rfqNumber,
+        requisitionId: validated.requisitionId,
+        companyId,
+        factoryId: requisition.factoryId,
+        issueDate: new Date(validated.rfqDate),
+        submissionDeadline: new Date(validated.submissionDeadline),
+        expectedDeliveryDate: new Date(validated.deliveryDate),
+        deliveryTerms: validated.deliveryTerms,
+        paymentTerms: validated.paymentTerms,
+        specialInstructions: validated.specialInstructions,
+        quotationValidityDays: validated.validityDays,
+        status: 'OPEN',
+        createdBy: userId,
+        items: {
+          create: requisition.items.map(item => ({
+            materialId: item.materialId,
+            quantity: item.quantity,
+            requiredDate: item.requiredDate,
+            specifications: item.specification
+          }))
+        },
+        vendors: {
+          create: validated.vendorIds.map(vendorId => ({
+            vendorId,
+            emailSent: false,
+            responseReceived: false
+          }))
+        }
+      },
+      include: {
+        requisition: {
+          select: {
+            requisitionNo: true,
+            division: { select: { name: true } }
+          }
+        },
+        vendors: {
+          include: {
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
+        items: {
+          include: {
+            material: {
+              select: {
+                code: true,
+                name: true,
+                uom: {
+                  select: { code: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+    
+    // Update requisition status to indicate RFQ created
+    await prisma.requisition.update({
+      where: { id: validated.requisitionId },
+      data: { 
+        status: 'PARTIALLY_ORDERED',
+        updatedAt: new Date()
+      }
+    })
+    
+    return c.json({ 
+      success: true,
+      rfq,
+      message: `RFQ ${rfqNumber} created successfully`
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return c.json({ 
+        error: 'Validation error', 
+        details: error.errors 
+      }, 400)
+    }
+    console.error('Error creating RFQ:', error)
+    return c.json({ error: error.message }, 500)
   }
 })
 
@@ -324,6 +484,81 @@ app.post('/:id/select-vendors', async (c) => {
     })
   } catch (error: any) {
     console.error('Error selecting vendors:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Generate RFQ PDF
+app.get('/:id/pdf', async (c) => {
+  const user = c.get('user')
+  const rfqId = c.req.param('id')
+  
+  try {
+    // Check if RFQ belongs to user's company
+    const rfq = await prisma.rFQ.findFirst({
+      where: {
+        id: rfqId,
+        companyId: user.companyId
+      },
+      select: {
+        rfqNumber: true
+      }
+    })
+    
+    if (!rfq) {
+      return c.json({ success: false, error: 'RFQ not found' }, 404)
+    }
+    
+    // Generate PDF
+    const { buffer, filename } = await rfqPDFGenerator.generateAndSaveRFQ(rfqId)
+    
+    // Set response headers
+    c.header('Content-Type', 'application/pdf')
+    c.header('Content-Disposition', `attachment; filename="${filename}"`)
+    
+    // Return PDF buffer
+    return c.body(buffer)
+  } catch (error: any) {
+    console.error('Error generating RFQ PDF:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Generate vendor-specific RFQ PDF
+app.get('/:id/pdf/:vendorId', async (c) => {
+  const user = c.get('user')
+  const rfqId = c.req.param('id')
+  const vendorId = c.req.param('vendorId')
+  
+  try {
+    // Check if RFQ belongs to user's company
+    const rfq = await prisma.rFQ.findFirst({
+      where: {
+        id: rfqId,
+        companyId: user.companyId
+      },
+      select: {
+        rfqNumber: true
+      }
+    })
+    
+    if (!rfq) {
+      return c.json({ success: false, error: 'RFQ not found' }, 404)
+    }
+    
+    // Generate vendor-specific PDF
+    const buffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendorId)
+    
+    const filename = `RFQ_${rfq.rfqNumber}_${vendorId}_${new Date().getTime()}.pdf`
+    
+    // Set response headers
+    c.header('Content-Type', 'application/pdf')
+    c.header('Content-Disposition', `attachment; filename="${filename}"`)
+    
+    // Return PDF buffer
+    return c.body(buffer)
+  } catch (error: any) {
+    console.error('Error generating vendor RFQ PDF:', error)
     return c.json({ success: false, error: error.message }, 500)
   }
 })

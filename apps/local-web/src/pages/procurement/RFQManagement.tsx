@@ -9,6 +9,7 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
+import { RFQPDFViewer } from '../../components/procurement/RFQPDFViewer'
 
 interface RFQItem {
   id: string
@@ -317,15 +318,11 @@ export default function RFQManagement() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {rfq.status === 'draft' && (
-                      <button 
-                        onClick={() => handleSendRFQ(rfq.id)}
-                        className="btn-primary text-sm flex items-center gap-1"
-                      >
-                        <Send className="h-3 w-3" />
-                        Send to Vendors
-                      </button>
-                    )}
+                    <RFQPDFViewer 
+                      rfqId={rfq.id}
+                      rfqNumber={rfq.rfqNumber}
+                      onEmailSent={fetchRFQs}
+                    />
                     {rfq.status === 'sent' && rfq._count.quotations > 0 && (
                       <Link
                         to={`/procurement/rfqs/${rfq.id}/comparison`}

@@ -1403,3 +1403,229 @@ model DocumentActivity {
   
   @@index([documentId])
 }
+
+// ==================== PROCUREMENT MODELS ====================
+
+// Purchase Requisition
+model PurchaseRequisition {
+  id          String    @id @default(uuid())
+  companyId   String
+  prNumber    String    @unique
+  divisionId  String
+  departmentId String?
+  
+  requestedBy String
+  requestDate DateTime  @default(now())
+  requiredBy  DateTime
+  
+  priority    String    @default("normal") // low, normal, high, urgent
+  purpose     String
+  
+  status      String    @default("draft") // draft, submitted, approved, rejected, converted
+  
+  approvedBy  String?
+  approvedAt  DateTime?
+  rejectedBy  String?
+  rejectedAt  DateTime?
+  rejectionReason String?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  company     Company   @relation(fields: [companyId], references: [id])
+  division    Division  @relation(fields: [divisionId], references: [id])
+  department  Department? @relation(fields: [departmentId], references: [id])
+  items       PRItem[]
+  rfqs        RFQ[]
+  
+  @@index([companyId])
+  @@index([divisionId])
+  @@index([status])
+}
+
+model PRItem {
+  id            String   @id @default(uuid())
+  prId          String
+  
+  itemCode      String?
+  itemName      String
+  description   String?
+  specification String?
+  
+  quantity      Float
+  unit          String
+  estimatedRate Float?
+  estimatedAmount Float?
+  
+  remarks       String?
+  
+  pr            PurchaseRequisition @relation(fields: [prId], references: [id])
+  
+  @@index([prId])
+}
+
+// Request for Quotation
+model RFQ {
+  id          String    @id @default(uuid())
+  companyId   String
+  rfqNumber   String    @unique
+  prId        String?
+  
+  issueDate   DateTime  @default(now())
+  dueDate     DateTime
+  
+  terms       String?   // General terms
+  paymentTerms String?
+  deliveryTerms String?
+  warrantyTerms String?
+  specialTerms String?
+  
+  status      String    @default("draft") // draft, sent, closed, cancelled
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  company     Company   @relation(fields: [companyId], references: [id])
+  pr          PurchaseRequisition? @relation(fields: [prId], references: [id])
+  vendors     RFQVendor[]
+  items       RFQItem[]
+  quotations  Quotation[]
+  
+  @@index([companyId])
+  @@index([status])
+}
+
+model RFQItem {
+  id              String   @id @default(uuid())
+  rfqId           String
+  
+  itemCode        String?
+  itemDescription String
+  specification   String?
+  quantity        Float
+  unit            String
+  deliveryDays    String?
+  
+  rfq             RFQ      @relation(fields: [rfqId], references: [id])
+  
+  @@index([rfqId])
+}
+
+model RFQVendor {
+  id               String    @id @default(uuid())
+  rfqId            String
+  vendorId         String
+  
+  emailSent        Boolean   @default(false)
+  emailSentAt      DateTime?
+  responseReceived Boolean   @default(false)
+  
+  rfq              RFQ       @relation(fields: [rfqId], references: [id])
+  vendor           Vendor    @relation(fields: [vendorId], references: [id])
+  
+  @@index([rfqId])
+  @@index([vendorId])
+}
+
+// Vendor Quotations
+model Quotation {
+  id               String    @id @default(uuid())
+  companyId        String
+  quotationNumber  String    @unique
+  rfqId            String?
+  vendorId         String
+  
+  quotationDate    DateTime
+  validUntil       DateTime
+  
+  subtotal         Float
+  taxAmount        Float
+  totalAmount      Float
+  
+  paymentTerms     String?
+  deliveryTerms    String?
+  warrantyTerms    String?
+  
+  status           String    @default("received") // received, under_review, accepted, rejected
+  
+  emailId          String?   // Reference to email if auto-processed
+  notes            String?
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  company          Company   @relation(fields: [companyId], references: [id])
+  rfq              RFQ?      @relation(fields: [rfqId], references: [id])
+  vendor           Vendor    @relation(fields: [vendorId], references: [id])
+  items            QuotationItem[]
+  
+  @@index([companyId])
+  @@index([vendorId])
+  @@index([rfqId])
+}
+
+model QuotationItem {
+  id            String    @id @default(uuid())
+  quotationId   String
+  
+  itemCode      String?
+  itemName      String
+  quantity      Float
+  unit          String
+  unitPrice     Float
+  totalAmount   Float
+  
+  deliveryDays  Int?
+  warranty      String?
+  
+  quotation     Quotation @relation(fields: [quotationId], references: [id])
+  
+  @@index([quotationId])
+}
+
+// Quotation Comparison
+model QuotationComparison {
+  id                String    @id @default(uuid())
+  rfqId             String
+  itemCode          String
+  selectedVendorId  String
+  selectionReason   String?
+  
+  comparedBy        String
+  comparedAt        DateTime  @default(now())
+  
+  @@index([rfqId])
+  @@index([selectedVendorId])
+}
+
+// Vendor Invoice
+model VendorInvoice {
+  id             String    @id @default(uuid())
+  companyId      String
+  invoiceNumber  String
+  vendorId       String
+  poId           String?
+  
+  invoiceDate    DateTime
+  dueDate        DateTime
+  
+  subtotal       Float
+  taxAmount      Float
+  totalAmount    Float
+  
+  status         String    @default("received") // received, verified, approved, paid, rejected
+  
+  emailId        String?   // Reference to email if auto-processed
+  notes          String?
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  company        Company   @relation(fields: [companyId], references: [id])
+  vendor         Vendor    @relation(fields: [vendorId], references: [id])
+  po             PurchaseOrder? @relation(fields: [poId], references: [id])
+  
+  @@index([companyId])
+  @@index([vendorId])
+  @@unique([companyId, vendorId, invoiceNumber])
+}
