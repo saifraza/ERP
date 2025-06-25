@@ -99,13 +99,14 @@ export class ShortcutAssigner {
   }
 
   // Assign shortcuts to all matching elements
-  assignShortcuts(container: HTMLElement = document.body): AssignedShortcut[] {
+  assignShortcuts(container?: HTMLElement): AssignedShortcut[] {
+    const targetContainer = container || document.body
     // Clear previous assignments for this container
-    this.clearShortcuts(container)
+    this.clearShortcuts(targetContainer)
 
     // Find all eligible elements
     const selector = shortcutConfig.selectors.join(', ')
-    const elements = container.querySelectorAll<HTMLElement>(selector)
+    const elements = targetContainer.querySelectorAll<HTMLElement>(selector)
 
     const assigned: AssignedShortcut[] = []
 
@@ -203,8 +204,9 @@ export class ShortcutAssigner {
   }
 
   // Clear shortcuts for a container
-  clearShortcuts(container: HTMLElement = document.body) {
-    const elements = container.querySelectorAll('[data-shortcut-key]')
+  clearShortcuts(container?: HTMLElement) {
+    const targetContainer = container || document.body
+    const elements = targetContainer.querySelectorAll('[data-shortcut-key]')
     elements.forEach(element => {
       const id = this.elementMap.get(element as HTMLElement)
       if (id) {
