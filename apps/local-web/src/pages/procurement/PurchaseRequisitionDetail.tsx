@@ -13,41 +13,49 @@ interface PRItem {
   id: string
   materialId: string
   material: {
+    id: string
     code: string
     name: string
     description?: string
     unit: string
     specifications?: string
+    category?: string
+    criticalItem?: boolean
+    reorderLevel?: number
+    leadTimeDays?: number
   }
   quantity: number
-  requiredBy: string
-  preferredVendorId?: string
-  preferredVendor?: {
-    code: string
-    name: string
-  }
-  purpose: string
-  estimatedCost?: number
+  requiredDate: string
+  specification?: string
+  remarks?: string
 }
 
 interface PurchaseRequisition {
   id: string
-  prNumber: string
-  title: string
-  description?: string
-  division: string
-  status: string
+  requisitionNo: string
+  requisitionDate: string
+  department: string
   priority: string
-  createdAt: string
-  requiredBy: string
-  items: PRItem[]
-  requestor: {
+  purpose?: string
+  status: string
+  requestedBy: string
+  requestedByEmail: string
+  approvedBy?: string
+  approvedByEmail?: string
+  approvedDate?: string
+  remarks?: string
+  factory: {
     name: string
-    email: string
+    code: string
   }
-  approvals: {
-    id: string
-    level: string
+  division?: {
+    name: string
+    code: string
+  }
+  items: PRItem[]
+  purchaseOrders?: any[]
+  createdAt: string
+  updatedAt: string
     approverName: string
     status: string
     approvedAt?: string
@@ -78,7 +86,7 @@ export default function PurchaseRequisitionDetail() {
     try {
       setLoading(true)
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/purchase-requisitions/${id}`,
+        `${import.meta.env.VITE_API_URL}/api/requisitions/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -88,7 +96,7 @@ export default function PurchaseRequisitionDetail() {
 
       if (response.ok) {
         const data = await response.json()
-        setPr(data.pr)
+        setPr(data.requisition)
       } else {
         toast.error('Failed to load PR details')
       }
@@ -106,14 +114,14 @@ export default function PurchaseRequisitionDetail() {
     setActionLoading(true)
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/purchase-requisitions/${id}/${approvalAction}`,
+        `${import.meta.env.VITE_API_URL}/api/requisitions/${id}/${approvalAction}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ comments: approvalComment })
+          body: JSON.stringify(approvalAction === 'approve' ? { remarks: approvalComment } : { reason: approvalComment })
         }
       )
 
@@ -151,7 +159,25 @@ export default function PurchaseRequisitionDetail() {
       high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
       urgent: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
     }
-    return colors[priority as keyof typeof colors] || colors.medium
+    return colors[priority.toLowerCase() as keyof typeof colors] || colors.medium
+  }
+
+  const parseSpecification = (spec: string | undefined): string => {
+    if (!spec) return '-'
+    
+    try {
+      const parsed = JSON.parse(spec)
+      const parts: string[] = []
+      
+      if (parsed.technicalGrade) parts.push(`Grade: ${parsed.technicalGrade}`)
+      if (parsed.complianceStandard) parts.push(`Standard: ${parsed.complianceStandard}`)
+      if (parsed.storageConditions) parts.push(`Storage: ${parsed.storageConditions}`)
+      if (parsed.shelfLife) parts.push(`Shelf Life: ${parsed.shelfLife} years`)
+      
+      return parts.length > 0 ? parts.join(' • ') : spec
+    } catch {
+      return spec
+    }
   }
 
   const canApprove = pr?.status === 'submitted' && pr.approvals.some(a => a.status === 'pending')
@@ -271,8 +297,8 @@ export default function PurchaseRequisitionDetail() {
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Requestor</p>
-              <p className="font-medium text-gray-900 dark:text-white">{pr.requestor.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">{pr.requestor.email}</p>
+              <p className="font-medium text-gray-900 dark:text-white">{pr.requestedBy}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500">{pr.requestedByEmail}</p>
             </div>
           </div>
         </div>
@@ -284,8 +310,8 @@ export default function PurchaseRequisitionDetail() {
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Division</p>
-              <p className="font-medium text-gray-900 dark:text-white capitalize">{pr.division}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">{pr.company.name}</p>
+              <p className="font-medium text-gray-900 dark:text-white capitalize">{pr.division?.name || pr.department}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500">{pr.factory.name}</p>
             </div>
           </div>
         </div>
@@ -296,12 +322,12 @@ export default function PurchaseRequisitionDetail() {
               <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Required By</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Created On</p>
               <p className="font-medium text-gray-900 dark:text-white">
-                {new Date(pr.requiredBy).toLocaleDateString()}
+                {new Date(pr.requisitionDate).toLocaleDateString()}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-500">
-                {Math.ceil((new Date(pr.requiredBy).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
+                {Math.ceil((new Date().getTime() - new Date(pr.requisitionDate).getTime()) / (1000 * 60 * 60 * 24))} days ago
               </p>
             </div>
           </div>
@@ -313,11 +339,11 @@ export default function PurchaseRequisitionDetail() {
               <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
               <p className="font-medium text-gray-900 dark:text-white">
-                ₹{pr.totalAmount.toLocaleString('en-IN')}
+                {pr.items.length}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">{pr.items.length} items</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500">Line items</p>
             </div>
           </div>
         </div>
@@ -342,13 +368,7 @@ export default function PurchaseRequisitionDetail() {
                   Required By
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Preferred Vendor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Estimated Cost
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Purpose
+                  Remarks
                 </th>
               </tr>
             </thead>
@@ -365,9 +385,9 @@ export default function PurchaseRequisitionDetail() {
                           {item.material.description}
                         </p>
                       )}
-                      {item.material.specifications && (
+                      {item.specification && (
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                          Specs: {item.material.specifications}
+                          Specs: {parseSpecification(item.specification)}
                         </p>
                       )}
                     </div>
@@ -378,27 +398,10 @@ export default function PurchaseRequisitionDetail() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                    {new Date(item.requiredBy).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    {item.preferredVendor ? (
-                      <div className="text-sm">
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {item.preferredVendor.name}
-                        </p>
-                        <p className="text-gray-500 dark:text-gray-400">
-                          {item.preferredVendor.code}
-                        </p>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    {item.estimatedCost ? `₹${item.estimatedCost.toLocaleString('en-IN')}` : '-'}
+                    {new Date(item.requiredDate).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                    {item.purpose}
+                    {item.remarks || '-'}
                   </td>
                 </tr>
               ))}
