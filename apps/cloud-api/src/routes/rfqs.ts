@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
 import { procurementAutomation } from '../services/procurement-automation.js'
-import { rfqPDFGenerator } from '../services/rfq-pdf-generator-simple.js'
+import { rfqPDFGenerator } from '../services/rfq-pdf-generator-fixed.js'
 import { z } from 'zod'
 
 const app = new Hono()
@@ -591,8 +591,8 @@ app.get('/:id/pdf', async (c) => {
     const { buffer, filename } = await rfqPDFGenerator.generateAndSaveRFQ(rfqId)
     
     // Set response headers
-    c.header('Content-Type', 'text/plain; charset=utf-8')
-    c.header('Content-Disposition', `attachment; filename="${filename}.txt"`)
+    c.header('Content-Type', 'application/pdf')
+    c.header('Content-Disposition', `attachment; filename="${filename}.pdf"`)
     
     // Return PDF buffer
     return c.body(buffer)
@@ -640,8 +640,8 @@ app.get('/:id/pdf/:vendorId', async (c) => {
     const filename = `RFQ_${rfq.rfqNumber}_${vendorId}_${new Date().getTime()}.pdf`
     
     // Set response headers
-    c.header('Content-Type', 'text/plain; charset=utf-8')
-    c.header('Content-Disposition', `attachment; filename="${filename}.txt"`)
+    c.header('Content-Type', 'application/pdf')
+    c.header('Content-Disposition', `attachment; filename="${filename}.pdf"`)
     
     // Return PDF buffer
     return c.body(buffer)
