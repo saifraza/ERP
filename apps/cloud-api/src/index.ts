@@ -36,47 +36,31 @@ const app = new Hono()
 // Middleware
 app.use('*', logger())
 app.use('*', prettyJSON())
-// CORS configuration - simplified for debugging
-app.use('*', cors({
-  origin: true, // Allow all origins temporarily
-  credentials: true,
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposeHeaders: ['Content-Length', 'Content-Type'],
-  maxAge: 3600
-}))
 
-// Add specific CORS headers as backup
+// Simple CORS middleware that works
 app.use('*', async (c, next) => {
+  // Get origin from request
   const origin = c.req.header('Origin')
   
-  // List of allowed origins
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://frontend-production-adfe.up.railway.app',
-    'https://erp-frontend.up.railway.app'
-  ]
-  
-  // Set CORS headers
-  if (origin && (allowedOrigins.includes(origin) || origin.includes('.up.railway.app'))) {
+  // Always set CORS headers
+  if (origin) {
     c.header('Access-Control-Allow-Origin', origin)
-    c.header('Access-Control-Allow-Credentials', 'true')
-  } else if (!origin) {
-    // For same-origin requests
+  } else {
     c.header('Access-Control-Allow-Origin', '*')
   }
   
-  // Always set these headers
+  c.header('Access-Control-Allow-Credentials', 'true')
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
   c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
+  c.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type')
+  
+  // Handle OPTIONS preflight requests
+  if (c.req.method === 'OPTIONS') {
+    c.header('Access-Control-Max-Age', '86400') // 24 hours
+    return c.text('', 204)
+  }
   
   await next()
-})
-
-// Handle OPTIONS requests for CORS preflight
-app.options('*', (c) => {
-  return c.text('', 204)
 })
 
 // Health check
