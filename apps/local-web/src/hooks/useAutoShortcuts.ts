@@ -3,7 +3,7 @@ import { ShortcutAssigner, AssignedShortcut } from '../utils/shortcutAssigner'
 import { shortcutConfig } from '../config/shortcuts'
 
 export function useAutoShortcuts(containerRef?: React.RefObject<HTMLElement>) {
-  const assignerRef = useRef<ShortcutAssigner>()
+  const assignerRef = useRef<ShortcutAssigner | null>(null)
   const [shortcuts, setShortcuts] = useState<AssignedShortcut[]>([])
   const [showOverlay, setShowOverlay] = useState(false)
 
