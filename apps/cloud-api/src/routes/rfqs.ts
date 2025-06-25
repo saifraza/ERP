@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
 import { procurementAutomation } from '../services/procurement-automation.js'
-import { rfqPDFGenerator } from '../services/rfq-pdf-simple-html.js'
+import { rfqPDFGenerator } from '../services/rfq-pdf-generator.js'
 import { z } from 'zod'
 
 const app = new Hono()
@@ -810,30 +810,17 @@ app.get('/:id/pdf', async (c) => {
     
     try {
       // Generate PDF
-      const { buffer, filename } = await rfqPDFGenerator.generateAndSaveRFQ(rfqId)
+      const pdfBuffer = await rfqPDFGenerator.generateRFQPDF(rfqId)
       
-      // Set response headers
-      c.header('Content-Type', 'text/html; charset=utf-8')
-      c.header('Content-Disposition', `inline; filename="${filename}.html"`)
+      // Set response headers for PDF
+      c.header('Content-Type', 'application/pdf')
+      c.header('Content-Disposition', `inline; filename="RFQ_${rfq.rfqNumber}.pdf"`)
       
-      // Return HTML buffer
-      return c.body(buffer)
+      // Return PDF buffer
+      return c.body(pdfBuffer)
     } catch (pdfError: any) {
       console.error('PDF generation error:', pdfError)
-      // Return a simple error page
-      const errorHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head><title>Error</title></head>
-        <body>
-          <h1>Error generating RFQ</h1>
-          <p>Unable to generate the RFQ document. Please try again later.</p>
-          <p>Error: ${pdfError.message || 'Unknown error'}</p>
-        </body>
-        </html>
-      `
-      c.header('Content-Type', 'text/html; charset=utf-8')
-      return c.body(errorHtml)
+      return c.json({ success: false, error: pdfError.message }, 500)
     }
   } catch (error: any) {
     console.error('Error generating RFQ PDF:', error)
@@ -875,32 +862,25 @@ app.get('/:id/pdf/:vendorId', async (c) => {
     
     try {
       // Generate vendor-specific PDF
-      const buffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendorId)
+      const pdfBuffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendorId)
       
-      const filename = `RFQ_${rfq.rfqNumber}_${vendorId}_${new Date().getTime()}`
+      // Get vendor info for filename
+      const vendor = await prisma.vendor.findUnique({
+        where: { id: vendorId },
+        select: { code: true }
+      })
       
-      // Set response headers
-      c.header('Content-Type', 'text/html; charset=utf-8')
-      c.header('Content-Disposition', `inline; filename="${filename}.html"`)
+      const filename = `RFQ_${rfq.rfqNumber}_${vendor?.code || vendorId}.pdf`
       
-      // Return HTML buffer
-      return c.body(buffer)
+      // Set response headers for PDF
+      c.header('Content-Type', 'application/pdf')
+      c.header('Content-Disposition', `inline; filename="${filename}"`)
+      
+      // Return PDF buffer
+      return c.body(pdfBuffer)
     } catch (pdfError: any) {
       console.error('PDF generation error:', pdfError)
-      // Return a simple error page
-      const errorHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head><title>Error</title></head>
-        <body>
-          <h1>Error generating RFQ</h1>
-          <p>Unable to generate the RFQ document. Please try again later.</p>
-          <p>Error: ${pdfError.message || 'Unknown error'}</p>
-        </body>
-        </html>
-      `
-      c.header('Content-Type', 'text/html; charset=utf-8')
-      return c.body(errorHtml)
+      return c.json({ success: false, error: pdfError.message }, 500)
     }
   } catch (error: any) {
     console.error('Error generating vendor RFQ PDF:', error)

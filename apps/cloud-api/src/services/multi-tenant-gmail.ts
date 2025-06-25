@@ -317,49 +317,60 @@ export class MultiTenantGmailService {
     
     console.log(`Sending email with ${attachments.length} attachment(s) from ${email} to ${to}`)
     
-    // Create a multipart message
+    // Create a multipart message with proper MIME formatting
     const boundary = `boundary_${Date.now()}`
+    const nl = '\r\n' // Use CRLF for proper email formatting
     const messageParts = []
     
     // Email headers
     messageParts.push(
       'MIME-Version: 1.0',
       `From: ${email}`,
-      `To: ${to}`,
-      cc ? `Cc: ${cc}` : '',
-      bcc ? `Bcc: ${bcc}` : '',
+      `To: ${to}`
+    )
+    
+    if (cc) messageParts.push(`Cc: ${cc}`)
+    if (bcc) messageParts.push(`Bcc: ${bcc}`)
+    
+    messageParts.push(
       `Subject: ${subject}`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
-      '',
+      '', // Empty line after headers
       `--${boundary}`
     )
     
-    // Email body - use 7bit encoding for better compatibility
+    // Email body part
     messageParts.push(
-      'Content-Type: text/html; charset=utf-8',
+      'Content-Type: text/html; charset="UTF-8"',
       'Content-Transfer-Encoding: 7bit',
-      '',
+      '', // Empty line before content
       body,
-      ''
+      '', // Empty line after content
+      `--${boundary}`
     )
     
-    // Add attachments
+    // Add attachments with proper formatting
     for (const attachment of attachments) {
+      // Ensure base64 content is properly chunked (76 chars per line)
+      const base64Content = attachment.content.toString('base64')
+      const chunkedBase64 = base64Content.match(/.{1,76}/g) || []
+      
       messageParts.push(
-        `--${boundary}`,
         `Content-Type: ${attachment.contentType}; name="${attachment.filename}"`,
-        'Content-Transfer-Encoding: base64',
         `Content-Disposition: attachment; filename="${attachment.filename}"`,
-        '',
-        attachment.content.toString('base64'),
-        ''
+        'Content-Transfer-Encoding: base64',
+        '', // Empty line before content
+        ...chunkedBase64, // Spread chunked base64 content
+        '', // Empty line after content
+        `--${boundary}`
       )
     }
     
-    // End boundary
-    messageParts.push(`--${boundary}--`)
+    // Remove last boundary and add closing boundary
+    messageParts[messageParts.length - 1] = `--${boundary}--`
     
-    const message = messageParts.filter(part => part !== undefined).join('\r\n')
+    // Join with CRLF and encode
+    const message = messageParts.join(nl)
     const encodedMessage = Buffer.from(message)
       .toString('base64')
       .replace(/\+/g, '-')
