@@ -134,25 +134,67 @@ export function RFQPDFViewer({
         },
       })
       
-      if (!response.ok) throw new Error('Failed to fetch RFQ data')
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('RFQ fetch error:', errorData)
+        throw new Error(errorData.error || 'Failed to fetch RFQ data')
+      }
       
       const data = await response.json()
-      setRfqData(data.rfq)
+      console.log('RFQ data received:', data)
+      
+      // Handle both response formats
+      const rfqData = data.rfq || data
+      if (!rfqData || !rfqData.vendors) {
+        throw new Error('Invalid RFQ data format')
+      }
+      
+      setRfqData(rfqData)
     } catch (error: any) {
       console.error('Error fetching RFQ data:', error)
-      toast.error('Failed to load RFQ data')
+      toast.error(error.message || 'Failed to load RFQ data')
     } finally {
       setLoading(false)
     }
   }
   
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (parentRfqData) {
       setRfqData(parentRfqData)
       setShowEmailPreview(true)
     } else {
-      fetchRFQData()
-      setShowEmailPreview(true)
+      // Fetch data first
+      setLoading(true)
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error('RFQ fetch error:', errorData)
+          throw new Error(errorData.error || 'Failed to fetch RFQ data')
+        }
+        
+        const data = await response.json()
+        console.log('RFQ data received:', data)
+        
+        // Handle both response formats
+        const fetchedRfqData = data.rfq || data
+        if (!fetchedRfqData || !fetchedRfqData.vendors) {
+          throw new Error('Invalid RFQ data format')
+        }
+        
+        setRfqData(fetchedRfqData)
+        setShowEmailPreview(true)
+      } catch (error: any) {
+        console.error('Error fetching RFQ data:', error)
+        toast.error(error.message || 'Failed to load RFQ data')
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -254,13 +296,13 @@ export function RFQPDFViewer({
         <RFQEmailPreview
           rfqId={rfqId}
           rfqNumber={rfqNumber}
-          vendors={rfqData.vendors.map((v: any) => ({
-            id: v.vendor.id,
-            name: v.vendor.name,
-            email: v.vendor.email,
-            code: v.vendor.code,
-            contactPerson: v.vendor.contactPerson
-          }))}
+          vendors={rfqData.vendors?.map((v: any) => ({
+            id: v.vendor?.id || v.id,
+            name: v.vendor?.name || v.name,
+            email: v.vendor?.email || v.email,
+            code: v.vendor?.code || v.code,
+            contactPerson: v.vendor?.contactPerson || v.contactPerson
+          })) || []}
           onClose={() => setShowEmailPreview(false)}
           onEmailSent={() => {
             setShowEmailPreview(false)
