@@ -76,10 +76,10 @@ app.get('/', async (c) => {
             responseReceived: true
           }
         },
-        items: true,
-        _count: {
-          select: { quotations: true }
-        }
+        items: true
+        // _count: {
+        //   select: { quotations: true }
+        // }
       },
       orderBy: { createdAt: 'desc' }
     })
@@ -279,12 +279,12 @@ app.get('/:id', async (c) => {
             }
           }
         },
-        quotations: {
-          include: {
-            vendor: true,
-            items: true
-          }
-        }
+        // quotations: {
+        //   include: {
+        //     vendor: true,
+        //     items: true
+        //   }
+        // }
       }
     })
     
@@ -292,7 +292,13 @@ app.get('/:id', async (c) => {
       return c.json({ success: false, error: 'RFQ not found' }, 404)
     }
     
-    return c.json({ success: true, rfq })
+    // Add empty quotations array if not present
+    const rfqWithQuotations = {
+      ...rfq,
+      quotations: rfq.quotations || []
+    }
+    
+    return c.json({ success: true, rfq: rfqWithQuotations })
   } catch (error: any) {
     console.error('Error fetching RFQ:', {
       error: error.message,

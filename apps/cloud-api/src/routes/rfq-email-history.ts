@@ -32,13 +32,13 @@ app.get('/', authMiddleware, async (c) => {
               }
             }
           }
-        },
-        quotations: {
-          select: {
-            id: true,
-            status: true,
-          }
         }
+        // quotations: {
+        //   select: {
+        //     id: true,
+        //     status: true,
+        //   }
+        // }
       },
       orderBy: {
         createdAt: 'desc'
@@ -53,7 +53,7 @@ app.get('/', authMiddleware, async (c) => {
         issueDate: rfq.issueDate,
         submissionDeadline: rfq.submissionDeadline,
         vendors: rfq.vendors,
-        quotationCount: rfq.quotations.length,
+        quotationCount: 0, // rfq.quotations.length,
         requisition: rfq.requisition
       }))
     })

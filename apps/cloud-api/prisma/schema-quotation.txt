@@ -1,0 +1,63 @@
+// Add this to schema.prisma after RFQCommunicationThread model
+
+// Quotation Model
+model Quotation {
+  id              String    @id @default(uuid())
+  companyId       String
+  vendorId        String
+  rfqId           String
+  quotationNumber String    @unique
+  quotationDate   DateTime  @default(now())
+  validUntil      DateTime
+  
+  status          String    @default("draft") // draft, submitted, approved, rejected, expired
+  
+  currency        String    @default("INR")
+  subtotal        Float     @default(0)
+  taxAmount       Float     @default(0)
+  totalAmount     Float     @default(0)
+  
+  deliveryTerms   String?
+  paymentTerms    String?
+  specialTerms    String?
+  attachments     String?   // JSON array of attachment paths
+  
+  emailId         String?   // Reference to email if auto-processed
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  company         Company   @relation(fields: [companyId], references: [id])
+  vendor          Vendor    @relation(fields: [vendorId], references: [id])
+  rfq             RFQ       @relation(fields: [rfqId], references: [id])
+  items           QuotationItem[]
+  
+  @@index([companyId])
+  @@index([vendorId])
+  @@index([rfqId])
+  @@index([status])
+}
+
+model QuotationItem {
+  id              String    @id @default(uuid())
+  quotationId     String
+  materialId      String?
+  
+  itemDescription String
+  quantity        Float
+  unit            String
+  unitPrice       Float
+  totalPrice      Float
+  
+  taxRate         Float     @default(0)
+  taxAmount       Float     @default(0)
+  
+  deliveryDate    DateTime?
+  specifications  String?
+  
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  material        Material? @relation(fields: [materialId], references: [id])
+  
+  @@index([quotationId])
+  @@index([materialId])
+}
