@@ -277,10 +277,14 @@ export default function RFQDetail() {
                   </div>
                   <div className="flex items-center gap-2">
                     {vendorRfq.emailSent && (
-                      <Mail className="h-4 w-4 text-green-600" title="Email sent" />
+                      <span title="Email sent">
+                        <Mail className="h-4 w-4 text-green-600" />
+                      </span>
                     )}
                     {vendorRfq.responseReceived && (
-                      <CheckCircle className="h-4 w-4 text-blue-600" title="Response received" />
+                      <span title="Response received">
+                        <CheckCircle className="h-4 w-4 text-blue-600" />
+                      </span>
                     )}
                   </div>
                 </div>

@@ -289,7 +289,7 @@ export default function RFQManagement() {
                         </span>
                         {rfq.requisition && (
                           <Link
-                            to={`/procurement/requisitions/${rfq.requisition.prNumber}`}
+                            to={`/procurement/requisitions/${rfq.requisition.requisitionNo}`}
                             className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             From {rfq.requisition.requisitionNo}

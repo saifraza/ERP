@@ -231,7 +231,7 @@ model Vendor {
   updatedAt         DateTime  @updatedAt
   
   company           Company         @relation(fields: [companyId], references: [id])
-  // purchaseOrders    PurchaseOrder[] // TODO: Add PurchaseOrder model
+  purchaseOrders    PurchaseOrder[]
   invoices          Invoice[]
   payments          Payment[]
   rfqVendors        RFQVendor[]
