@@ -13,6 +13,12 @@ export default function DensityToggle({ onDensityChange }: DensityToggleProps) {
     return (saved as DensityMode) || 'compact'
   })
 
+  // Initialize density on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('erp-density') as DensityMode || 'compact'
+    document.body.classList.add(`density-${saved}`)
+  }, [])
+
   useEffect(() => {
     // Apply density class to body
     document.body.classList.remove('density-compact', 'density-condensed', 'density-comfortable')
