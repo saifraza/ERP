@@ -524,7 +524,7 @@ Accounts Team
         company: true,
         vendors: true,
         items: true,
-        pr: {
+        requisition: {
           include: {
             division: true
           }
