@@ -588,7 +588,23 @@ This is an automated email. Please do not reply to this email address.
           where: { id: rfqVendor.vendorId }
         })
         
-        if (!vendor) continue
+        if (!vendor) {
+          console.log(`Vendor not found for ID: ${rfqVendor.vendorId}`)
+          continue
+        }
+        
+        if (!vendor.email) {
+          console.log(`No email address for vendor: ${vendor.name} (${vendor.code})`)
+          results.push({
+            success: false,
+            vendorId: vendor.id,
+            vendorName: vendor.name,
+            error: 'No email address'
+          })
+          continue
+        }
+        
+        console.log(`Sending RFQ to vendor: ${vendor.name} (${vendor.email})`)
         
         // Generate vendor-specific PDF
         const pdfBuffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendor.id)

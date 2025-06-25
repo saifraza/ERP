@@ -378,7 +378,7 @@ export default function RFQManagement() {
                     >
                       <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                     </Link>
-                    {rfq.status === 'SENT' && (
+                    {(rfq.status === 'SENT' || rfq.status === 'sent') && (
                       <Link
                         to={`/procurement/rfqs/${rfq.id}/email-history`}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
@@ -397,11 +397,25 @@ export default function RFQManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm text-gray-600 dark:text-gray-400">Vendors</p>
                       <p className="font-medium text-gray-900 dark:text-white">
                         {rfq.vendors.length}
                       </p>
+                      {rfq.vendors.length > 0 && (
+                        <div className="mt-1 space-y-0.5">
+                          {rfq.vendors.slice(0, 2).map((v: any, idx: number) => (
+                            <p key={idx} className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {v.vendor?.email || 'No email'}
+                            </p>
+                          ))}
+                          {rfq.vendors.length > 2 && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              +{rfq.vendors.length - 2} more
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
