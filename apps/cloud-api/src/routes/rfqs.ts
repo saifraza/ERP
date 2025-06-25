@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
 import { procurementAutomation } from '../services/procurement-automation.js'
-import { rfqPDFGenerator } from '../services/rfq-pdf-generator-fixed.js'
+import { rfqPDFGenerator } from '../services/rfq-pdf-working.js'
 import { z } from 'zod'
 
 const app = new Hono()
