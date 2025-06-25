@@ -95,6 +95,7 @@ const navigation = [
           { name: 'Purchase Requisitions', href: '/procurement/requisitions', icon: ClipboardList, badge: 'NEW', badgeColor: 'green' },
           { name: 'Pending Approvals', href: '/procurement/approvals', icon: Shield, badge: 'MGR', badgeColor: 'yellow' },
           { name: 'RFQ Management', href: '/procurement/rfqs', icon: Calculator, badge: 'NEW', badgeColor: 'green' },
+          { name: 'RFQ Email History', href: '/procurement/rfq-emails', icon: Mail, badge: 'TRACK', badgeColor: 'blue' },
           { name: 'Purchase Orders', href: '/procurement/purchase-orders', icon: FileText },
           { name: 'Quotation Comparison', href: '/procurement/quotations', icon: BarChart3 },
           { name: 'Goods Receipt', href: '/procurement/grn', icon: Package },

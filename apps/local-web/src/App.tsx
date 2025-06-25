@@ -36,6 +36,7 @@ import ConvertToRFQ from './pages/procurement/ConvertToRFQ'
 import RFQDetail from './pages/procurement/RFQDetail'
 import RFQEmailHistory from './pages/procurement/RFQEmailHistory'
 import QuotationComparison from './pages/procurement/QuotationComparison'
+import AllRFQEmails from './pages/procurement/AllRFQEmails'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -129,6 +130,7 @@ function App() {
                     <Route path="/procurement/rfqs/:id" element={<RFQDetail />} />
                     <Route path="/procurement/rfqs/:id/email-history" element={<RFQEmailHistory />} />
                     <Route path="/procurement/rfqs/:id/comparison" element={<QuotationComparison />} />
+                    <Route path="/procurement/rfq-emails" element={<AllRFQEmails />} />
                     <Route path="/procurement/purchase-orders" element={<div>Purchase Orders</div>} />
                     <Route path="/procurement/quotations" element={<div>Quotation Management</div>} />
                     <Route path="/procurement/grn" element={<div>Goods Receipt</div>} />
