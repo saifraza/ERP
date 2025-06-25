@@ -513,8 +513,8 @@ app.get('/:id/pdf', async (c) => {
     const { buffer, filename } = await rfqPDFGenerator.generateAndSaveRFQ(rfqId)
     
     // Set response headers
-    c.header('Content-Type', 'application/pdf')
-    c.header('Content-Disposition', `attachment; filename="${filename}"`)
+    c.header('Content-Type', 'text/plain')
+    c.header('Content-Disposition', `attachment; filename="${filename}.txt"`)
     
     // Return PDF buffer
     return c.body(buffer)
@@ -552,8 +552,8 @@ app.get('/:id/pdf/:vendorId', async (c) => {
     const filename = `RFQ_${rfq.rfqNumber}_${vendorId}_${new Date().getTime()}.pdf`
     
     // Set response headers
-    c.header('Content-Type', 'application/pdf')
-    c.header('Content-Disposition', `attachment; filename="${filename}"`)
+    c.header('Content-Type', 'text/plain')
+    c.header('Content-Disposition', `attachment; filename="${filename}.txt"`)
     
     // Return PDF buffer
     return c.body(buffer)
