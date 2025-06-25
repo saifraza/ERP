@@ -294,8 +294,17 @@ app.get('/:id', async (c) => {
     
     return c.json({ success: true, rfq })
   } catch (error: any) {
-    console.error('Error fetching RFQ:', error)
-    return c.json({ success: false, error: error.message }, 500)
+    console.error('Error fetching RFQ:', {
+      error: error.message,
+      stack: error.stack,
+      rfqId: rfqId,
+      userId: userId
+    })
+    return c.json({ 
+      success: false, 
+      error: error.message,
+      details: error.toString()
+    }, 500)
   }
 })
 

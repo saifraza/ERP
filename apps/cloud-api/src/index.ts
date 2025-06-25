@@ -28,6 +28,7 @@ import materialsRoutes from './routes/materials.js'
 import factoriesRoutes from './routes/factories.js'
 import procurementDashboardRoutes from './routes/procurement-dashboard.js'
 import procurementStatsRoutes from './routes/procurement-stats.js'
+import debugRfqRoutes from './routes/debug-rfq.js'
 
 const app = new Hono()
 
@@ -103,6 +104,7 @@ app.route('/api/materials', materialsRoutes)
 app.route('/api/factories', factoriesRoutes)
 app.route('/api/procurement/dashboard', procurementDashboardRoutes)
 app.route('/api/procurement/stats', procurementStatsRoutes)
+app.route('/api/debug-rfq', debugRfqRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {
