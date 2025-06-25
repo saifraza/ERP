@@ -1448,7 +1448,6 @@ model PurchaseRequisition {
   division    Division  @relation(fields: [divisionId], references: [id])
   department  Department? @relation(fields: [departmentId], references: [id])
   items       PRItem[]
-  rfqs        RFQ[]
   
   @@index([companyId])
   @@index([divisionId])
