@@ -91,6 +91,10 @@ model Company {
   uoms           UOM[]
   approvalMatrix ApprovalMatrix[]
   emailCredentials EmailCredential[]
+  purchaseRequisitions PurchaseRequisition[]
+  rfqs           RFQ[]
+  quotations     Quotation[]
+  vendorInvoices VendorInvoice[]
 }
 
 model CompanyUser {
@@ -171,6 +175,7 @@ model Division {
   company      Company       @relation(fields: [companyId], references: [id])
   departments  Department[]
   requisitions Requisition[]
+  purchaseRequisitions PurchaseRequisition[]
   
   @@unique([companyId, code])
   @@index([companyId])
@@ -188,6 +193,7 @@ model Department {
   updatedAt   DateTime  @updatedAt
   
   division    Division  @relation(fields: [divisionId], references: [id])
+  purchaseRequisitions PurchaseRequisition[]
   
   @@unique([divisionId, code])
   @@index([divisionId])
@@ -225,9 +231,12 @@ model Vendor {
   updatedAt         DateTime  @updatedAt
   
   company           Company         @relation(fields: [companyId], references: [id])
-  purchaseOrders    PurchaseOrder[]
+  // purchaseOrders    PurchaseOrder[] // TODO: Add PurchaseOrder model
   invoices          Invoice[]
   payments          Payment[]
+  rfqVendors        RFQVendor[]
+  quotations        Quotation[]
+  vendorInvoices    VendorInvoice[]
   
   @@unique([companyId, code])
   @@index([companyId])
@@ -1623,7 +1632,7 @@ model VendorInvoice {
   
   company        Company   @relation(fields: [companyId], references: [id])
   vendor         Vendor    @relation(fields: [vendorId], references: [id])
-  po             PurchaseOrder? @relation(fields: [poId], references: [id])
+  // po             PurchaseOrder? @relation(fields: [poId], references: [id]) // TODO: Add PurchaseOrder model
   
   @@index([companyId])
   @@index([vendorId])
