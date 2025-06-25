@@ -9,6 +9,7 @@ app.use('*', authMiddleware)
 
 // Get procurement dashboard statistics
 app.get('/', async (c) => {
+  console.log('Procurement dashboard endpoint called')
   const userId = c.get('userId')
   const { range = 'month' } = c.req.query()
   
@@ -61,6 +62,9 @@ app.get('/', async (c) => {
       }
     })
     
+    console.log('Total requisitions found:', totalRequisitions)
+    console.log('Requisitions by status:', requisitions)
+    
     const requisitionStats = {
       total: 0,
       draft: 0,
@@ -88,7 +92,7 @@ app.get('/', async (c) => {
     })
     
     // Get RFQ statistics
-    const rfqs = await prisma.rfq.groupBy({
+    const rfqs = await prisma.rFQ.groupBy({
       by: ['status'],
       where: {
         companyId,
@@ -120,14 +124,8 @@ app.get('/', async (c) => {
     })
     
     // Get Purchase Order statistics
-    const purchaseOrders = await prisma.purchaseOrder.groupBy({
-      by: ['status'],
-      where: {
-        companyId,
-        createdAt: { gte: startDate }
-      },
-      _count: true
-    })
+    // TODO: Implement when PurchaseOrder model is ready
+    const purchaseOrders: any[] = []
     
     const poStats = {
       total: 0,
@@ -156,10 +154,10 @@ app.get('/', async (c) => {
     })
     
     // Get GRN statistics
-    const grns = await prisma.goodsReceiptNote.groupBy({
+    const grns = await prisma.goodsReceipt.groupBy({
       by: ['status'],
       where: {
-        purchaseOrder: { companyId },
+        factory: { companyId },
         createdAt: { gte: startDate }
       },
       _count: true
@@ -229,15 +227,8 @@ app.get('/', async (c) => {
     })
     
     // Get payment amounts
-    const totalPOValue = await prisma.purchaseOrder.aggregate({
-      where: {
-        companyId,
-        createdAt: { gte: startDate }
-      },
-      _sum: {
-        totalAmount: true
-      }
-    })
+    // TODO: Implement when PurchaseOrder model is ready
+    const totalPOValue = { _sum: { totalAmount: 0 } }
     
     const pendingPayments = await prisma.vendorInvoice.aggregate({
       where: {
@@ -250,16 +241,8 @@ app.get('/', async (c) => {
       }
     })
     
-    const completedPayments = await prisma.vendorPayment.aggregate({
-      where: {
-        vendor: { companyId },
-        status: 'COMPLETED',
-        createdAt: { gte: startDate }
-      },
-      _sum: {
-        amount: true
-      }
-    })
+    // TODO: Implement when VendorPayment model is ready
+    const completedPayments = { _sum: { amount: 0 } }
     
     // Calculate savings (mock calculation - in real world, this would be based on negotiated discounts)
     const savingsAmount = (totalPOValue._sum.totalAmount || 0) * 0.075 // 7.5% average savings
@@ -296,32 +279,26 @@ app.get('/', async (c) => {
       })
     })
     
-    // Get recent POs
-    const recentPOs = await prisma.purchaseOrder.findMany({
+    // Get recent RFQs
+    const recentRFQs = await prisma.rFQ.findMany({
       where: { companyId },
       select: {
         id: true,
-        poNumber: true,
-        poDate: true,
-        status: true,
-        totalAmount: true,
-        vendor: {
-          select: { name: true }
-        }
+        rfqNumber: true,
+        issueDate: true,
+        status: true
       },
       orderBy: { createdAt: 'desc' },
       take: 2
     })
     
-    recentPOs.forEach(po => {
+    recentRFQs.forEach(rfq => {
       recentDocs.push({
-        id: po.id,
-        type: 'PO' as const,
-        documentNo: po.poNumber,
-        date: po.poDate.toISOString(),
-        status: po.status.charAt(0).toUpperCase() + po.status.slice(1).toLowerCase(),
-        amount: po.totalAmount,
-        vendor: po.vendor.name
+        id: rfq.id,
+        type: 'RFQ' as const,
+        documentNo: rfq.rfqNumber,
+        date: rfq.issueDate.toISOString(),
+        status: rfq.status.charAt(0).toUpperCase() + rfq.status.slice(1).toLowerCase()
       })
     })
     
