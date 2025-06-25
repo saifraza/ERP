@@ -36,34 +36,43 @@ const app = new Hono()
 // Middleware
 app.use('*', logger())
 app.use('*', prettyJSON())
+// CORS configuration - simplified for debugging
 app.use('*', cors({
-  origin: (origin) => {
-    // Allow requests from Railway domains and localhost
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://frontend-production-adfe.up.railway.app',
-      'https://erp-frontend.up.railway.app'
-    ]
-    
-    // Allow if origin is in the list or if no origin (same-origin requests)
-    if (!origin || allowedOrigins.includes(origin)) {
-      return origin || '*'
-    }
-    
-    // Also allow any Railway subdomain
-    if (origin?.includes('.up.railway.app')) {
-      return origin
-    }
-    
-    return null
-  },
+  origin: true, // Allow all origins temporarily
   credentials: true,
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposeHeaders: ['Content-Length', 'Content-Type'],
   maxAge: 3600
 }))
+
+// Add specific CORS headers as backup
+app.use('*', async (c, next) => {
+  const origin = c.req.header('Origin')
+  
+  // List of allowed origins
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://frontend-production-adfe.up.railway.app',
+    'https://erp-frontend.up.railway.app'
+  ]
+  
+  // Set CORS headers
+  if (origin && (allowedOrigins.includes(origin) || origin.includes('.up.railway.app'))) {
+    c.header('Access-Control-Allow-Origin', origin)
+    c.header('Access-Control-Allow-Credentials', 'true')
+  } else if (!origin) {
+    // For same-origin requests
+    c.header('Access-Control-Allow-Origin', '*')
+  }
+  
+  // Always set these headers
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
+  
+  await next()
+})
 
 // Handle OPTIONS requests for CORS preflight
 app.options('*', (c) => {
