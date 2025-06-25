@@ -55,7 +55,7 @@ export default function RFQEmailHistoryStandalone() {
       
       // Try to get RFQ number from URL or fallback
       const rfqParam = new URLSearchParams(window.location.search).get('rfq')
-      setRfqNumber(rfqParam || `RFQ-${id.slice(0, 8)}`)
+      setRfqNumber(rfqParam || `RFQ-${id?.slice(0, 8) || 'Unknown'}`)
     } catch (error) {
       console.error('Error fetching email logs:', error)
       toast.error('Failed to load email history')
