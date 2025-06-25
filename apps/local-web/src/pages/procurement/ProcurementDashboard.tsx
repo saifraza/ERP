@@ -79,73 +79,75 @@ export default function ProcurementDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/procurement/dashboard?range=${timeRange}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
+      const url = `${import.meta.env.VITE_API_URL}/api/procurement/dashboard?range=${timeRange}`
+      console.log('Fetching dashboard data from:', url)
+      
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       
       if (response.ok) {
         const data = await response.json()
         setStats(data.stats)
         setRecentDocs(data.recentDocs)
       } else {
-        // Fallback to mock data if API fails
+        const errorText = await response.text()
+        console.error('Dashboard API error:', response.status, errorText)
+        
+        // Initialize with empty real data structure
         setStats({
-        requisitions: {
-          total: 156,
-          draft: 12,
-          submitted: 24,
-          approved: 98,
-          rejected: 22
-        },
-        rfqs: {
-          total: 89,
-          open: 15,
-          closed: 68,
-          awarded: 6
-        },
-        purchaseOrders: {
-          total: 78,
-          pending: 8,
-          confirmed: 45,
-          partial: 15,
-          completed: 10
-        },
-        grn: {
-          total: 65,
-          pending: 20,
-          completed: 45
-        },
-        invoices: {
-          total: 72,
-          pending: 18,
-          approved: 34,
-          paid: 20
-        },
-        vendors: {
-          total: 234,
-          active: 178,
-          new: 12
-        },
-        amounts: {
-          totalPOValue: 4567890,
-          pendingPayments: 1234567,
-          completedPayments: 2345678,
-          savingsAmount: 345678
+          requisitions: {
+            total: 0,
+            draft: 0,
+            submitted: 0,
+            approved: 0,
+            rejected: 0
+          },
+          rfqs: {
+            total: 0,
+            open: 0,
+            closed: 0,
+            awarded: 0
+          },
+          purchaseOrders: {
+            total: 0,
+            pending: 0,
+            confirmed: 0,
+            partial: 0,
+            completed: 0
+          },
+          grn: {
+            total: 0,
+            pending: 0,
+            completed: 0
+          },
+          invoices: {
+            total: 0,
+            pending: 0,
+            approved: 0,
+            paid: 0
+          },
+          vendors: {
+            total: 0,
+            active: 0,
+            new: 0
+          },
+          amounts: {
+            totalPOValue: 0,
+            pendingPayments: 0,
+            completedPayments: 0,
+            savingsAmount: 0
+          }
+        })
+        
+        setRecentDocs([])
+        
+        // Don't show error toast on initial load
+        if (!loading) {
+          toast.error('Unable to load dashboard data')
         }
-      })
-
-        setRecentDocs([
-          { id: '1', type: 'PR', documentNo: 'REQ-202412-0001', date: '2024-12-26', status: 'Submitted', vendor: 'ABC Chemicals' },
-          { id: '2', type: 'PO', documentNo: 'PO-202412-0045', date: '2024-12-26', status: 'Confirmed', amount: 125000, vendor: 'XYZ Industries' },
-          { id: '3', type: 'Invoice', documentNo: 'INV-2024-0234', date: '2024-12-25', status: 'Pending', amount: 89000, vendor: 'DEF Supplies' },
-          { id: '4', type: 'RFQ', documentNo: 'RFQ-202412-0023', date: '2024-12-25', status: 'Open', vendor: 'Multiple' },
-          { id: '5', type: 'GRN', documentNo: 'GRN-202412-0067', date: '2024-12-24', status: 'Completed', vendor: 'PQR Trading' }
-        ])
       }
     } catch (error) {
       toast.error('Failed to load dashboard data')

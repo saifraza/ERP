@@ -54,6 +54,13 @@ app.get('/', async (c) => {
       _count: true
     })
     
+    // Also get total count without date filter for better stats
+    const totalRequisitions = await prisma.requisition.count({
+      where: {
+        factory: { companyId }
+      }
+    })
+    
     const requisitionStats = {
       total: 0,
       draft: 0,
@@ -344,7 +351,8 @@ app.get('/', async (c) => {
     })
   } catch (error: any) {
     console.error('Error fetching procurement dashboard:', error)
-    return c.json({ error: error.message }, 500)
+    console.error('Error details:', error.stack)
+    return c.json({ error: error.message || 'Failed to fetch dashboard data' }, 500)
   }
 })
 

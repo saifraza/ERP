@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import AddRequisitionModal from '../../components/procurement/AddRequisitionModal'
+import PRWorkflowInfo from '../../components/procurement/PRWorkflowInfo'
 
 interface RequisitionItem {
   id: string
@@ -440,6 +441,11 @@ export default function PurchaseRequisitions() {
           ))
         )}
       </div>
+
+      {/* Workflow Information */}
+      {requisitions.some(pr => pr.status.toUpperCase() === 'DRAFT' || pr.status.toUpperCase() === 'SUBMITTED') && (
+        <PRWorkflowInfo />
+      )}
 
       {/* Add Requisition Modal */}
       <AddRequisitionModal
