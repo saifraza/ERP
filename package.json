@@ -42,5 +42,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@types/pdfkit": "^0.14.0",
+    "pdfkit": "^0.17.1"
+  }
 }
