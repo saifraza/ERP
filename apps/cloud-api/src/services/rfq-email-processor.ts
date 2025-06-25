@@ -22,11 +22,12 @@ export class RFQEmailProcessor {
    */
   async processRFQEmails(companyId: string) {
     try {
-      // Fetch unread emails
-      const emails = await multiTenantGmail.fetchUnreadEmails(companyId, {
-        maxResults: 50,
-        query: 'subject:(RFQ OR "Request for Quotation" OR Quotation)'
-      })
+      // Fetch unread emails with RFQ-related subjects
+      const emails = await multiTenantGmail.listEmails(
+        companyId, 
+        50,
+        'is:unread subject:(RFQ OR "Request for Quotation" OR Quotation)'
+      )
       
       const results = []
       
@@ -45,8 +46,11 @@ export class RFQEmailProcessor {
             continue
           }
           
+          // Get full email content
+          const fullEmail = await multiTenantGmail.getEmailContent(companyId, email.id)
+          
           // Check if this is a response to an RFQ
-          const rfqNumber = this.extractRFQNumber(email.subject, email.body)
+          const rfqNumber = this.extractRFQNumber(email.subject, fullEmail.textBody || fullEmail.htmlBody || '')
           if (!rfqNumber) {
             console.log(`No RFQ number found in email from ${vendor.name}`)
             continue
@@ -79,11 +83,11 @@ export class RFQEmailProcessor {
           }
           
           // Process the email
-          const result = await this.processVendorResponse(email, rfq, vendor)
+          const result = await this.processVendorResponse(email, fullEmail, rfq, vendor)
           results.push(result)
           
-          // Mark email as read
-          await multiTenantGmail.markAsRead(companyId, email.id)
+          // TODO: Implement markAsRead in multiTenantGmail
+          // await multiTenantGmail.markAsRead(companyId, email.id)
           
         } catch (error) {
           console.error(`Error processing email ${email.id}:`, error)
@@ -109,7 +113,7 @@ export class RFQEmailProcessor {
   /**
    * Process a vendor response email
    */
-  private async processVendorResponse(email: any, rfq: any, vendor: any) {
+  private async processVendorResponse(email: any, fullEmail: any, rfq: any, vendor: any) {
     // Create email response record
     const emailResponse = await prisma.rFQEmailResponse.create({
       data: {
@@ -118,8 +122,8 @@ export class RFQEmailProcessor {
         emailId: email.id,
         fromEmail: email.from,
         subject: email.subject,
-        body: email.body,
-        attachments: JSON.stringify(email.attachments || []),
+        body: fullEmail.textBody || fullEmail.htmlBody || '',
+        attachments: JSON.stringify(fullEmail.attachments || []),
         receivedAt: new Date(email.date),
         processingStatus: 'processing'
       }
@@ -127,7 +131,7 @@ export class RFQEmailProcessor {
     
     try {
       // Extract quotation data using AI
-      const extractedData = await this.extractQuotationData(email, rfq)
+      const extractedData = await this.extractQuotationData(fullEmail, rfq)
       
       // Create quotation if data was extracted
       if (extractedData && extractedData.items && extractedData.items.length > 0) {
@@ -253,7 +257,7 @@ export class RFQEmailProcessor {
     const prompt = `Extract quotation details from this vendor email response to RFQ ${rfq.rfqNumber}:
 
 Subject: ${email.subject}
-Body: ${email.body}
+Body: ${email.textBody || email.htmlBody || ''}
 
 RFQ Items requested:
 ${rfq.items.map(item => `- ${item.itemCode}: ${item.itemDescription} - Qty: ${item.quantity} ${item.unit}`).join('\n')}
@@ -303,7 +307,8 @@ Return as JSON with structure:
    */
   private basicQuotationExtraction(email: any) {
     // Try to find price patterns in email
-    const priceMatches = email.body.match(/₹\s*([\d,]+(?:\.\d{2})?)/g) || []
+    const emailContent = email.textBody || email.htmlBody || ''
+    const priceMatches = emailContent.match(/₹\s*([\d,]+(?:\.\d{2})?)/g) || []
     const prices = priceMatches.map(p => parseFloat(p.replace(/[₹,]/g, '')))
     
     if (prices.length === 0) {
