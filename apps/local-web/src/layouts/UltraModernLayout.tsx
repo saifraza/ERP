@@ -89,6 +89,7 @@ const navigation = [
       {
         name: 'Procurement',
         icon: ShoppingBag,
+        href: '/procurement',
         children: [
           { name: 'Vendor Management', href: '/procurement/vendors', icon: Users, badge: 'NEW', badgeColor: 'green' },
           { name: 'Purchase Requisitions', href: '/procurement/requisitions', icon: ClipboardList, badge: 'NEW', badgeColor: 'green' },
@@ -548,15 +549,43 @@ function SidebarContent({
                     </Link>
                   ) : (
                     <div>
-                      <button
-                        onClick={() => toggleSection(item.name)}
-                        className={cn(
-                          item.children.some((child: any) => isActive(child.href))
-                            ? 'bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
-                          'group flex w-full items-center gap-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all'
-                        )}
-                      >
+                      {item.href ? (
+                        <Link
+                          to={item.href}
+                          onClick={() => toggleSection(item.name)}
+                          className={cn(
+                            isActive(item.href) || item.children.some((child: any) => isActive(child.href))
+                              ? 'bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
+                            'group flex w-full items-center gap-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all'
+                          )}
+                        >
+                          <item.icon
+                            className={cn(
+                              isActive(item.href) || item.children.some((child: any) => isActive(child.href))
+                                ? 'text-gray-700 dark:text-gray-200' 
+                                : 'text-gray-400 dark:text-gray-500',
+                              'h-5 w-5 shrink-0'
+                            )}
+                          />
+                          {item.name}
+                          <ChevronRight
+                            className={cn(
+                              'ml-auto h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500 transition-transform',
+                              expandedSections.includes(item.name) && 'rotate-90'
+                            )}
+                          />
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => toggleSection(item.name)}
+                          className={cn(
+                            item.children.some((child: any) => isActive(child.href))
+                              ? 'bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
+                            'group flex w-full items-center gap-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all'
+                          )}
+                        >
                         <item.icon
                           className={cn(
                             item.children.some((child: any) => isActive(child.href))
@@ -565,14 +594,15 @@ function SidebarContent({
                             'h-5 w-5 shrink-0'
                           )}
                         />
-                        {item.name}
-                        <ChevronRight
-                          className={cn(
-                            'ml-auto h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500 transition-transform',
-                            expandedSections.includes(item.name) && 'rotate-90'
-                          )}
-                        />
-                      </button>
+                          {item.name}
+                          <ChevronRight
+                            className={cn(
+                              'ml-auto h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500 transition-transform',
+                              expandedSections.includes(item.name) && 'rotate-90'
+                            )}
+                          />
+                        </button>
+                      )}
                       {expandedSections.includes(item.name) && (
                         <ul className="mt-1 px-2 space-y-1">
                           {item.children.map((subItem: any) => (
