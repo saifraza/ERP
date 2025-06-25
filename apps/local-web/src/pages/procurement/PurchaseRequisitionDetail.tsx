@@ -56,15 +56,6 @@ interface PurchaseRequisition {
   purchaseOrders?: any[]
   createdAt: string
   updatedAt: string
-    approverName: string
-    status: string
-    approvedAt?: string
-    comments?: string
-  }[]
-  totalAmount: number
-  company: {
-    name: string
-  }
 }
 
 export default function PurchaseRequisitionDetail() {
