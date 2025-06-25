@@ -141,6 +141,19 @@ export default function PurchaseRequisitions() {
     }
   }
 
+  const formatSpecification = (spec: string | undefined): string => {
+    if (!spec) return ''
+    
+    try {
+      const parsed = JSON.parse(spec)
+      // Just show the quantity and unit for the list view
+      return `${parsed.technicalGrade || ''}`
+    } catch {
+      // If it's not JSON, return as is
+      return spec
+    }
+  }
+
   const handleSubmitPR = async (prId: string) => {
     try {
       const response = await fetch(
@@ -390,17 +403,16 @@ export default function PurchaseRequisitions() {
                       <div key={item.id} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600 dark:text-gray-400">{item.materialName || 'N/A'}</span>
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {item.materialCode} {item.materialName ? `- ${item.materialName}` : ''}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-gray-600 dark:text-gray-400">
                             {item.quantity} {item.unit}
                           </span>
-                          {item.specification && (
-                            <span className="text-gray-700 dark:text-gray-300 font-medium">
-                              {item.specification}
-                            </span>
-                          )}
                         </div>
                       </div>
                     ))}
