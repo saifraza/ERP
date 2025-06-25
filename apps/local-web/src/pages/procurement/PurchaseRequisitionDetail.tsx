@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Package, Calendar, User, Building,
   FileText, Check, X, Clock, Edit, Trash,
-  Send, AlertCircle, ChevronRight, Download,
+  Send, AlertCircle, Download,
   Printer, MessageSquare, History, ShoppingCart
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
@@ -171,9 +171,9 @@ export default function PurchaseRequisitionDetail() {
     }
   }
 
-  const canApprove = pr?.status === 'submitted' && pr.approvals.some(a => a.status === 'pending')
-  const canEdit = pr?.status === 'draft'
-  const canConvertToPO = pr?.status === 'approved'
+  const canApprove = pr?.status.toUpperCase() === 'SUBMITTED'
+  const canEdit = pr?.status.toUpperCase() === 'DRAFT'
+  const canConvertToPO = pr?.status.toUpperCase() === 'APPROVED' && (!pr.purchaseOrders || pr.purchaseOrders.length === 0)
 
   if (loading) {
     return (
@@ -212,7 +212,7 @@ export default function PurchaseRequisitionDetail() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {pr.prNumber}
+                {pr.requisitionNo}
               </h1>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(pr.status)}`}>
                 {pr.status.charAt(0).toUpperCase() + pr.status.slice(1)}
@@ -221,7 +221,7 @@ export default function PurchaseRequisitionDetail() {
                 {pr.priority.charAt(0).toUpperCase() + pr.priority.slice(1)} Priority
               </span>
             </div>
-            <p className="text-gray-600 dark:text-gray-400">{pr.title}</p>
+            <p className="text-gray-600 dark:text-gray-400">{pr.purpose || 'Purchase Requisition'}</p>
           </div>
         </div>
 
@@ -401,65 +401,41 @@ export default function PurchaseRequisitionDetail() {
         </div>
       </div>
 
-      {/* Approval History */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Approval History
-          </h2>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {pr.approvals.map((approval, index) => (
-              <div key={approval.id} className="flex items-start gap-4">
-                <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center ${
-                  approval.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30' :
-                  approval.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30' :
-                  'bg-gray-100 dark:bg-gray-900/30'
-                }`}>
-                  {approval.status === 'approved' ? (
-                    <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  ) : approval.status === 'rejected' ? (
-                    <X className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  ) : (
-                    <Clock className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {approval.level} - {approval.approverName}
-                      </p>
-                      {approval.approvedAt && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {new Date(approval.approvedAt).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      approval.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                      approval.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                    }`}>
-                      {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
-                    </span>
-                  </div>
-                  {approval.comments && (
-                    <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <MessageSquare className="h-3 w-3 inline mr-1" />
-                        {approval.comments}
-                      </p>
-                    </div>
-                  )}
-                </div>
+      {/* Approval Information */}
+      {pr.approvedBy && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Approval Information
+            </h2>
+          </div>
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center bg-green-100 dark:bg-green-900/30`}>
+                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
-            ))}
+              <div className="flex-1">
+                <p className="font-medium text-gray-900 dark:text-white">
+                  Approved by {pr.approvedBy}
+                </p>
+                {pr.approvedDate && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {new Date(pr.approvedDate).toLocaleString()}
+                  </p>
+                )}
+                {pr.remarks && (
+                  <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <MessageSquare className="h-3 w-3 inline mr-1" />
+                      {pr.remarks}
+                      </p>
+                    </div>
+                  )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Approval Modal */}
       {showApprovalModal && (
