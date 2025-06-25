@@ -432,6 +432,7 @@ export default function PurchaseRequisitionDetail() {
                       </p>
                     </div>
                   )}
+              </div>
             </div>
           </div>
         </div>
