@@ -4,12 +4,14 @@ import {
   Users, Plus, Search, Filter, Download, Upload, 
   Phone, Mail, MapPin, Star, TrendingUp, IndianRupee,
   Edit, Eye, MoreVertical, Building2, CreditCard,
-  FileText, Package, AlertCircle, CheckCircle
+  FileText, Package, AlertCircle, CheckCircle,
+  Ban, Power, Copy, Send
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import AddVendorModal from '../../components/procurement/AddVendorModal'
+import EditVendorModal from '../../components/procurement/EditVendorModal'
 
 interface Vendor {
   id: string
@@ -38,10 +40,24 @@ export default function Vendors() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
+  const [showDropdown, setShowDropdown] = useState<string | null>(null)
 
   useEffect(() => {
     fetchVendors()
   }, [currentCompany, selectedStatus])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showDropdown && !(event.target as Element).closest('.relative')) {
+        setShowDropdown(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [showDropdown])
 
   const fetchVendors = async () => {
     try {
@@ -347,12 +363,85 @@ export default function Vendors() {
                         >
                           <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </Link>
-                        <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                        <button 
+                          onClick={() => {
+                            setSelectedVendor(vendor)
+                            setShowEditModal(true)
+                          }}
+                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                          title="Edit vendor"
+                        >
                           <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </button>
-                        <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                          <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </button>
+                        <div className="relative">
+                          <button 
+                            onClick={() => setShowDropdown(showDropdown === vendor.id ? null : vendor.id)}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                          >
+                            <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                          </button>
+                          {showDropdown === vendor.id && (
+                            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(vendor.email || '')
+                                  toast.success('Email copied to clipboard')
+                                  setShowDropdown(null)
+                                }}
+                                disabled={!vendor.email}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Copy className="h-4 w-4" />
+                                Copy Email
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (vendor.email) {
+                                    window.location.href = `mailto:${vendor.email}`
+                                  }
+                                  setShowDropdown(null)
+                                }}
+                                disabled={!vendor.email}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Send className="h-4 w-4" />
+                                Send Email
+                              </button>
+                              <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch(
+                                      `${import.meta.env.VITE_API_URL}/api/vendors/${vendor.id}`,
+                                      {
+                                        method: 'PUT',
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          Authorization: `Bearer ${token}`,
+                                        },
+                                        body: JSON.stringify({ isActive: !vendor.isActive })
+                                      }
+                                    )
+                                    if (response.ok) {
+                                      toast.success(`Vendor ${vendor.isActive ? 'deactivated' : 'activated'} successfully`)
+                                      fetchVendors()
+                                    }
+                                  } catch (error) {
+                                    toast.error('Failed to update vendor status')
+                                  }
+                                  setShowDropdown(null)
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                              >
+                                {vendor.isActive ? (
+                                  <><Ban className="h-4 w-4" /> Deactivate</>
+                                ) : (
+                                  <><Power className="h-4 w-4" /> Activate</>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -372,6 +461,23 @@ export default function Vendors() {
           fetchVendors()
         }}
       />
+      
+      {/* Edit Vendor Modal */}
+      {selectedVendor && (
+        <EditVendorModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setSelectedVendor(null)
+          }}
+          onSuccess={() => {
+            setShowEditModal(false)
+            setSelectedVendor(null)
+            fetchVendors()
+          }}
+          vendor={selectedVendor}
+        />
+      )}
     </div>
   )
 }
