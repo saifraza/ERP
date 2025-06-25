@@ -1,23 +1,22 @@
 // Keyboard shortcut configuration
 export const shortcutConfig = {
-  // Which elements should get automatic shortcuts
+  // Enable automatic shortcuts (set to false to use only manual shortcuts)
+  enabled: false,
+  
+  // Which elements should get automatic shortcuts (when enabled)
   selectors: [
-    'button',
-    '[role="button"]',
-    'a.btn',
-    'a.btn-primary',
-    'a.btn-secondary',
-    '[data-shortcut-enabled]'
+    '[data-shortcut]', // Only elements explicitly marked
+    '.workflow-button' // Only workflow-critical buttons
   ],
   
   // Modifier key for shortcuts
-  modifier: 'alt' as 'alt' | 'ctrl' | 'cmd',
+  modifier: 'alt' as 'g' | 'alt' | 'ctrl' | 'cmd',
   
   // Visual indicator style
-  indicatorStyle: 'underline' as 'underline' | 'badge' | 'superscript' | 'none',
+  indicatorStyle: 'badge' as 'underline' | 'badge' | 'superscript' | 'none',
   
   // Show indicators
-  showIndicators: true,
+  showIndicators: false,
   
   // Conflict resolution strategy
   conflictStrategy: 'smart' as 'smart' | 'numeric' | 'skip',

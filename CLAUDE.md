@@ -183,27 +183,37 @@ ERP/
 - [x] Vendor rating and evaluation system
 
 ### ✅ Keyboard Navigation System (NEW! 2025-01-25)
+- [x] **G-Based Navigation** - Press G then a letter to navigate anywhere (fastest workflow)
 - [x] **Command Palette** (⌘P) - VS Code style command palette with fuzzy search
 - [x] **Global Search** (⌘K) - Quick search across the application
 - [x] **Keyboard Shortcuts Help** (?) - Interactive help modal showing all shortcuts
 - [x] **Vim-style List Navigation** - Navigate lists with j/k keys
-- [x] **Context-aware Shortcuts** - Different shortcuts for different pages
-- [x] **Quick Navigation** (G + key) - Jump to any module quickly
-- [x] **Module Quick Access** (Alt + 1-9) - Direct access to major modules
+- [x] **Focused Workflow Shortcuts** - Only critical actions have shortcuts (not every button)
+- [x] **Context-aware Actions** - G then N creates new items on any page
+- [x] **Manager Shortcuts** - ⌘A to approve, ⌘R to reject PRs
 
-#### Global Keyboard Shortcuts
+#### G-Based Navigation (Press G then...)
+- **G → H** - Go to Home
+- **G → P** - Go to Procurement Dashboard
+- **G → R** - Go to RFQ Management
+- **G → Q** - Go to Purchase Requisitions  
+- **G → V** - Go to Vendors
+- **G → M** - Go to Mails & AI
+- **G → E** - Go to Email Automation
+- **G → A** - Go to Pending Approvals
+- **G → O** - Go to Purchase Orders
+- **G → I** - Go to Inventory
+- **G → F** - Go to Finance
+- **G → N** - Create New (context-aware)
+- **G → C** - Create (context-aware)
+
+#### Global Shortcuts
 - **⌘K** - Open global search
-- **⌘P** - Open command palette (search for any action)
-- **⌘N** - Create new (context-aware based on current page)
+- **⌘P** - Open command palette
+- **⌘N** - Create new (context-aware)
 - **?** - Show keyboard shortcuts help
 - **ESC** - Close modals/dialogs
-- **G then H** - Go to Home
-- **G then P** - Go to Procurement
-- **G then R** - Go to RFQ Management
-- **G then Q** - Go to Purchase Requisitions
-- **G then V** - Go to Vendors
-- **G then M** - Go to Mails & AI
-- **Alt + 1-9** - Quick access to modules
+- **/** - Focus search in current page
 
 #### List Navigation (Vim-style)
 - **J** - Move down in list
@@ -212,29 +222,25 @@ ERP/
 - **Enter** - Open selected item
 - **/** - Focus search in current list
 
-#### Page-Specific Shortcuts
+#### Workflow-Focused Shortcuts
 
-**RFQ Management Page**
-- **N** - Create new RFQ
-- **S** - Send selected RFQ to vendors
-- **C** - Compare quotations
-- **M** - View email history
+**RFQ Management**
+- **⌘S** - Send first open RFQ to vendors
+- **⌘C** - Convert PR to RFQ
 
-**Purchase Requisitions Page**
-- **N** - Create new requisition
-- **A** - Approve selected PR (managers only)
-- **R** - Reject selected PR (managers only)
-- **S** - Submit selected PR for approval
-- **C** - Convert approved PR to RFQ
+**Purchase Requisitions (Managers)**
+- **⌘A** - Approve first pending PR
+- **⌘R** - Reject first pending PR
 
-#### Implementation Details
-- **useKeyboardShortcuts Hook** - Central hook for managing keyboard shortcuts
-- **useListNavigation Hook** - Specialized hook for list navigation
+#### Implementation Philosophy
+- **Workflow-First** - Only critical workflow actions have shortcuts
+- **G-Based Navigation** - Vim-inspired navigation for power users
+- **Context-Aware** - Shortcuts adapt based on user role and page
+- **Clean Interface** - No cluttered shortcuts on every button
+- **Fast & Efficient** - Press G then one letter to go anywhere
+- **Manager Focus** - Special shortcuts for approval workflows
+- **useKeyboardShortcuts Hook** - Central hook for managing shortcuts
 - **CommandPalette Component** - VS Code inspired command palette
-- **KeyboardShortcutsHelp Component** - Interactive help modal
-- **Visual Indicators** - Selected items highlighted with primary color ring
-- **Accessibility** - Shortcuts disabled when typing in inputs
-- **Performance** - Smooth scrolling and instant response
 
 ### 🚀 Ready for Phase 2
 - [ ] Business logic implementation
@@ -611,15 +617,16 @@ Last Updated: 2025-01-25
 ## Recent Updates
 
 ### January 2025
-- ✅ **Comprehensive Keyboard Navigation System** (2025-01-25)
+- ✅ **Focused G-Based Keyboard Navigation** (2025-01-25)
+  - G-based navigation (Press G then any letter) - fastest workflow
   - Command Palette (⌘P) for VS Code-like experience
-  - Global keyboard shortcuts for all major actions
+  - Global search with ⌘K
   - Vim-style list navigation (j/k/x)
-  - Context-aware shortcuts for each page
+  - Workflow-focused shortcuts (only critical actions)
+  - Manager shortcuts for approvals (⌘A, ⌘R)
+  - Context-aware create actions (G then N)
   - Interactive help modal (?)
-  - Quick navigation with G + key combinations
-  - Module quick access with Alt + 1-9
-  - Full accessibility support
+  - Clean interface without button clutter
 
 ### December 2024
 - ✅ Consolidated APIs (removed backend-api, kept cloud-api)

@@ -11,31 +11,36 @@ interface ShortcutGroup {
 
 const shortcutGroups: ShortcutGroup[] = [
   {
-    name: 'Automatic Button Shortcuts',
+    name: 'Quick Navigation (Press G then...)',
     shortcuts: [
-      { keys: ['Alt', '+', 'Letter'], description: 'Activate any button (letter shown when holding Alt)' },
-      { keys: ['Alt'], description: 'Hold to see all available button shortcuts' },
+      { keys: ['G', 'then H'], description: 'Go to Home' },
+      { keys: ['G', 'then P'], description: 'Go to Procurement Dashboard' },
+      { keys: ['G', 'then R'], description: 'Go to RFQ Management' },
+      { keys: ['G', 'then Q'], description: 'Go to Purchase Requisitions' },
+      { keys: ['G', 'then V'], description: 'Go to Vendors' },
+      { keys: ['G', 'then M'], description: 'Go to Mails & AI' },
+      { keys: ['G', 'then E'], description: 'Go to Email Automation' },
+      { keys: ['G', 'then A'], description: 'Go to Pending Approvals' },
+      { keys: ['G', 'then O'], description: 'Go to Purchase Orders' },
+      { keys: ['G', 'then I'], description: 'Go to Inventory' },
+      { keys: ['G', 'then F'], description: 'Go to Finance' },
+      { keys: ['G', 'then N'], description: 'Create New (context-aware)' },
+      { keys: ['G', 'then C'], description: 'Create (context-aware)' },
     ]
   },
   {
-    name: 'Global Navigation',
+    name: 'Global Shortcuts',
     shortcuts: [
       { keys: ['⌘', 'K'], description: 'Open global search' },
       { keys: ['⌘', 'P'], description: 'Open command palette' },
+      { keys: ['⌘', 'N'], description: 'Create new (context aware)' },
       { keys: ['?'], description: 'Show this help' },
-      { keys: ['G', 'then H'], description: 'Go to Home' },
-      { keys: ['G', 'then P'], description: 'Go to Procurement' },
-      { keys: ['G', 'then R'], description: 'Go to RFQs' },
-      { keys: ['G', 'then Q'], description: 'Go to Requisitions' },
-      { keys: ['G', 'then V'], description: 'Go to Vendors' },
-      { keys: ['G', 'then M'], description: 'Go to Mails' },
       { keys: ['ESC'], description: 'Close modal/dialog' },
     ]
   },
   {
-    name: 'Quick Actions',
+    name: 'Workflow Actions',
     shortcuts: [
-      { keys: ['⌘', 'N'], description: 'Create new (context aware)' },
       { keys: ['⌘', 'S'], description: 'Save current form' },
       { keys: ['⌘', 'Enter'], description: 'Submit/Approve' },
       { keys: ['Alt', '1-9'], description: 'Quick jump to modules' },
@@ -196,14 +201,13 @@ export default function KeyboardShortcutsHelp() {
               Pro Tips
             </h4>
             <ul className="space-y-1 text-sm text-primary-700 dark:text-primary-300">
-              <li>• <strong>NEW:</strong> Every button automatically gets a keyboard shortcut!</li>
-              <li>• Hold Alt to see shortcuts for all buttons on the page</li>
+              <li>• <strong>Press G</strong> to enter navigation mode - fastest way to move around!</li>
+              <li>• G then R takes you straight to RFQs, G then Q to Requisitions</li>
+              <li>• G then N or C creates new items on any page</li>
               <li>• Use ⌘P to open command palette for all actions</li>
-              <li>• Use ⌘K to quickly search and navigate anywhere</li>
-              <li>• Press G followed by a letter for quick navigation</li>
-              <li>• Use J/K to navigate lists without mouse</li>
-              <li>• Press X to select items, Enter to open</li>
-              <li>• Most actions work without leaving the keyboard</li>
+              <li>• Use ⌘K to quickly search across the system</li>
+              <li>• Use J/K to navigate lists without mouse (Vim-style)</li>
+              <li>• Focus on workflow - only important actions have shortcuts</li>
               <li>• Shortcuts are context-aware based on current page</li>
             </ul>
           </div>

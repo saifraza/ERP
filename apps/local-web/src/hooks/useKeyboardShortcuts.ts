@@ -151,18 +151,37 @@ export function useGlobalKeyboardShortcuts() {
             'e': '/email-automation', // Email automation
             'a': '/procurement/approvals', // Approvals
             's': '/settings', // Settings
+            'd': '/procurement', // Dashboard
+            'i': '/store/inventory', // Inventory
+            'o': '/procurement/purchase-orders', // Purchase Orders
+            'f': '/finance', // Finance
+            'n': 'new', // Special: trigger new action
+            'c': 'create', // Special: trigger create action
           }
           
           if (routes[nextKey]) {
-            navigate(routes[nextKey])
-            toast.success(`Navigated to ${routes[nextKey]}`)
+            // Handle special actions
+            if (routes[nextKey] === 'new' || routes[nextKey] === 'create') {
+              // Trigger context-aware new/create action
+              const newButton = document.querySelector('[data-new-requisition], [data-new-vendor], [data-create-button]') as HTMLElement
+              if (newButton) {
+                newButton.click()
+                toast.success('Create action triggered')
+              } else {
+                toast.info('No create action available on this page')
+              }
+            } else {
+              // Normal navigation
+              navigate(routes[nextKey])
+              toast.success(`Navigated to ${routes[nextKey]}`)
+            }
           }
           
           window.removeEventListener('keydown', handleNextKey)
         }
         
         window.addEventListener('keydown', handleNextKey)
-        toast('Press a key: H=Home, P=Procurement, R=RFQs, Q=Requisitions, V=Vendors, M=Mails...')
+        toast('Navigate: H=Home R=RFQs Q=Requisitions V=Vendors | Actions: N=New C=Create')
         
         // Remove listener after 3 seconds
         setTimeout(() => {

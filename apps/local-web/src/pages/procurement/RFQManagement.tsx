@@ -155,43 +155,26 @@ export default function RFQManagement() {
     return diff
   }
   
-  // Keyboard shortcuts for this page
+  // Focused workflow shortcuts - only the most important actions
   const pageShortcuts = [
     {
-      key: 'n',
-      description: 'Create new RFQ',
+      key: 'c',
+      cmd: true,
+      description: 'Convert to RFQ (when PR selected)',
       action: () => navigate('/procurement/requisitions')
     },
     {
       key: 's',
-      description: 'Send selected RFQ',
+      cmd: true,
+      description: 'Send RFQ to vendors',
       action: () => {
-        if (selectedRFQs.length === 1) {
-          const rfq = rfqs.find(r => r.id === selectedRFQs[0])
-          if (rfq && rfq.status === 'OPEN') {
-            handleSendRFQ(rfq.id)
-          }
-        }
-      }
-    },
-    {
-      key: 'c',
-      description: 'Compare quotations',
-      action: () => {
-        if (selectedRFQs.length === 1) {
-          const rfq = rfqs.find(r => r.id === selectedRFQs[0])
-          if (rfq && rfq._count.quotations > 0) {
-            navigate(`/procurement/rfqs/${rfq.id}/comparison`)
-          }
-        }
-      }
-    },
-    {
-      key: 'm',
-      description: 'Email history',
-      action: () => {
-        if (selectedRFQs.length === 1) {
-          navigate(`/procurement/rfqs/${selectedRFQs[0]}/email-history`)
+        const firstOpenRFQ = rfqs.find(r => r.status === 'OPEN')
+        if (firstOpenRFQ) {
+          // Find and click the send button for this RFQ
+          const sendButton = document.querySelector(`[data-rfq-send="${firstOpenRFQ.id}"]`) as HTMLElement
+          sendButton?.click()
+        } else {
+          toast.info('No open RFQs to send')
         }
       }
     },

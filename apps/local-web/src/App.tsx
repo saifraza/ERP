@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import MainLayout from './layouts/MainLayout'
 import ModernLayout from './layouts/ModernLayout'
 import UltraModernLayout from './layouts/UltraModernLayout'
-import ShortcutProvider from './components/shortcuts/ShortcutProvider'
+// import ShortcutProvider from './components/shortcuts/ShortcutProvider' // Not needed - using G-based navigation
 import Dashboard from './pages/Dashboard'
 import DashboardModern from './pages/DashboardModern'
 import DashboardUltra from './pages/DashboardUltra'
@@ -73,7 +73,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ShortcutProvider>
+      {/* <ShortcutProvider> Disabled - using G-based navigation instead */}
         <BrowserRouter>
           <Routes>
           <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
@@ -164,7 +164,7 @@ function App() {
           />
           </Routes>
         </BrowserRouter>
-      </ShortcutProvider>
+      {/* </ShortcutProvider> */}
       <Toaster 
         position="top-right"
         toastOptions={{

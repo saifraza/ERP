@@ -240,61 +240,39 @@ export default function PurchaseRequisitions() {
     }
   }
 
-  // Keyboard shortcuts for this page
-  const pageShortcuts = [
-    {
-      key: 'n',
-      description: 'Create new requisition',
-      action: () => setShowCreateModal(true)
-    },
+  // Focused workflow shortcuts - only critical actions for managers
+  const workflowShortcuts = isManager ? [
     {
       key: 'a',
-      description: 'Approve selected PR',
+      cmd: true,
+      description: 'Approve first pending PR',
       action: () => {
-        if (selectedPRs.length === 1 && isManager) {
-          const pr = requisitions.find(r => r.id === selectedPRs[0])
-          if (pr && pr.status.toUpperCase() === 'SUBMITTED') {
-            handleApprovePR(pr.id)
-          }
+        const pendingPR = requisitions.find(r => r.status.toUpperCase() === 'SUBMITTED')
+        if (pendingPR) {
+          handleApprovePR(pendingPR.id)
+        } else {
+          toast.info('No pending PRs to approve')
         }
       }
     },
     {
       key: 'r',
-      description: 'Reject selected PR',
+      cmd: true,
+      description: 'Reject first pending PR',
       action: () => {
-        if (selectedPRs.length === 1 && isManager) {
-          const pr = requisitions.find(r => r.id === selectedPRs[0])
-          if (pr && pr.status.toUpperCase() === 'SUBMITTED') {
-            handleRejectPR(pr.id)
-          }
+        const pendingPR = requisitions.find(r => r.status.toUpperCase() === 'SUBMITTED')
+        if (pendingPR) {
+          handleRejectPR(pendingPR.id)
+        } else {
+          toast.info('No pending PRs to reject')
         }
       }
-    },
-    {
-      key: 's',
-      description: 'Submit selected PR',
-      action: () => {
-        if (selectedPRs.length === 1) {
-          const pr = requisitions.find(r => r.id === selectedPRs[0])
-          if (pr && pr.status.toUpperCase() === 'DRAFT') {
-            handleSubmitPR(pr.id)
-          }
-        }
-      }
-    },
-    {
-      key: 'c',
-      description: 'Convert to RFQ',
-      action: () => {
-        if (selectedPRs.length === 1) {
-          const pr = requisitions.find(r => r.id === selectedPRs[0])
-          if (pr && pr.status.toUpperCase() === 'APPROVED' && pr.poCount === 0) {
-            navigate(`/procurement/requisitions/${pr.id}/convert-to-rfq`)
-          }
-        }
-      }
-    },
+    }
+  ] : []
+
+  // Common shortcuts for all users
+  const pageShortcuts = [
+    ...workflowShortcuts,
     {
       key: '/',
       description: 'Focus search',
