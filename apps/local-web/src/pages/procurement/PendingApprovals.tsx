@@ -331,7 +331,27 @@ export default function PendingApprovals() {
             setShowApprovalModal(false)
             setSelectedPR(null)
           }}
-          requisition={selectedPR}
+          pr={{
+            id: selectedPR.id,
+            requisitionNo: selectedPR.requisitionNo,
+            requisitionDate: selectedPR.requisitionDate,
+            department: selectedPR.department,
+            priority: selectedPR.priority,
+            purpose: selectedPR.purpose,
+            requestedBy: selectedPR.requestedBy,
+            requestedByEmail: '',  // Not available in list view
+            factory: selectedPR.factory,
+            division: selectedPR.division,
+            items: selectedPR.items.map(item => ({
+              material: {
+                code: item.materialCode,
+                name: item.materialName,
+                unit: item.unit
+              },
+              quantity: item.quantity
+            }))
+          }}
+          token={token || ''}
           onSuccess={() => {
             setShowApprovalModal(false)
             setSelectedPR(null)
