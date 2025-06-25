@@ -69,11 +69,16 @@ app.get('/', async (c) => {
           }
         },
         vendors: {
-          select: {
-            id: true,
-            vendorId: true,
-            emailSent: true,
-            responseReceived: true
+          include: {
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                email: true,
+                contactPerson: true
+              }
+            }
           }
         },
         items: true,
