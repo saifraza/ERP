@@ -21,6 +21,7 @@ interface RFQEmailPreviewProps {
   vendors: Vendor[]
   onClose: () => void
   onEmailSent: () => void
+  isReminder?: boolean
 }
 
 export default function RFQEmailPreview({ 
@@ -28,7 +29,8 @@ export default function RFQEmailPreview({
   rfqNumber, 
   vendors, 
   onClose, 
-  onEmailSent 
+  onEmailSent,
+  isReminder = false
 }: RFQEmailPreviewProps) {
   const { token } = useAuthStore()
   const { currentCompany } = useCompanyStore()
@@ -43,7 +45,9 @@ export default function RFQEmailPreview({
 
   useEffect(() => {
     // Generate default email content
-    const subject = `Request for Quotation - ${rfqNumber} - ${currentCompany?.name || 'Our Company'}`
+    const subject = isReminder 
+      ? `Reminder: Request for Quotation - ${rfqNumber} - ${currentCompany?.name || 'Our Company'}`
+      : `Request for Quotation - ${rfqNumber} - ${currentCompany?.name || 'Our Company'}`
     setEmailSubject(subject)
     
     const body = generateEmailBody()
@@ -116,8 +120,9 @@ This is an automated email. Please do not reply to this email address.`
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
       
-      // Send RFQ to selected vendors
-      const response = await fetch(`${apiUrl}/api/rfqs/${rfqId}/send`, {
+      // Send RFQ to selected vendors - use resend endpoint for reminders
+      const endpoint = isReminder ? `/api/rfqs/${rfqId}/resend` : `/api/rfqs/${rfqId}/send`
+      const response = await fetch(`${apiUrl}${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

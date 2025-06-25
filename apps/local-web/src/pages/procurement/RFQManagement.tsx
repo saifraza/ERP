@@ -352,6 +352,7 @@ export default function RFQManagement() {
                       rfqId={rfq.id}
                       rfqNumber={rfq.rfqNumber}
                       onEmailSent={fetchRFQs}
+                      rfqData={rfq}
                     />
                     {rfq.status === 'SENT' && rfq._count.quotations > 0 && (
                       <Link
@@ -373,9 +374,19 @@ export default function RFQManagement() {
                     <Link
                       to={`/procurement/rfqs/${rfq.id}`}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                      title="View Details"
                     >
                       <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                     </Link>
+                    {rfq.status === 'SENT' && (
+                      <Link
+                        to={`/procurement/rfqs/${rfq.id}/email-history`}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                        title="Email History"
+                      >
+                        <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      </Link>
+                    )}
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                       <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                     </button>

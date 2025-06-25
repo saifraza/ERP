@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'react-hot-toast'
+import RFQEmailPreview from '../../components/procurement/RFQEmailPreview'
 
 interface EmailLog {
   id: string
@@ -59,6 +60,8 @@ export default function RFQEmailHistory() {
   const [stats, setStats] = useState<any>(null)
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [showEmailPreview, setShowEmailPreview] = useState(false)
+  const [selectedVendorForReminder, setSelectedVendorForReminder] = useState<any>(null)
 
   useEffect(() => {
     fetchEmailHistory()
@@ -115,23 +118,18 @@ export default function RFQEmailHistory() {
 
   const handleSendReminder = async (vendorId: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-      const response = await fetch(`${apiUrl}/api/rfqs/${id}/resend`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ vendorIds: [vendorId] })
-      })
-
-      if (!response.ok) throw new Error('Failed to send reminder')
-
-      toast.success('Reminder sent successfully')
-      fetchEmailHistory() // Refresh data
+      // Find the vendor and show email preview
+      const vendor = communicationSummary.find(c => c.vendor.id === vendorId)?.vendor
+      if (!vendor) {
+        toast.error('Vendor not found')
+        return
+      }
+      
+      setSelectedVendorForReminder(vendor)
+      setShowEmailPreview(true)
     } catch (error) {
-      console.error('Error sending reminder:', error)
-      toast.error('Failed to send reminder')
+      console.error('Error preparing reminder:', error)
+      toast.error('Failed to prepare reminder')
     }
   }
 
@@ -273,7 +271,7 @@ export default function RFQEmailHistory() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{comm.vendor.name}</div>
-                        <div className="text-xs text-gray-500">{comm.vendor.email}</div>
+                        <div className="text-xs text-gray-500">{comm.vendor.email || 'No email'}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -406,6 +404,25 @@ export default function RFQEmailHistory() {
           </div>
         </div>
       </div>
+      
+      {/* Email Preview Modal for Reminders */}
+      {showEmailPreview && selectedVendorForReminder && rfq && (
+        <RFQEmailPreview
+          rfqId={rfq.id}
+          rfqNumber={rfq.rfqNumber}
+          vendors={[selectedVendorForReminder]}
+          onClose={() => {
+            setShowEmailPreview(false)
+            setSelectedVendorForReminder(null)
+          }}
+          onEmailSent={() => {
+            setShowEmailPreview(false)
+            setSelectedVendorForReminder(null)
+            fetchEmailHistory() // Refresh data
+          }}
+          isReminder={true}
+        />
+      )}
     </div>
   )
 }
