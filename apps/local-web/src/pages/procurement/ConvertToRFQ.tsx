@@ -11,10 +11,11 @@ import { toast } from 'react-hot-toast'
 interface RequisitionItem {
   id: string
   material: {
+    id: string
     code: string
     name: string
     description?: string
-    uom: { code: string }
+    unit: string
   }
   quantity: number
   requiredDate: string
@@ -31,6 +32,7 @@ interface Requisition {
   department: string
   priority: string
   purpose?: string
+  status: string
   requestedBy: string
   items: RequisitionItem[]
 }
@@ -89,11 +91,14 @@ export default function ConvertToRFQ() {
         return
       }
 
-      const prData = await prResponse.json()
+      const response = await prResponse.json()
+      const prData = response.requisition || response
+      
+      console.log('Requisition data:', prData) // Debug log
       
       // Check if PR is approved
       if (prData.status !== 'APPROVED') {
-        toast.error('Only approved requisitions can be converted to RFQ')
+        toast.error(`Only approved requisitions can be converted to RFQ. Current status: ${prData.status}`)
         navigate('/procurement/requisitions')
         return
       }
@@ -385,7 +390,7 @@ export default function ConvertToRFQ() {
                       <div className="flex items-center gap-4 mt-2 ml-6 text-sm">
                         <span className="text-gray-600 dark:text-gray-400">
                           Qty: <span className="font-medium text-gray-900 dark:text-white">
-                            {item.quantity} {item.material.uom.code}
+                            {item.quantity} {item.material.unit}
                           </span>
                         </span>
                         <span className="text-gray-600 dark:text-gray-400">
