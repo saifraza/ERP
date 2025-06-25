@@ -120,33 +120,89 @@ export class RFQPDFGenerator {
 <title>RFQ ${rfq.rfqNumber || ''}</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; }
-.header { background: #b4d04a; padding: 20px; text-align: center; margin: -20px -20px 20px; }
-.company-name { font-size: 20pt; font-weight: bold; color: #5e4b3d; }
-.details { font-size: 9pt; margin-top: 10px; }
-h1 { text-align: center; margin: 30px 0; }
+.header { 
+  background: #b4d04a; 
+  padding: 20px; 
+  margin: -20px -20px 20px; 
+  position: relative;
+  min-height: 140px;
+}
+.logo-container {
+  position: absolute;
+  left: 30px;
+  top: 20px;
+  width: 100px;
+  height: 100px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.logo-text {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #5e4b3d;
+  text-align: center;
+}
+.header-content {
+  margin-left: 140px;
+  text-align: left;
+}
+.company-name { 
+  font-size: 22pt; 
+  font-weight: bold; 
+  color: #5e4b3d; 
+  margin-bottom: 5px;
+}
+.details { 
+  font-size: 9pt; 
+  line-height: 1.4;
+  color: #333;
+}
+h1 { text-align: center; margin: 30px 0; text-decoration: underline; }
 table { width: 100%; border-collapse: collapse; margin: 20px 0; }
 th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-th { background: #f0f0f0; }
+th { background: #f0f0f0; font-weight: bold; }
 .terms { margin-top: 30px; }
 .footer { margin-top: 50px; }
+.info-row { 
+  display: flex; 
+  justify-content: space-between; 
+  margin-bottom: 10px;
+}
+@media print {
+  .header {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 </style>
 </head>
 <body>
 <div class="header">
+<div class="logo-container">
+<div class="logo-text">MSPIL</div>
+</div>
+<div class="header-content">
 <div class="company-name">Mahakaushal Sugar and Power Industries Ltd.</div>
 <div class="details">
 CIN - U01543MP2005PLC017514, GSTIN - 23AAECM3666P1Z1<br>
-Regd off : SF-11, Second Floor, Aakriti Business Center, Aakriti Eco city,<br>
-Bawadiya Kalan, Bhopal-462039<br>
+Regd off : SF-11, Second Floor, Aakriti Business Center, Aakriti Eco city, Bawadiya Kalan, Bhopal-462039<br>
 Admin off & Factory : Village Bachai, Dist. Narsinghpur (M.P.) - 487001<br>
 E-mail : mspil.acc@gmail.com | mspil.power@gmail.com
+</div>
 </div>
 </div>
 
 <h1>REQUEST FOR QUOTATION</h1>
 
-<p><strong>RFQ No.:</strong> ${rfq.rfqNumber || 'N/A'} &nbsp;&nbsp;&nbsp; <strong>Date:</strong> ${formatDate(rfq.issueDate)}</p>
-<p><strong>Due Date:</strong> ${formatDate(rfq.submissionDeadline)}</p>
+<div class="info-row">
+<div><strong>RFQ No.:</strong> ${rfq.rfqNumber || 'N/A'}</div>
+<div><strong>Date:</strong> ${formatDate(rfq.issueDate)}</div>
+</div>
+<div><strong>Quotation Due Date:</strong> ${formatDate(rfq.submissionDeadline)}</div>
 
 <div style="margin: 20px 0;">
 <strong>To:</strong><br>
