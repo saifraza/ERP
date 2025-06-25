@@ -46,14 +46,18 @@ export function RFQPDFViewer({
       
       if (!response.ok) throw new Error('Failed to download PDF')
       
+      // Check content type for proper file extension
+      const contentType = response.headers.get('content-type')
+      const isHtml = contentType?.includes('text/html')
+      
       // Create download link
       const blob = await response.blob()
       const downloadUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = downloadUrl
       link.download = vendorId 
-        ? `RFQ_${rfqNumber}_${vendorName?.replace(/\s+/g, '_')}.pdf`
-        : `RFQ_${rfqNumber}.pdf`
+        ? `RFQ_${rfqNumber}_${vendorName?.replace(/\s+/g, '_')}.${isHtml ? 'html' : 'pdf'}`
+        : `RFQ_${rfqNumber}.${isHtml ? 'html' : 'pdf'}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -83,11 +87,30 @@ export function RFQPDFViewer({
       
       if (!response.ok) throw new Error('Failed to load PDF')
       
-      // Create preview URL
-      const blob = await response.blob()
-      const previewUrl = window.URL.createObjectURL(blob)
-      setPdfUrl(previewUrl)
-      setPreviewOpen(true)
+      // Check content type
+      const contentType = response.headers.get('content-type')
+      
+      if (contentType?.includes('text/html')) {
+        // For HTML content, open in new window
+        const blob = await response.blob()
+        const htmlUrl = window.URL.createObjectURL(blob)
+        const newWindow = window.open(htmlUrl, '_blank', 'width=800,height=600')
+        
+        // Clean up after window is opened
+        setTimeout(() => {
+          window.URL.revokeObjectURL(htmlUrl)
+        }, 1000)
+        
+        if (!newWindow) {
+          toast.error('Please allow popups to view the RFQ')
+        }
+      } else {
+        // For PDF content
+        const blob = await response.blob()
+        const previewUrl = window.URL.createObjectURL(blob)
+        setPdfUrl(previewUrl)
+        setPreviewOpen(true)
+      }
     } catch (error: any) {
       console.error('Error loading PDF:', error)
       toast.error("Failed to load RFQ PDF")
