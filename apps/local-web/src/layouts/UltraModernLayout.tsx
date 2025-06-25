@@ -16,6 +16,9 @@ import {
 import { useAuthStore } from '../stores/authStore'
 import { cn } from '../lib/utils'
 import CompanySelector from '../components/CompanySelector'
+import CommandPalette from '../components/CommandPalette'
+import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp'
+import { useGlobalKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 
 interface UltraModernLayoutProps {
   children: React.ReactNode
@@ -233,6 +236,9 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
   const [showNotifications, setShowNotifications] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const { user, logout } = useAuthStore()
+  
+  // Initialize global keyboard shortcuts
+  useGlobalKeyboardShortcuts()
 
   // Auto-expand active sections
   useEffect(() => {
@@ -378,6 +384,7 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
                 {/* Global search */}
                 <button
                   onClick={() => setShowSearch(true)}
+                  data-search-trigger
                   className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
                   <Search className="h-5 w-5 text-gray-600 dark:text-gray-300" />
@@ -390,6 +397,7 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search... (⌘K)"
+                    data-search-trigger
                     className="pl-10 pr-3 py-2 w-64 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </form>
@@ -416,7 +424,14 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
                 </button>
 
                 {/* Help */}
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <button 
+                  onClick={() => {
+                    const event = new CustomEvent('show-keyboard-help')
+                    window.dispatchEvent(event)
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  title="Keyboard shortcuts (?)"
+                >
                   <HelpCircle className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                 </button>
 
@@ -459,6 +474,12 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
           </div>
         </div>
       )}
+      
+      {/* Command Palette */}
+      <CommandPalette />
+      
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   Calculator, Send, Clock, CheckCircle, XCircle,
   Eye, Mail, Calendar, Users, Package, FileText,
@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import { RFQPDFViewer } from '../../components/procurement/RFQPDFViewer'
+import { useKeyboardShortcuts, useListNavigation } from '../../hooks/useKeyboardShortcuts'
 
 interface RFQItem {
   id: string
@@ -44,9 +45,11 @@ interface RFQ {
 export default function RFQManagement() {
   const { token } = useAuthStore()
   const { currentCompany } = useCompanyStore()
+  const navigate = useNavigate()
   const [rfqs, setRFQs] = useState<RFQ[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedRFQs, setSelectedRFQs] = useState<string[]>([])
 
   useEffect(() => {
     fetchRFQs()
@@ -151,6 +154,71 @@ export default function RFQManagement() {
     const diff = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     return diff
   }
+  
+  // Keyboard shortcuts for this page
+  const pageShortcuts = [
+    {
+      key: 'n',
+      description: 'Create new RFQ',
+      action: () => navigate('/procurement/requisitions')
+    },
+    {
+      key: 's',
+      description: 'Send selected RFQ',
+      action: () => {
+        if (selectedRFQs.length === 1) {
+          const rfq = rfqs.find(r => r.id === selectedRFQs[0])
+          if (rfq && rfq.status === 'OPEN') {
+            handleSendRFQ(rfq.id)
+          }
+        }
+      }
+    },
+    {
+      key: 'c',
+      description: 'Compare quotations',
+      action: () => {
+        if (selectedRFQs.length === 1) {
+          const rfq = rfqs.find(r => r.id === selectedRFQs[0])
+          if (rfq && rfq._count.quotations > 0) {
+            navigate(`/procurement/rfqs/${rfq.id}/comparison`)
+          }
+        }
+      }
+    },
+    {
+      key: 'm',
+      description: 'Email history',
+      action: () => {
+        if (selectedRFQs.length === 1) {
+          navigate(`/procurement/rfqs/${selectedRFQs[0]}/email-history`)
+        }
+      }
+    },
+    {
+      key: '/',
+      description: 'Focus search',
+      action: () => {
+        const searchInput = document.querySelector('[data-search-rfq]') as HTMLInputElement
+        searchInput?.focus()
+      }
+    }
+  ]
+  
+  useKeyboardShortcuts(pageShortcuts, [selectedRFQs, rfqs, navigate])
+  
+  // List navigation
+  const { selectedIndex } = useListNavigation(
+    rfqs,
+    (rfq, index) => {
+      setSelectedRFQs(prev => 
+        prev.includes(rfq.id) 
+          ? prev.filter(id => id !== rfq.id)
+          : [...prev, rfq.id]
+      )
+    },
+    (rfq) => navigate(`/procurement/rfqs/${rfq.id}`)
+  )
 
   return (
     <div className="space-y-6">

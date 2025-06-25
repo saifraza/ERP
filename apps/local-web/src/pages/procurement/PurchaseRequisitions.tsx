@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   ClipboardList, Plus, Search, Filter, Calendar,
   Clock, AlertCircle, CheckCircle, XCircle, Send,
@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast'
 import AddRequisitionModal from '../../components/procurement/AddRequisitionModal'
 import PRWorkflowInfo from '../../components/procurement/PRWorkflowInfo'
 import PRStatusSummary from '../../components/procurement/PRStatusSummary'
+import { useKeyboardShortcuts, useListNavigation } from '../../hooks/useKeyboardShortcuts'
 
 interface RequisitionItem {
   id: string
@@ -50,11 +51,13 @@ interface Requisition {
 export default function PurchaseRequisitions() {
   const { token, user } = useAuthStore()
   const { currentCompany } = useCompanyStore()
+  const navigate = useNavigate()
   const [requisitions, setRequisitions] = useState<Requisition[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPriority, setSelectedPriority] = useState('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedPRs, setSelectedPRs] = useState<string[]>([])
   
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
 
@@ -182,6 +185,141 @@ export default function PurchaseRequisitions() {
     }
   }
 
+  const handleApprovePR = async (prId: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/requisitions/${prId}/approval`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'APPROVED' }),
+        }
+      )
+
+      if (response.ok) {
+        toast.success('PR approved successfully')
+        fetchRequisitions()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to approve PR')
+      }
+    } catch (error) {
+      toast.error('Failed to approve PR')
+    }
+  }
+
+  const handleRejectPR = async (prId: string) => {
+    const reason = prompt('Please provide a reason for rejection:')
+    if (!reason) return
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/requisitions/${prId}/approval`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'REJECTED', remarks: reason }),
+        }
+      )
+
+      if (response.ok) {
+        toast.success('PR rejected')
+        fetchRequisitions()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to reject PR')
+      }
+    } catch (error) {
+      toast.error('Failed to reject PR')
+    }
+  }
+
+  // Keyboard shortcuts for this page
+  const pageShortcuts = [
+    {
+      key: 'n',
+      description: 'Create new requisition',
+      action: () => setShowCreateModal(true)
+    },
+    {
+      key: 'a',
+      description: 'Approve selected PR',
+      action: () => {
+        if (selectedPRs.length === 1 && isManager) {
+          const pr = requisitions.find(r => r.id === selectedPRs[0])
+          if (pr && pr.status.toUpperCase() === 'SUBMITTED') {
+            handleApprovePR(pr.id)
+          }
+        }
+      }
+    },
+    {
+      key: 'r',
+      description: 'Reject selected PR',
+      action: () => {
+        if (selectedPRs.length === 1 && isManager) {
+          const pr = requisitions.find(r => r.id === selectedPRs[0])
+          if (pr && pr.status.toUpperCase() === 'SUBMITTED') {
+            handleRejectPR(pr.id)
+          }
+        }
+      }
+    },
+    {
+      key: 's',
+      description: 'Submit selected PR',
+      action: () => {
+        if (selectedPRs.length === 1) {
+          const pr = requisitions.find(r => r.id === selectedPRs[0])
+          if (pr && pr.status.toUpperCase() === 'DRAFT') {
+            handleSubmitPR(pr.id)
+          }
+        }
+      }
+    },
+    {
+      key: 'c',
+      description: 'Convert to RFQ',
+      action: () => {
+        if (selectedPRs.length === 1) {
+          const pr = requisitions.find(r => r.id === selectedPRs[0])
+          if (pr && pr.status.toUpperCase() === 'APPROVED' && pr.poCount === 0) {
+            navigate(`/procurement/requisitions/${pr.id}/convert-to-rfq`)
+          }
+        }
+      }
+    },
+    {
+      key: '/',
+      description: 'Focus search',
+      action: () => {
+        const searchInput = document.querySelector('[data-search-pr]') as HTMLInputElement
+        searchInput?.focus()
+      }
+    }
+  ]
+  
+  useKeyboardShortcuts(pageShortcuts, [selectedPRs, requisitions, isManager])
+  
+  // List navigation
+  const { selectedIndex } = useListNavigation(
+    requisitions,
+    (pr, index) => {
+      setSelectedPRs(prev => 
+        prev.includes(pr.id) 
+          ? prev.filter(id => id !== pr.id)
+          : [...prev, pr.id]
+      )
+    },
+    (pr) => navigate(`/procurement/requisitions/${pr.id}`)
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -193,6 +331,7 @@ export default function PurchaseRequisitions() {
         <button 
           onClick={() => setShowCreateModal(true)}
           className="btn-primary flex items-center gap-2"
+          data-new-requisition
         >
           <Plus className="h-4 w-4" />
           Create PR
@@ -284,6 +423,7 @@ export default function PurchaseRequisitions() {
                 type="text"
                 placeholder="Search by PR number or description..."
                 className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                data-search-pr
               />
             </div>
           </div>
@@ -337,8 +477,14 @@ export default function PurchaseRequisitions() {
             </button>
           </div>
         ) : (
-          requisitions.map((pr) => (
-            <div key={pr.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
+          requisitions.map((pr, index) => (
+            <div 
+              key={pr.id} 
+              data-row-index={index}
+              className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow ${
+                selectedPRs.includes(pr.id) ? 'ring-2 ring-primary-500' : ''
+              }`}
+            >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-4">
