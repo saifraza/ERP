@@ -238,6 +238,13 @@ model Vendor {
   rfqVendors        RFQVendor[]
   quotations        Quotation[]
   vendorInvoices    VendorInvoice[]
+  rfqEmailLogs      RFQEmailLog[]
+  rfqEmailResponses RFQEmailResponse[]
+  rfqThreads        RFQCommunicationThread[]
+  
+  // Communication preferences
+  preferredCommunication String? @default("email")
+  emailResponseTime Int? // Average response time in hours
   
   @@unique([companyId, code])
   @@index([companyId])
@@ -1504,6 +1511,9 @@ model RFQ {
   vendors               RFQVendor[]
   items                 RFQItem[]
   quotations            Quotation[]
+  emailLogs             RFQEmailLog[]
+  emailResponses        RFQEmailResponse[]
+  communicationThreads  RFQCommunicationThread[]
   
   @@index([companyId])
   @@index([factoryId])
@@ -1540,6 +1550,10 @@ model RFQVendor {
   emailSent        Boolean   @default(false)
   emailSentAt      DateTime?
   responseReceived Boolean   @default(false)
+  lastEmailSentAt  DateTime?
+  reminderCount    Int       @default(0)
+  lastReminderAt   DateTime?
+  quotationReceivedAt DateTime?
   
   rfq              RFQ       @relation(fields: [rfqId], references: [id])
   vendor           Vendor    @relation(fields: [vendorId], references: [id])
@@ -1649,4 +1663,74 @@ model VendorInvoice {
   @@index([companyId])
   @@index([vendorId])
   @@unique([companyId, vendorId, invoiceNumber])
+}
+
+// RFQ Email Tracking
+model RFQEmailLog {
+  id          String   @id @default(uuid())
+  rfqId       String
+  vendorId    String
+  emailType   String   @default("rfq_sent") // rfq_sent, reminder, clarification
+  emailId     String?  // Gmail message ID
+  subject     String
+  toEmail     String
+  ccEmails    String?  // JSON array
+  attachments String?  // JSON array
+  status      String   @default("sent") // sent, delivered, opened, failed
+  sentAt      DateTime @default(now())
+  openedAt    DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  rfq         RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  @@index([rfqId])
+  @@index([vendorId])
+  @@index([sentAt])
+  @@index([status])
+}
+
+model RFQEmailResponse {
+  id               String    @id @default(uuid())
+  rfqId            String
+  vendorId         String
+  emailId          String    // Gmail message ID
+  fromEmail        String
+  subject          String
+  body             String?
+  attachments      String?   // JSON array
+  receivedAt       DateTime
+  processedAt      DateTime?
+  processingStatus String    @default("pending") // pending, processing, processed, failed
+  extractedData    String?   // JSON with extracted quotation data
+  quotationId      String?   // Link to created quotation
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  rfq              RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor           Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  @@index([rfqId])
+  @@index([vendorId])
+  @@index([receivedAt])
+  @@index([processingStatus])
+}
+
+model RFQCommunicationThread {
+  id            String    @id @default(uuid())
+  rfqId         String
+  vendorId      String
+  threadId      String?   // Gmail thread ID
+  messageCount  Int       @default(0)
+  lastMessageAt DateTime?
+  status        String    @default("active") // active, closed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  rfq           RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor        Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  @@unique([rfqId, vendorId])
 }

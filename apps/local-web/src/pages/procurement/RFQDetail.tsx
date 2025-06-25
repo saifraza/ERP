@@ -153,6 +153,22 @@ export default function RFQDetail() {
         </div>
         
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(`/procurement/rfqs/${id}/email-history`)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Mail className="h-4 w-4" />
+            Email History
+          </button>
+          {rfq.quotations && rfq.quotations.length > 0 && (
+            <button
+              onClick={() => navigate(`/procurement/rfqs/${id}/comparison`)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              <FileText className="h-4 w-4" />
+              Compare Quotations ({rfq.quotations.length})
+            </button>
+          )}
           <RFQPDFViewer 
             rfqId={rfq.id} 
             rfqNumber={rfq.rfqNumber}

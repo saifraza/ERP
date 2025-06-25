@@ -34,6 +34,8 @@ import ProcurementDashboard from './pages/procurement/ProcurementDashboard'
 import PendingApprovals from './pages/procurement/PendingApprovals'
 import ConvertToRFQ from './pages/procurement/ConvertToRFQ'
 import RFQDetail from './pages/procurement/RFQDetail'
+import RFQEmailHistory from './pages/procurement/RFQEmailHistory'
+import QuotationComparison from './pages/procurement/QuotationComparison'
 import { useAuthStore } from './stores/authStore'
 import { useCompanyStore } from './stores/companyStore'
 
@@ -125,8 +127,10 @@ function App() {
                     <Route path="/procurement/approvals" element={<PendingApprovals />} />
                     <Route path="/procurement/rfqs" element={<RFQManagement />} />
                     <Route path="/procurement/rfqs/:id" element={<RFQDetail />} />
+                    <Route path="/procurement/rfqs/:id/email-history" element={<RFQEmailHistory />} />
+                    <Route path="/procurement/rfqs/:id/comparison" element={<QuotationComparison />} />
                     <Route path="/procurement/purchase-orders" element={<div>Purchase Orders</div>} />
-                    <Route path="/procurement/quotations" element={<div>Quotation Comparison</div>} />
+                    <Route path="/procurement/quotations" element={<div>Quotation Management</div>} />
                     <Route path="/procurement/grn" element={<div>Goods Receipt</div>} />
                     <Route path="/procurement/invoices" element={<div>Vendor Invoices</div>} />
                     <Route path="/procurement/payments" element={<div>Vendor Payments</div>} />

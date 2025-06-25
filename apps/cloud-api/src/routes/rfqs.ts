@@ -310,16 +310,27 @@ app.post('/:id/send', async (c) => {
     const rfq = await prisma.rFQ.findFirst({
       where: {
         id: rfqId,
-        companyId: companyUser.companyId,
-        status: 'OPEN'
+        companyId: companyUser.companyId
+      },
+      include: {
+        vendors: true
       }
     })
     
     if (!rfq) {
       return c.json({ 
         success: false, 
-        error: 'RFQ not found or already sent' 
+        error: 'RFQ not found' 
       }, 404)
+    }
+    
+    // Check if already sent to all vendors
+    const allSent = rfq.vendors.every(v => v.emailSent)
+    if (rfq.status === 'sent' && allSent) {
+      return c.json({ 
+        success: false, 
+        error: 'RFQ already sent to all vendors. Use resend option for specific vendors.' 
+      }, 400)
     }
     
     // Send emails to vendors
@@ -332,6 +343,155 @@ app.post('/:id/send', async (c) => {
     })
   } catch (error: any) {
     console.error('Error sending RFQ:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Resend RFQ to specific vendors
+app.post('/:id/resend', async (c) => {
+  const userId = c.get('userId')
+  const rfqId = c.req.param('id')
+  const { vendorIds } = await c.req.json()
+  
+  try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
+    const rfq = await prisma.rFQ.findFirst({
+      where: {
+        id: rfqId,
+        companyId: companyUser.companyId
+      }
+    })
+    
+    if (!rfq) {
+      return c.json({ error: 'RFQ not found' }, 404)
+    }
+    
+    // Update reminder count for specified vendors
+    await prisma.rFQVendor.updateMany({
+      where: {
+        rfqId: rfqId,
+        vendorId: { in: vendorIds }
+      },
+      data: {
+        reminderCount: { increment: 1 },
+        lastReminderAt: new Date()
+      }
+    })
+    
+    // Send reminder emails
+    const result = await procurementAutomation.sendRFQToVendors(rfqId, vendorIds)
+    
+    return c.json({
+      success: true,
+      message: 'RFQ reminders sent',
+      ...result
+    })
+  } catch (error: any) {
+    console.error('Error resending RFQ:', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+// Get RFQ email history
+app.get('/:id/email-history', async (c) => {
+  const userId = c.get('userId')
+  const rfqId = c.req.param('id')
+  
+  try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
+    // Get RFQ with email logs
+    const rfq = await prisma.rFQ.findFirst({
+      where: {
+        id: rfqId,
+        companyId: companyUser.companyId
+      },
+      include: {
+        emailLogs: {
+          include: {
+            vendor: {
+              select: {
+                name: true,
+                code: true
+              }
+            }
+          },
+          orderBy: { sentAt: 'desc' }
+        },
+        emailResponses: {
+          include: {
+            vendor: {
+              select: {
+                name: true,
+                code: true
+              }
+            }
+          },
+          orderBy: { receivedAt: 'desc' }
+        },
+        vendors: {
+          include: {
+            vendor: true
+          }
+        }
+      }
+    })
+    
+    if (!rfq) {
+      return c.json({ error: 'RFQ not found' }, 404)
+    }
+    
+    // Format communication summary
+    const communicationSummary = rfq.vendors.map(v => ({
+      vendor: v.vendor,
+      emailSent: v.emailSent,
+      emailSentAt: v.emailSentAt,
+      responseReceived: v.responseReceived,
+      quotationReceivedAt: v.quotationReceivedAt,
+      reminderCount: v.reminderCount,
+      lastReminderAt: v.lastReminderAt,
+      totalEmails: rfq.emailLogs.filter(log => log.vendorId === v.vendorId).length,
+      lastEmail: rfq.emailLogs.find(log => log.vendorId === v.vendorId),
+      hasResponse: rfq.emailResponses.some(res => res.vendorId === v.vendorId)
+    }))
+    
+    return c.json({
+      success: true,
+      rfq: {
+        id: rfq.id,
+        rfqNumber: rfq.rfqNumber,
+        status: rfq.status
+      },
+      communicationSummary,
+      emailLogs: rfq.emailLogs,
+      emailResponses: rfq.emailResponses,
+      stats: {
+        totalVendors: rfq.vendors.length,
+        emailsSent: rfq.vendors.filter(v => v.emailSent).length,
+        responsesReceived: rfq.vendors.filter(v => v.responseReceived).length,
+        totalEmailsSent: rfq.emailLogs.length,
+        totalResponsesReceived: rfq.emailResponses.length
+      }
+    })
+  } catch (error: any) {
+    console.error('Error fetching email history:', error)
     return c.json({ success: false, error: error.message }, 500)
   }
 })
