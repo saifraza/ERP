@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { ChevronUp, ChevronDown, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
 
 export interface Column<T> {
@@ -47,6 +47,13 @@ export default function DenseTable<T>({
 }: DenseTableProps<T>) {
   const allSelected = data.length > 0 && data.every(item => selectedRows.includes(rowKey(item)))
   const someSelected = data.some(item => selectedRows.includes(rowKey(item)))
+  const checkboxRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = someSelected && !allSelected
+    }
+  }, [someSelected, allSelected])
 
   const handleSort = (key: string) => {
     if (!onSort) return
@@ -87,9 +94,9 @@ export default function DenseTable<T>({
               {onSelectRow && (
                 <th className="w-10 text-center">
                   <input
+                    ref={checkboxRef}
                     type="checkbox"
                     checked={allSelected}
-                    indeterminate={someSelected && !allSelected}
                     onChange={(e) => onSelectAll?.(e.target.checked)}
                     className="h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                   />
