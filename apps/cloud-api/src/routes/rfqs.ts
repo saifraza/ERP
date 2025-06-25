@@ -270,7 +270,15 @@ app.get('/:id', async (c) => {
             vendor: true
           }
         },
-        items: true,
+        items: {
+          include: {
+            material: {
+              include: {
+                uom: true
+              }
+            }
+          }
+        },
         quotations: {
           include: {
             vendor: true,

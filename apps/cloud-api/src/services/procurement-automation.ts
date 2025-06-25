@@ -600,8 +600,8 @@ This is an automated email. Please do not reply to this email address.
           .replace(/{companyName}/g, rfq.company.name)
           .replace(/{rfqNumber}/g, rfq.rfqNumber)
           .replace(/{issueDate}/g, new Date(rfq.issueDate).toLocaleDateString('en-IN'))
-          .replace(/{dueDate}/g, new Date(rfq.dueDate).toLocaleDateString('en-IN'))
-          .replace(/{division}/g, rfq.pr?.division?.name || 'General')
+          .replace(/{dueDate}/g, new Date(rfq.submissionDeadline).toLocaleDateString('en-IN'))
+          .replace(/{division}/g, rfq.requisition?.division?.name || 'General')
           .replace(/{signatoryName}/g, 'Procurement Team')
           .replace(/{signatoryDesignation}/g, 'Purchase Department')
           .replace(/{companyEmail}/g, rfq.company.email)
@@ -623,42 +623,43 @@ This is an automated email. Please do not reply to this email address.
           ]
         )
         
+        // TODO: Uncomment after database migration
         // Create email log
-        await prisma.rFQEmailLog.create({
-          data: {
-            rfqId: rfq.id,
-            vendorId: vendor.id,
-            emailType: 'rfq_sent',
-            emailId: result.messageId,
-            subject: subject,
-            toEmail: vendor.email,
-            attachments: JSON.stringify([pdfFilename]),
-            status: 'sent',
-            sentAt: new Date()
-          }
-        })
+        // await prisma.rFQEmailLog.create({
+        //   data: {
+        //     rfqId: rfq.id,
+        //     vendorId: vendor.id,
+        //     emailType: 'rfq_sent',
+        //     emailId: result.messageId,
+        //     subject: subject,
+        //     toEmail: vendor.email,
+        //     attachments: JSON.stringify([pdfFilename]),
+        //     status: 'sent',
+        //     sentAt: new Date()
+        //   }
+        // })
         
         // Create or update communication thread
-        await prisma.rFQCommunicationThread.upsert({
-          where: {
-            rfqId_vendorId: {
-              rfqId: rfq.id,
-              vendorId: vendor.id
-            }
-          },
-          create: {
-            rfqId: rfq.id,
-            vendorId: vendor.id,
-            threadId: result.threadId,
-            messageCount: 1,
-            lastMessageAt: new Date(),
-            status: 'active'
-          },
-          update: {
-            messageCount: { increment: 1 },
-            lastMessageAt: new Date()
-          }
-        })
+        // await prisma.rFQCommunicationThread.upsert({
+        //   where: {
+        //     rfqId_vendorId: {
+        //       rfqId: rfq.id,
+        //       vendorId: vendor.id
+        //     }
+        //   },
+        //   create: {
+        //     rfqId: rfq.id,
+        //     vendorId: vendor.id,
+        //     threadId: result.threadId,
+        //     messageCount: 1,
+        //     lastMessageAt: new Date(),
+        //     status: 'active'
+        //   },
+        //   update: {
+        //     messageCount: { increment: 1 },
+        //     lastMessageAt: new Date()
+        //   }
+        // })
         
         // Update RFQ vendor status
         await prisma.rFQVendor.update({
