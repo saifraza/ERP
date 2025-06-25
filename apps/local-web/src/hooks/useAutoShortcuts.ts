@@ -14,7 +14,7 @@ export function useAutoShortcuts(containerRef?: React.RefObject<HTMLElement>) {
 
   // Assign shortcuts to elements
   const assignShortcuts = useCallback(() => {
-    const container = containerRef?.current || document.body
+    const container = containerRef?.current
     const assigned = assignerRef.current!.assignShortcuts(container)
     setShortcuts(assigned)
   }, [containerRef])
