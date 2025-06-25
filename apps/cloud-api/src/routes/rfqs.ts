@@ -146,7 +146,10 @@ app.post('/', async (c) => {
         items: {
           create: requisition.items.map(item => ({
             materialId: item.materialId,
+            itemCode: item.material?.code,
+            itemDescription: item.material?.name || 'Item',
             quantity: item.quantity,
+            unit: item.material?.uom?.code || 'NOS',
             requiredDate: item.requiredDate,
             specifications: item.specification
           }))

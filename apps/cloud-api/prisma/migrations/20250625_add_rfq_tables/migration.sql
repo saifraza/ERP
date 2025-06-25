@@ -26,10 +26,10 @@ CREATE TABLE "RFQItem" (
     "rfqId" TEXT NOT NULL,
     "materialId" TEXT,
     "itemCode" TEXT,
-    "itemDescription" TEXT NOT NULL,
+    "itemDescription" TEXT,
     "specifications" TEXT,
     "quantity" DOUBLE PRECISION NOT NULL,
-    "unit" TEXT NOT NULL,
+    "unit" TEXT,
     "requiredDate" TIMESTAMP(3) NOT NULL,
     "deliveryDays" TEXT,
 

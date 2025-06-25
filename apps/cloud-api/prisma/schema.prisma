@@ -151,6 +151,7 @@ model Factory {
   powerGeneration      PowerGeneration[]
   ethanolProduction    EthanolProduction[]
   feedProduction       FeedProduction[]
+  rfqs                 RFQ[]
   
   @@index([companyId])
 }
@@ -325,6 +326,7 @@ model Material {
   purchaseOrderItems PurchaseOrderItem[]
   goodsReceiptItems GoodsReceiptItem[]
   stockTransferItems StockTransferItem[]
+  rfqItems          RFQItem[]
   
   @@unique([companyId, code])
   @@index([companyId])
@@ -421,6 +423,7 @@ model Requisition {
   approvedByUser   User?               @relation("ApprovedByUser", fields: [approvedBy], references: [id])
   items            RequisitionItem[]
   purchaseOrders   PurchaseOrder[]
+  rfqs             RFQ[]
   
   @@unique([factoryId, requisitionNo])
   @@index([factoryId])
@@ -1475,49 +1478,59 @@ model PRItem {
 
 // Request for Quotation
 model RFQ {
-  id          String    @id @default(uuid())
-  companyId   String
-  rfqNumber   String    @unique
-  prId        String?
+  id                    String    @id @default(uuid())
+  companyId             String
+  factoryId             String
+  rfqNumber             String    @unique
+  requisitionId         String?
   
-  issueDate   DateTime  @default(now())
-  dueDate     DateTime
+  issueDate             DateTime  @default(now())
+  submissionDeadline    DateTime
+  expectedDeliveryDate  DateTime
   
-  terms       String?   // General terms
-  paymentTerms String?
-  deliveryTerms String?
-  warrantyTerms String?
-  specialTerms String?
+  deliveryTerms         String
+  paymentTerms          String
+  specialInstructions   String?
+  quotationValidityDays Int       @default(30)
   
-  status      String    @default("draft") // draft, sent, closed, cancelled
+  status                String    @default("OPEN") // OPEN, SENT, CLOSED, CANCELLED
   
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdBy             String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
   
-  company     Company   @relation(fields: [companyId], references: [id])
-  pr          PurchaseRequisition? @relation(fields: [prId], references: [id])
-  vendors     RFQVendor[]
-  items       RFQItem[]
-  quotations  Quotation[]
+  company               Company   @relation(fields: [companyId], references: [id])
+  factory               Factory   @relation(fields: [factoryId], references: [id])
+  requisition           Requisition? @relation(fields: [requisitionId], references: [id])
+  vendors               RFQVendor[]
+  items                 RFQItem[]
+  quotations            Quotation[]
   
   @@index([companyId])
+  @@index([factoryId])
+  @@index([requisitionId])
   @@index([status])
+  @@index([issueDate])
 }
 
 model RFQItem {
   id              String   @id @default(uuid())
   rfqId           String
+  materialId      String?
   
   itemCode        String?
-  itemDescription String
-  specification   String?
+  itemDescription String?
+  specifications  String?
   quantity        Float
-  unit            String
+  unit            String?
+  requiredDate    DateTime
   deliveryDays    String?
   
   rfq             RFQ      @relation(fields: [rfqId], references: [id])
+  material        Material? @relation(fields: [materialId], references: [id])
   
   @@index([rfqId])
+  @@index([materialId])
 }
 
 model RFQVendor {
