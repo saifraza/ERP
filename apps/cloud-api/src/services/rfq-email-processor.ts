@@ -112,7 +112,7 @@ export class RFQEmailProcessor {
           console.log(`Extracted RFQ number: ${rfqNumber}`)
           
           if (!rfqNumber) {
-            console.log(`No RFQ number found in email from ${vendor.name}`)
+            console.log(`No RFQ number found in email from ${senderEmail}`)
             console.log(`Subject: ${email.subject}`)
             console.log(`Body preview: ${(fullEmail.textBody || fullEmail.htmlBody || '').substring(0, 200)}...`)
             
@@ -120,7 +120,8 @@ export class RFQEmailProcessor {
               emailId: email.id,
               success: false,
               reason: 'no_rfq_number',
-              vendorName: vendor.name,
+              vendorEmail: senderEmail,
+              vendorsWithEmail: vendors.map(v => v.name),
               subject: email.subject
             })
             continue
@@ -160,7 +161,8 @@ export class RFQEmailProcessor {
               success: false,
               reason: 'rfq_not_found',
               rfqNumber,
-              vendorName: vendor.name,
+              vendorEmail: senderEmail,
+              vendorsWithEmail: vendors.map(v => v.name),
               subject: email.subject
             })
             continue
@@ -277,6 +279,7 @@ export class RFQEmailProcessor {
         successful: results.filter(r => r.success).length,
         quotationsCreated: results.filter(r => r.action === 'quotation_created').length,
         manualReviewRequired: results.filter(r => r.action === 'manual_review_required').length,
+        alreadyProcessed: results.filter(r => r.action === 'already_processed').length,
         failed: results.filter(r => r.success === false).length
       }
       
@@ -289,6 +292,7 @@ export class RFQEmailProcessor {
         summary,
         debug: {
           totalEmailsFound: emails.length,
+          alreadyProcessed: results.filter(r => r.action === 'already_processed').length,
           failureReasons: {
             notAVendor: results.filter(r => r.reason === 'not_a_vendor').length,
             noRfqNumber: results.filter(r => r.reason === 'no_rfq_number').length,
@@ -307,6 +311,26 @@ export class RFQEmailProcessor {
    * Process a vendor response email
    */
   private async processVendorResponse(email: any, fullEmail: any, rfq: any, vendor: any) {
+    // Check if this email has already been processed
+    const existingResponse = await prisma.rFQEmailResponse.findFirst({
+      where: {
+        emailId: email.id,
+        rfqId: rfq.id,
+        vendorId: vendor.id
+      }
+    })
+    
+    if (existingResponse) {
+      console.log(`Email ${email.id} already processed for vendor ${vendor.name} and RFQ ${rfq.rfqNumber}`)
+      return {
+        emailId: email.id,
+        success: true,
+        action: 'already_processed',
+        vendorName: vendor.name,
+        existingResponseId: existingResponse.id
+      }
+    }
+    
     // Create email response record
     const emailResponse = await prisma.rFQEmailResponse.create({
       data: {

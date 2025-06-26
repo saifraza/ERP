@@ -1712,6 +1712,7 @@ model RFQEmailResponse {
   rfq              RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   vendor           Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   
+  @@unique([emailId, rfqId, vendorId])
   @@index([rfqId])
   @@index([vendorId])
   @@index([receivedAt])

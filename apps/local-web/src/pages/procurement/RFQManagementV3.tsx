@@ -963,7 +963,23 @@ export default function RFQManagementV3() {
                           {log.attachments && (
                             <div className="flex items-center gap-2">
                               <Paperclip className="h-3 w-3" />
-                              <span>{JSON.parse(log.attachments).join(', ')}</span>
+                              <span>
+                                {(() => {
+                                  try {
+                                    const attachments = typeof log.attachments === 'string' 
+                                      ? JSON.parse(log.attachments) 
+                                      : log.attachments;
+                                    if (Array.isArray(attachments)) {
+                                      return attachments.map(a => 
+                                        typeof a === 'string' ? a : (a.filename || a.name || 'Attachment')
+                                      ).join(', ');
+                                    }
+                                    return 'Attachments';
+                                  } catch (e) {
+                                    return 'Attachments';
+                                  }
+                                })()}
+                              </span>
                             </div>
                           )}
                           {log.error && (
