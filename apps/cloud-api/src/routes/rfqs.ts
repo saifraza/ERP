@@ -856,7 +856,11 @@ app.get('/:id/pdf', async (c) => {
       
       // Set response headers for PDF
       c.header('Content-Type', 'application/pdf')
+      // Use inline to display in browser instead of downloading
       c.header('Content-Disposition', `inline; filename="RFQ_${rfq.rfqNumber}.pdf"`)
+      c.header('Cache-Control', 'no-cache, no-store, must-revalidate')
+      c.header('Pragma', 'no-cache')
+      c.header('Expires', '0')
       
       // Return PDF buffer
       return c.body(pdfBuffer)

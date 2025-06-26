@@ -55,72 +55,75 @@ export class RFQPDFFinal {
         doc.on('data', chunk => chunks.push(chunk))
         doc.on('end', () => resolve(Buffer.concat(chunks)))
 
-        // Header with letterhead design
-        // Background header
-        doc.rect(0, 0, doc.page.width, 120)
-           .fill('#1e3a8a') // Deep blue background
+        // Header with company letterhead matching the official design
+        // Light green header background like in the letterhead
+        doc.rect(0, 0, doc.page.width, 130)
+           .fill('#a4c639') // Light green background
            
-        // Company logo area with stylized text logo
-        doc.save()
-        doc.rect(50, 25, 60, 60)
-           .strokeColor('#ffffff')
-           .lineWidth(1)
-           .stroke()
-           
-        // Stylized text logo
+        // Company title
         doc.font('Helvetica-Bold')
-           .fontSize(32)
-           .fillColor('#ffffff')
-           .text('MS', 50, 40, { width: 60, align: 'center' })
-        doc.fontSize(8)
-           .text('POWER', 50, 67, { width: 60, align: 'center' })
-        doc.restore()
+           .fontSize(24)
+           .fillColor('#2d4a2b') // Dark green text
+           .text('Mahakaushal Sugar and Power Industries Ltd.', 0, 25, {
+             align: 'center',
+             width: doc.page.width
+           })
            
-        // Company name and details in white
+        // Company details in smaller font
+        doc.font('Helvetica')
+           .fontSize(10)
+           .fillColor('#2d4a2b')
+           .text('CIN - U01543MP2005PLC017514, GSTIN - 23AAECM3666P1Z1', 0, 55, {
+             align: 'center',
+             width: doc.page.width
+           })
+           
+        doc.fontSize(9)
+           .text('Regd off : SF-11, Second Floor, Aakriti Business Center, Aakriti Eco city,', 0, 72, {
+             align: 'center',
+             width: doc.page.width
+           })
+           .text('Bawadiya Kalan, Bhopal-462039', 0, 86, {
+             align: 'center',
+             width: doc.page.width
+           })
+           
         doc.font('Helvetica-Bold')
-           .fontSize(22)
-           .fillColor('#ffffff')
-           .text('MAHAKAUSHAL SUGAR AND POWER INDUSTRIES LTD.', 140, 25)
+           .text('Admin off & Factory : Village Bachai, Dist. Narsinghpur (M.P.) - 487001', 0, 100, {
+             align: 'center',
+             width: doc.page.width
+           })
            
         doc.font('Helvetica')
-           .fontSize(9)
-           .fillColor('#e0e7ff')
-           .text('CIN: U01543MP2005PLC017514 | GSTIN: 23AAECM3666P1Z1', 140, 55)
-           .text('Regd. Office: SF-11, Aakriti Business Center, Bawadiya Kalan, Bhopal-462039', 140, 70)
-           .text('Factory: Village Bachai, Dist. Narsinghpur (M.P.) - 487001', 140, 85)
-           .text('Email: procurement@mspil.com | Phone: +91 9131489373', 140, 100)
+           .text('E-mail : mspil.acc@gmail.com | mspil.power@gmail.com', 0, 114, {
+             align: 'center',
+             width: doc.page.width
+           })
            
-        // Golden accent line
-        doc.moveTo(0, 120)
-           .lineTo(doc.page.width, 120)
-           .strokeColor('#fbbf24')
-           .lineWidth(3)
-           .stroke()
-           
-        // Add watermark
+        // Add subtle watermark
         doc.save()
-        doc.opacity(0.03)
-        doc.fontSize(80)
-           .fillColor('#1e3a8a')
+        doc.opacity(0.05)
+        doc.fontSize(60)
+           .fillColor('#a4c639')
            .rotate(-45, { origin: [doc.page.width / 2, doc.page.height / 2] })
-           .text('MAHAKAUSHAL', doc.page.width / 2 - 200, doc.page.height / 2 - 40)
+           .text('MSPIL', doc.page.width / 2 - 100, doc.page.height / 2 - 30)
         doc.restore()
            
         // Reset to black text
         doc.fillColor('#000000')
         doc.y = 140
 
-        // Title with underline
+        // Title
         doc.fontSize(18)
            .font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b') // Dark green to match letterhead
            .text('REQUEST FOR QUOTATION', { align: 'center' })
            
         // Underline
         const titleY = doc.y
         doc.moveTo(doc.page.width / 2 - 100, titleY)
            .lineTo(doc.page.width / 2 + 100, titleY)
-           .strokeColor('#fbbf24')
+           .strokeColor('#a4c639') // Light green
            .lineWidth(2)
            .stroke()
            .moveDown()
@@ -138,14 +141,14 @@ export class RFQPDFFinal {
         // Left column
         doc.fontSize(10)
            .font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b')
            .text('RFQ Number:', 50, doc.y)
            .font('Helvetica')
            .fillColor('#374151')
            .text(rfq.rfqNumber, 140, doc.y - 10)
            
         doc.font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b')
            .text('Issue Date:', 50, doc.y + 5)
            .font('Helvetica')
            .fillColor('#374151')
@@ -153,14 +156,14 @@ export class RFQPDFFinal {
            
         // Right column
         doc.font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b')
            .text('Due Date:', 300, detailsY + 10)
            .font('Helvetica')
            .fillColor('#374151')
            .text(new Date(rfq.submissionDeadline).toLocaleDateString('en-IN'), 380, detailsY + 10)
            
         doc.font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b')
            .text('Division:', 300, detailsY + 25)
            .font('Helvetica')
            .fillColor('#374151')
@@ -168,14 +171,14 @@ export class RFQPDFFinal {
            
         // Delivery info
         doc.font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b')
            .text('Delivery Terms:', 50, detailsY + 45)
            .font('Helvetica')
            .fillColor('#374151')
            .text(rfq.deliveryTerms || 'Ex-Works', 140, detailsY + 45)
            
         doc.font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b')
            .text('Payment Terms:', 300, detailsY + 45)
            .font('Helvetica')
            .fillColor('#374151')
@@ -186,7 +189,7 @@ export class RFQPDFFinal {
         // Items section with table
         doc.fontSize(14)
            .font('Helvetica-Bold')
-           .fillColor('#1e3a8a')
+           .fillColor('#2d4a2b')
            .text('ITEMS REQUIRED')
            .moveDown(0.5)
            
@@ -197,7 +200,7 @@ export class RFQPDFFinal {
         
         // Header background
         doc.rect(40, tableTop, doc.page.width - 80, 25)
-           .fill('#f3f4f6')
+           .fill('#e8f5e9') // Light green background
            
         // Header text
         doc.font('Helvetica-Bold')

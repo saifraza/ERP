@@ -589,7 +589,12 @@ export default function RFQManagementV3() {
           )}
           
           <button
-            onClick={(e) => viewPDF(rfq.id, rfq.rfqNumber, e)}
+            onClick={(e) => {
+              e.stopPropagation()
+              // Use direct URL with token for viewing in browser
+              const pdfUrl = `${import.meta.env.VITE_API_URL}/api/rfqs/${rfq.id}/pdf?token=${encodeURIComponent(token)}`
+              window.open(pdfUrl, '_blank', 'noopener,noreferrer')
+            }}
             className="p-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
             title="View PDF"
           >
