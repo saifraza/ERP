@@ -239,6 +239,26 @@ app.post('/link-email', async (c) => {
   }
 })
 
+// Clear linked email endpoint
+app.post('/clear-linked-email', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Update user to remove linked email
+    await prisma.user.update({
+      where: { id: userId },
+      data: { linkedGmailEmail: null }
+    })
+    
+    return c.json({ 
+      message: 'Linked email cleared successfully'
+    })
+  } catch (error) {
+    console.error('Clear linked email error:', error)
+    return c.json({ error: 'Failed to clear linked email' }, 500)
+  }
+})
+
 // Verify token endpoint
 app.get('/verify', async (c) => {
   try {
