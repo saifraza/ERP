@@ -84,11 +84,11 @@ app.route('/api/auth', authRoutes)
 app.route('/api/companies', companiesRoutes)
 app.route('/api/setup', setupRoutes)
 app.route('/api/mcp', mcpRoutes)
-app.route('/api/fix-data', fixDataRoutes)
+// app.route('/api/fix-data', fixDataRoutes) // Debug route - disabled in production
 app.route('/api/storage', storageRoutes)
 app.route('/api/email-oauth', emailOAuthRoutes)
 app.route('/api/assistant', assistantRoutes)
-app.route('/api/debug', debugRoutes)
+// app.route('/api/debug', debugRoutes) // Debug route - disabled in production
 app.route('/api/email', emailRoutes)
 app.route('/api/gemini', geminiAssistantRoutes)
 app.route('/api/email-automation', emailAutomationRoutes)
@@ -103,16 +103,17 @@ app.route('/api/materials', materialsRoutes)
 app.route('/api/factories', factoriesRoutes)
 app.route('/api/procurement/dashboard', procurementDashboardRoutes)
 app.route('/api/procurement/stats', procurementStatsRoutes)
-app.route('/api/debug-rfq', debugRfqRoutes)
+// app.route('/api/debug-rfq', debugRfqRoutes) // Debug route - disabled in production
 app.route('/api/rfq-email-history', rfqEmailHistoryRoutes)
-app.route('/api/test-email-log', testEmailLogRoutes)
-app.route('/api/check-email-tables', checkEmailTablesRoutes)
-app.route('/api/fix-rfq-duplicates', fixRfqDuplicatesRoutes)
+// app.route('/api/test-email-log', testEmailLogRoutes) // Debug route - disabled in production
+// app.route('/api/check-email-tables', checkEmailTablesRoutes) // Debug route - disabled in production
+// app.route('/api/fix-rfq-duplicates', fixRfqDuplicatesRoutes) // Debug route - disabled in production
 app.route('/api/setup-company', setupCompanyRoutes)
-app.route('/api/clear-database', clearDatabaseRoutes)
+// app.route('/api/clear-database', clearDatabaseRoutes) // DANGEROUS - only for development
 
-// Debug endpoint to check users (remove in production)
-app.get('/api/debug/users', async (c) => {
+// Debug endpoint to check users (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/debug/users', async (c) => {
   try {
     const { prisma } = await import('./lib/prisma.js')
     const users = await prisma.user.findMany({
@@ -126,7 +127,8 @@ app.get('/api/debug/users', async (c) => {
   } catch (error) {
     return c.json({ error: error.message }, 500)
   }
-})
+  })
+}
 
 // Database status endpoint
 app.get('/api/db-status', async (c) => {

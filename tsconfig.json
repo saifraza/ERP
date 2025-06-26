@@ -15,13 +15,7 @@
     "incremental": true,
     "paths": {
       "@erp/shared/*": ["./packages/shared/src/*"],
-      "@erp/database": ["./packages/database/src/index.ts"],
-      "@erp/mcp-tools": ["./packages/mcp-tools/src/index.ts"],
-      "@erp/common/*": ["./modules/common/src/*"],
-      "@erp/sugar/*": ["./modules/sugar/src/*"],
-      "@erp/power/*": ["./modules/power/src/*"],
-      "@erp/ethanol/*": ["./modules/ethanol/src/*"],
-      "@erp/feed/*": ["./modules/feed/src/*"]
+      "@erp/mcp-tools": ["./packages/mcp-tools/src/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
