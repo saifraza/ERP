@@ -82,8 +82,8 @@ export default function Companies() {
                   </button>
                   <button
                     onClick={() => {
-                      if (currentCompany?.id === company.id) {
-                        toast.error('Cannot delete current company')
+                      if (currentCompany?.id === company.id && companies.length > 1) {
+                        toast.error('Cannot delete current company. Switch to another company first.')
                         return
                       }
                       setSelectedCompany(company)

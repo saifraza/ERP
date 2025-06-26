@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Building2, Globe, Phone, Mail, MapPin, Calendar, FileText } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
+import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 
 interface Company {
@@ -578,6 +579,7 @@ export function EditCompanyModal({ isOpen, onClose, onSuccess, company }: EditCo
 
 export function DeleteCompanyModal({ isOpen, onClose, onSuccess, company }: DeleteCompanyModalProps) {
   const { token } = useAuthStore()
+  const { currentCompany, clearSelection } = useCompanyStore()
   const [loading, setLoading] = useState(false)
 
   const handleDelete = async () => {
@@ -598,6 +600,10 @@ export function DeleteCompanyModal({ isOpen, onClose, onSuccess, company }: Dele
 
       if (response.ok) {
         toast.success('Company deleted successfully')
+        // Clear current company selection if we deleted the current company
+        if (currentCompany?.id === company.id) {
+          clearSelection()
+        }
         onSuccess()
         onClose()
       } else {
@@ -624,6 +630,11 @@ export function DeleteCompanyModal({ isOpen, onClose, onSuccess, company }: Dele
           Are you sure you want to delete <span className="font-semibold">{company.name}</span>? 
           This action cannot be undone and will remove all associated data.
         </p>
+        {company.isActive === false && (
+          <p className="text-amber-600 dark:text-amber-400 text-sm mb-4">
+            Note: This company is already marked as inactive.
+          </p>
+        )}
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
