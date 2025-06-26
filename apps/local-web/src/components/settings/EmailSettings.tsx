@@ -350,12 +350,40 @@ export function EmailSettings() {
                 </div>
               )}
               {debugInfo?.user?.linkedGmailEmail && (
-                <div className="mt-2">
+                <div className="mt-2 space-y-2">
                   <button
                     onClick={forceClear}
-                    className="text-sm text-red-600 hover:text-red-800 underline"
+                    className="text-sm text-red-600 hover:text-red-800 underline block"
                   >
                     Force Clear Email Data (Use if regular clear fails)
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(
+                          `${import.meta.env.VITE_API_URL}/api/debug-email/clear-linked-email`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              Authorization: `Bearer ${token}`,
+                            },
+                          }
+                        )
+                        const data = await response.json()
+                        if (data.success) {
+                          toast.success('Cleared linked email')
+                          checkDebugInfo()
+                          loadAccounts()
+                        } else {
+                          toast.error(data.error || 'Failed to clear')
+                        }
+                      } catch (err) {
+                        toast.error('Failed to clear linked email')
+                      }
+                    }}
+                    className="text-sm text-orange-600 hover:text-orange-800 underline block"
+                  >
+                    Simple Clear (Just remove linked email)
                   </button>
                 </div>
               )}

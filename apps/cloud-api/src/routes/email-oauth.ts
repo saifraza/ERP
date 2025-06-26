@@ -327,24 +327,32 @@ app.post('/clear-credentials', authMiddleware, async (c) => {
     
     console.log('Clearing credentials for user:', userId)
     
-    // Delete all email credentials for this user (may be none)
-    const deletedCreds = await prisma.emailCredential.deleteMany({
-      where: { userId }
-    })
-    console.log('Deleted credentials:', deletedCreds.count)
+    try {
+      // Delete all email credentials for this user (may be none)
+      const deletedCreds = await prisma.emailCredential.deleteMany({
+        where: { userId }
+      })
+      console.log('Deleted credentials:', deletedCreds.count)
+    } catch (credError) {
+      console.log('No credentials to delete or error deleting:', credError)
+    }
     
-    // Clear linkedGmailEmail from user (this is the main issue)
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { linkedGmailEmail: null }
-    })
-    console.log('Cleared linkedGmailEmail from user:', updatedUser.email)
-    
-    return c.json({
-      success: true,
-      message: 'Email credentials and linked email cleared successfully',
-      clearedEmail: updatedUser.linkedGmailEmail
-    })
+    try {
+      // Clear linkedGmailEmail from user (this is the main issue)
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { linkedGmailEmail: null }
+      })
+      console.log('Cleared linkedGmailEmail from user:', updatedUser.email)
+      
+      return c.json({
+        success: true,
+        message: 'Email credentials and linked email cleared successfully'
+      })
+    } catch (updateError: any) {
+      console.error('Error updating user:', updateError)
+      throw updateError
+    }
   } catch (error: any) {
     console.error('Clear credentials error:', error)
     return c.json({

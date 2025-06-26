@@ -103,20 +103,68 @@ app.post('/force-clear', async (c) => {
   try {
     const userId = c.get('userId')
     
-    // Use raw SQL to ensure it clears
-    await prisma.$executeRaw`UPDATE "User" SET "linkedGmailEmail" = NULL WHERE id = ${userId}`
+    console.log('Force clearing email data for user:', userId)
     
-    // Also clear any credentials
-    await prisma.$executeRaw`DELETE FROM "EmailCredential" WHERE "userId" = ${userId}`
+    let clearedEmail = false
+    let clearedCreds = false
     
-    return c.json({
-      success: true,
-      message: 'Force cleared all email data'
-    })
+    try {
+      // Use raw SQL to ensure it clears
+      const result = await prisma.$executeRaw`UPDATE "User" SET "linkedGmailEmail" = NULL WHERE id = ${userId}`
+      console.log('Updated user rows:', result)
+      clearedEmail = true
+    } catch (e) {
+      console.error('Error clearing linkedGmailEmail:', e)
+    }
+    
+    try {
+      // Also clear any credentials
+      const credResult = await prisma.$executeRaw`DELETE FROM "EmailCredential" WHERE "userId" = ${userId}`
+      console.log('Deleted credential rows:', credResult)
+      clearedCreds = true
+    } catch (e) {
+      console.error('Error clearing credentials:', e)
+    }
+    
+    if (clearedEmail || clearedCreds) {
+      return c.json({
+        success: true,
+        message: 'Force cleared email data',
+        clearedEmail,
+        clearedCreds
+      })
+    } else {
+      throw new Error('Could not clear any data')
+    }
   } catch (error: any) {
     console.error('Force clear error:', error)
     return c.json({ 
       error: 'Failed to force clear', 
+      details: error.message 
+    }, 500)
+  }
+})
+
+// Simple clear just the linked email
+app.post('/clear-linked-email', async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Just clear the linkedGmailEmail field
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { linkedGmailEmail: null }
+    })
+    
+    return c.json({
+      success: true,
+      message: 'Cleared linked email',
+      previousEmail: user.linkedGmailEmail
+    })
+  } catch (error: any) {
+    console.error('Clear linked email error:', error)
+    return c.json({ 
+      error: 'Failed to clear linked email', 
       details: error.message 
     }, 500)
   }
