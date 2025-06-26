@@ -141,17 +141,17 @@ app.delete('/:id', authMiddleware, async (c) => {
     const companyId = c.req.param('id')
     const userId = c.get('userId')
     
-    // Only OWNER can delete company
+    // Only OWNER or ADMIN can delete company
     const companyUser = await prisma.companyUser.findFirst({
       where: {
         userId,
         companyId,
-        role: 'OWNER'
+        role: { in: ['OWNER', 'ADMIN'] }
       }
     })
     
     if (!companyUser) {
-      return c.json({ error: 'Only company owner can delete company' }, 403)
+      return c.json({ error: 'Only company owner or admin can delete company' }, 403)
     }
     
     // Soft delete by marking as inactive
