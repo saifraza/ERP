@@ -316,6 +316,7 @@ export class RFQEmailProcessor {
         fromEmail: email.from,
         subject: email.subject,
         body: fullEmail.textBody || fullEmail.htmlBody || '',
+        snippet: typeof fullEmail.snippet === 'string' ? fullEmail.snippet : (fullEmail.snippet?.text || fullEmail.snippet?.plain || ''),
         attachments: JSON.stringify(fullEmail.attachments || []),
         receivedAt: new Date(email.date),
         processingStatus: 'processing'

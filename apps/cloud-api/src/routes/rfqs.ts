@@ -528,6 +528,7 @@ app.get('/:id/email-history', async (c) => {
       },
       include: {
         emailLogs: {
+          where: { rfqId: rfqId },  // Only get logs for this specific RFQ
           include: {
             vendor: {
               select: {
@@ -539,6 +540,7 @@ app.get('/:id/email-history', async (c) => {
           orderBy: { sentAt: 'desc' }
         },
         emailResponses: {
+          where: { rfqId: rfqId },  // Only get responses for this specific RFQ
           include: {
             vendor: {
               select: {
@@ -595,8 +597,16 @@ app.get('/:id/email-history', async (c) => {
         status: rfq.status
       },
       communicationSummary,
-      emailLogs: rfq.emailLogs,
-      emailResponses: rfq.emailResponses,
+      emailLogs: rfq.emailLogs.map(log => ({
+        ...log,
+        snippet: typeof log.snippet === 'string' ? log.snippet : ''
+      })),
+      emailResponses: rfq.emailResponses.map(response => ({
+        ...response,
+        snippet: typeof response.snippet === 'string' 
+          ? response.snippet 
+          : (typeof response.body === 'string' ? response.body.substring(0, 150) + '...' : 'Email content')
+      })),
       stats: {
         totalVendors: rfq.vendors.length,
         emailsSent: rfq.vendors.filter(v => v.emailSent).length,
