@@ -62,17 +62,17 @@ export class MultiTenantGmailService {
     })
     
     if (!cred) {
-      // Check if user has linkedEmail
+      // Check if user has linkedGmailEmail
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { linkedEmail: true }
+        select: { linkedGmailEmail: true }
       })
       
-      if (!user?.linkedEmail) {
+      if (!user?.linkedGmailEmail) {
         throw new Error('User has not linked an email account')
       }
       
-      throw new Error(`No email credentials found for user. Please link your email account: ${user.linkedEmail}`)
+      throw new Error(`No email credentials found for user. Please link your email account: ${user.linkedGmailEmail}`)
     }
     
     return cred
