@@ -325,20 +325,25 @@ app.post('/clear-credentials', authMiddleware, async (c) => {
   try {
     const userId = c.get('userId')
     
-    // Delete all email credentials for this user
-    await prisma.emailCredential.deleteMany({
+    console.log('Clearing credentials for user:', userId)
+    
+    // Delete all email credentials for this user (may be none)
+    const deletedCreds = await prisma.emailCredential.deleteMany({
       where: { userId }
     })
+    console.log('Deleted credentials:', deletedCreds.count)
     
-    // Clear linkedGmailEmail from user
-    await prisma.user.update({
+    // Clear linkedGmailEmail from user (this is the main issue)
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { linkedGmailEmail: null }
     })
+    console.log('Cleared linkedGmailEmail from user:', updatedUser.email)
     
     return c.json({
       success: true,
-      message: 'Email credentials cleared successfully'
+      message: 'Email credentials and linked email cleared successfully',
+      clearedEmail: updatedUser.linkedGmailEmail
     })
   } catch (error: any) {
     console.error('Clear credentials error:', error)

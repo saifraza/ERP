@@ -194,6 +194,32 @@ export function EmailSettings() {
     }
   }
 
+  const forceClear = async () => {
+    if (!confirm('Force clear all email data? This will remove any linked email addresses.')) return
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/debug-email/force-clear`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to force clear')
+
+      const data = await response.json()
+      toast.success(data.message || 'Force cleared all email data')
+      setAccounts([])
+      setDebugInfo(null)
+      loadAccounts()
+    } catch (err) {
+      toast.error('Failed to force clear email data')
+    }
+  }
+
   if (!token) {
     return (
       <div className="rounded-md bg-yellow-50 p-4">
@@ -321,6 +347,16 @@ export function EmailSettings() {
                   {debugInfo.emailCredentials.map((cred: any) => (
                     <p key={cred.id} className="text-gray-600 ml-2">- {cred.emailAddress}</p>
                   ))}
+                </div>
+              )}
+              {debugInfo?.user?.linkedGmailEmail && (
+                <div className="mt-2">
+                  <button
+                    onClick={forceClear}
+                    className="text-sm text-red-600 hover:text-red-800 underline"
+                  >
+                    Force Clear Email Data (Use if regular clear fails)
+                  </button>
                 </div>
               )}
             </div>

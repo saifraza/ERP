@@ -98,4 +98,28 @@ app.get('/test-connection', async (c) => {
   }
 })
 
+// Force clear all email data
+app.post('/force-clear', async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Use raw SQL to ensure it clears
+    await prisma.$executeRaw`UPDATE "User" SET "linkedGmailEmail" = NULL WHERE id = ${userId}`
+    
+    // Also clear any credentials
+    await prisma.$executeRaw`DELETE FROM "EmailCredential" WHERE "userId" = ${userId}`
+    
+    return c.json({
+      success: true,
+      message: 'Force cleared all email data'
+    })
+  } catch (error: any) {
+    console.error('Force clear error:', error)
+    return c.json({ 
+      error: 'Failed to force clear', 
+      details: error.message 
+    }, 500)
+  }
+})
+
 export default app
