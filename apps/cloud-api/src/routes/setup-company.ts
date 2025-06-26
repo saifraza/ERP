@@ -157,7 +157,7 @@ app.post('/complete', async (c) => {
               companyId: company.id,
               code: `PLANT${String(index + 1).padStart(3, '0')}`,
               name: factory.name,
-              type: factory.type,
+              type: factory.type.toUpperCase() as any, // Convert to uppercase for Prisma enum
               addressLine1: factory.addressLine1,
               addressLine2: factory.addressLine2,
               city: factory.city,
@@ -182,12 +182,13 @@ app.post('/complete', async (c) => {
         const divisionTypes = [...new Set(data.factories.map(f => f.type))]
         
         for (const type of divisionTypes) {
+          const divisionType = type === 'integrated' ? 'SUGAR' : type.toUpperCase()
           await tx.division.create({
             data: {
               companyId: company.id,
-              code: type.toUpperCase().slice(0, 3),
+              code: divisionType.slice(0, 3),
               name: `${type.charAt(0).toUpperCase() + type.slice(1)} Division`,
-              type: type === 'integrated' ? 'sugar' : type,
+              type: divisionType as any,
               description: `${type} operations division`
             }
           })
