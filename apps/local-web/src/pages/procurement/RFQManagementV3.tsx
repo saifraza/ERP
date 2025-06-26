@@ -592,7 +592,7 @@ export default function RFQManagementV3() {
             onClick={(e) => {
               e.stopPropagation()
               // Use direct URL with token for viewing in browser
-              const pdfUrl = `${import.meta.env.VITE_API_URL}/api/rfqs/${rfq.id}/pdf?token=${encodeURIComponent(token)}`
+              const pdfUrl = `${import.meta.env.VITE_API_URL}/api/rfqs/${rfq.id}/pdf?token=${encodeURIComponent(token || '')}`
               window.open(pdfUrl, '_blank', 'noopener,noreferrer')
             }}
             className="p-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
