@@ -245,18 +245,32 @@ app.post('/clear-linked-email', authMiddleware, async (c) => {
   try {
     const userId = c.get('userId')
     
+    console.log('Clearing email for user:', userId)
+    
     // Update user to remove linked email
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { linkedGmailEmail: null }
+      data: { linkedGmailEmail: null },
+      select: {
+        id: true,
+        email: true,
+        linkedGmailEmail: true
+      }
     })
     
+    console.log('Updated user:', updatedUser)
+    
     return c.json({ 
-      message: 'Linked email cleared successfully'
+      message: 'Linked email cleared successfully',
+      user: updatedUser
     })
   } catch (error) {
     console.error('Clear linked email error:', error)
-    return c.json({ error: 'Failed to clear linked email' }, 500)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({ 
+      error: 'Failed to clear linked email',
+      details: errorMessage 
+    }, 500)
   }
 })
 
