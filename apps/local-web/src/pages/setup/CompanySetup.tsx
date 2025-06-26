@@ -157,7 +157,17 @@ export default function CompanySetup() {
         if (!response.ok) {
           const errorData = await response.json()
           console.error('Setup API error:', errorData)
-          console.warn('API call failed, but data saved locally')
+          
+          // Show the validation details if available
+          if (errorData.details && Array.isArray(errorData.details)) {
+            console.error('Validation errors:', errorData.details)
+            errorData.details.forEach((err: any, index: number) => {
+              console.error(`Error ${index + 1}:`, err)
+            })
+          }
+          
+          // For now, let's throw the error to see it clearly
+          throw new Error(`Setup failed: ${errorData.error || 'Unknown error'}`)
         }
       } catch (apiError) {
         console.warn('API not available, using local storage:', apiError)
