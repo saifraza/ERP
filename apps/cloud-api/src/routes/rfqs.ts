@@ -3,12 +3,36 @@ import { authMiddleware } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
 import { procurementAutomation } from '../services/procurement-automation.js'
 import { rfqPDFFinal } from '../services/rfq-pdf-final.js'
+import { rfqPDFGeneratorV2 } from '../services/rfq-pdf-generator-v2.js'
 import { z } from 'zod'
 
 const app = new Hono()
 
-// Apply auth middleware to all routes
-app.use('*', authMiddleware)
+// Apply auth middleware to all routes except PDF with token
+app.use('*', async (c, next) => {
+  // Skip auth middleware for PDF routes with token query param
+  const path = c.req.path
+  if (path.includes('/pdf') && c.req.query('token')) {
+    // Manually verify token for PDF routes
+    const token = c.req.query('token')
+    if (!token) {
+      return c.json({ error: 'No token provided' }, 401)
+    }
+    
+    try {
+      const jwt = await import('jsonwebtoken')
+      const decoded = jwt.default.verify(token, process.env.JWT_SECRET!) as any
+      c.set('userId', decoded.userId)
+      c.set('email', decoded.email)
+      return next()
+    } catch (error) {
+      return c.json({ error: 'Invalid token' }, 401)
+    }
+  }
+  
+  // Use normal auth middleware for other routes
+  return authMiddleware(c, next)
+})
 
 // Create RFQ schema
 const createRFQSchema = z.object({
@@ -862,7 +886,7 @@ app.get('/:id/pdf/:vendorId', async (c) => {
     
     try {
       // Generate vendor-specific PDF
-      const pdfBuffer = await rfqPDFGenerator.generateVendorRFQPDF(rfqId, vendorId)
+      const pdfBuffer = await rfqPDFGeneratorV2.generateVendorRFQPDF(rfqId, vendorId)
       
       // Get vendor info for filename
       const vendor = await prisma.vendor.findUnique({

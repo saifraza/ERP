@@ -47,12 +47,16 @@ interface EmailLog {
   vendorId: string
   emailType: string
   subject: string
-  toEmail: string
+  toEmail?: string
+  fromEmail?: string
   ccEmails?: string
   status: string
   sentAt?: string
+  receivedAt?: string
   error?: string
   attachments?: string
+  snippet?: string
+  quotationId?: string
   vendor?: {
     name: string
     code: string
@@ -139,7 +143,7 @@ export default function RFQManagementV3() {
     setLoadingEmailLogs(rfqId)
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/email-logs`,
+        `${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/email-history`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -149,9 +153,13 @@ export default function RFQManagementV3() {
 
       if (response.ok) {
         const data = await response.json()
-        setEmailLogs(prev => ({ ...prev, [rfqId]: data.logs || [] }))
+        // Combine emailLogs and emailResponses for display
+        const allLogs = [...(data.emailLogs || []), ...(data.emailResponses || [])]
+          .sort((a, b) => new Date(b.sentAt || b.receivedAt).getTime() - new Date(a.sentAt || a.receivedAt).getTime())
+        setEmailLogs(prev => ({ ...prev, [rfqId]: allLogs }))
       } else {
-        toast.error('Failed to load email history')
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to load email history')
       }
     } catch (error) {
       console.error('Error fetching email logs:', error)
@@ -308,17 +316,35 @@ export default function RFQManagementV3() {
 
   const viewPDF = (rfqId: string, rfqNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    window.open(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/pdf/view`, '_blank')
+    // Open PDF in new window with auth token
+    window.open(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/pdf?token=${token}`, '_blank')
   }
 
-  const downloadPDF = (rfqId: string, rfqNumber: string, e?: React.MouseEvent) => {
+  const downloadPDF = async (rfqId: string, rfqNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    const link = document.createElement('a')
-    link.href = `${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/pdf/view`
-    link.download = `RFQ_${rfqNumber}.pdf`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/pdf`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to download PDF')
+      }
+      
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `RFQ_${rfqNumber}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error('Failed to download PDF')
+    }
   }
 
   const rfqColumns: Column<RFQ>[] = [
@@ -750,30 +776,54 @@ export default function RFQManagementV3() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          {getEmailStatusIcon(log.status)}
+                          {log.receivedAt ? (
+                            <Inbox className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            getEmailStatusIcon(log.status)
+                          )}
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {log.emailType === 'rfq_sent' && 'RFQ Sent'}
-                            {log.emailType === 'quotation_received' && 'Quotation Received'}
-                            {log.emailType === 'reminder_sent' && 'Reminder Sent'}
+                            {log.receivedAt ? 'Vendor Reply' :
+                             log.emailType === 'rfq_sent' ? 'RFQ Sent' :
+                             log.emailType === 'quotation_received' ? 'Quotation Received' :
+                             log.emailType === 'reminder_sent' ? 'Reminder Sent' :
+                             'Email'}
                           </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            log.status === 'sent' ? 'bg-green-100 text-green-700' :
-                            log.status === 'failed' ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {log.status}
-                          </span>
+                          {log.receivedAt ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                              Received
+                            </span>
+                          ) : (
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              log.status === 'sent' ? 'bg-green-100 text-green-700' :
+                              log.status === 'failed' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {log.status}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                           <div className="flex items-center gap-2">
                             <User className="h-3 w-3" />
                             <span className="font-medium">{log.vendor?.name}</span>
-                            <span>({log.toEmail})</span>
+                            <span>({log.toEmail || log.fromEmail || 'Email'})</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-3 w-3" />
-                            <span>{log.sentAt ? new Date(log.sentAt).toLocaleString('en-IN') : 'Not sent'}</span>
+                            <span>{(log.sentAt || log.receivedAt) ? new Date(log.sentAt || log.receivedAt).toLocaleString('en-IN') : 'Not sent'}</span>
                           </div>
+                          {log.subject && (
+                            <div className="flex items-start gap-2">
+                              <MessageSquare className="h-3 w-3 mt-0.5" />
+                              <span className="font-medium">Subject: {log.subject}</span>
+                            </div>
+                          )}
+                          {log.snippet && (
+                            <div className="flex items-start gap-2">
+                              <FileText className="h-3 w-3 mt-0.5" />
+                              <span className="italic">"{log.snippet}..."</span>
+                            </div>
+                          )}
                           {log.attachments && (
                             <div className="flex items-center gap-2">
                               <Paperclip className="h-3 w-3" />
@@ -788,16 +838,29 @@ export default function RFQManagementV3() {
                           )}
                         </div>
                       </div>
-                      {log.status === 'failed' && (
-                        <button
-                          onClick={(e) => handleResendEmail(expandedRFQ, log.vendorId, e)}
-                          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
-                          title="Resend email"
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                          Resend
-                        </button>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {log.status === 'failed' && (
+                          <button
+                            onClick={(e) => handleResendEmail(expandedRFQ, log.vendorId, e)}
+                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                            title="Resend email"
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Resend
+                          </button>
+                        )}
+                        {log.receivedAt && log.quotationId && (
+                          <Link
+                            to={`/procurement/quotations/${log.quotationId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-1"
+                            title="View quotation"
+                          >
+                            <Eye className="h-3 w-3" />
+                            View Quote
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
