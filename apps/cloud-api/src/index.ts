@@ -34,6 +34,7 @@ import testEmailLogRoutes from './routes/test-email-log.js'
 import checkEmailTablesRoutes from './routes/check-email-tables.js'
 import fixRfqDuplicatesRoutes from './routes/fix-rfq-duplicates.js'
 import setupCompanyRoutes from './routes/setup-company.js'
+import clearDatabaseRoutes from './routes/clear-database.js'
 
 const app = new Hono()
 
@@ -108,6 +109,7 @@ app.route('/api/test-email-log', testEmailLogRoutes)
 app.route('/api/check-email-tables', checkEmailTablesRoutes)
 app.route('/api/fix-rfq-duplicates', fixRfqDuplicatesRoutes)
 app.route('/api/setup-company', setupCompanyRoutes)
+app.route('/api/clear-database', clearDatabaseRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {
