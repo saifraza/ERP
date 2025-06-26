@@ -130,6 +130,44 @@ app.post('/register', async (c) => {
   }
 })
 
+// Get current user profile
+app.get('/me', async (c) => {
+  try {
+    const token = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!token) {
+      return c.json({ error: 'No token provided' }, 401)
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    
+    // Get fresh user data
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        linkedGmailEmail: true,
+        isActive: true,
+        lastLogin: true,
+        createdAt: true
+      }
+    })
+    
+    if (!user || !user.isActive) {
+      return c.json({ error: 'User not found or inactive' }, 401)
+    }
+    
+    return c.json({ user })
+  } catch (error) {
+    console.error('Get user profile error:', error)
+    return c.json({ error: 'Invalid token' }, 401)
+  }
+})
+
 // Verify token endpoint
 app.get('/verify', async (c) => {
   try {

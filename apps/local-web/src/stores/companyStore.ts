@@ -190,10 +190,40 @@ export const useCompanyStore = create<CompanyStore>()(
         
         // Get the latest state after loading
         const latestState = get()
-        const isComplete = latestState.companies.length > 0
-        console.log('Companies after loading:', latestState.companies.length)
-        console.log('Setup complete status after loading:', isComplete)
-        console.log('Current isSetupComplete in state:', latestState.isSetupComplete)
+        
+        // Check if user has linked email (new requirement)
+        const token = localStorage.getItem('token')
+        let userHasLinkedEmail = false
+        
+        if (token) {
+          try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/me`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            })
+            
+            if (response.ok) {
+              const userData = await response.json()
+              userHasLinkedEmail = !!userData.user?.linkedGmailEmail
+              console.log('User has linked email:', userHasLinkedEmail)
+            }
+          } catch (error) {
+            console.error('Error checking user linked email:', error)
+          }
+        }
+        
+        // Setup is only complete if:
+        // 1. Companies exist
+        // 2. User has linked their Gmail account
+        const hasCompanies = latestState.companies.length > 0
+        const isComplete = hasCompanies && userHasLinkedEmail
+        
+        console.log('Setup check results:', {
+          hasCompanies,
+          userHasLinkedEmail,
+          isSetupComplete: isComplete
+        })
         
         // Force update the state to match reality
         set({ isSetupComplete: isComplete })
