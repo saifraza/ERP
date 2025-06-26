@@ -74,7 +74,7 @@ export function EmailSettings() {
     try {
       // Get OAuth URL from user-based endpoint
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth-user/connect`,
+        `${import.meta.env.VITE_API_URL}/api/email-oauth/user-connect`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

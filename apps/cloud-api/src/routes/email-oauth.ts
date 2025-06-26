@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
 import { multiTenantGmail } from '../services/multi-tenant-gmail.js'
 import { google } from 'googleapis'
+import { prisma } from '../lib/prisma.js'
 
 const app = new Hono()
 
@@ -10,7 +11,7 @@ app.use('*', async (c, next) => {
   const path = c.req.path
   
   // Skip auth for OAuth flow endpoints
-  if (path.includes('/connect/') || path.includes('/callback')) {
+  if (path.includes('/connect/') || path.includes('/callback') || path.includes('/user-connect')) {
     return next()
   }
   
@@ -31,6 +32,64 @@ const getOAuth2Client = () => {
   
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri)
 }
+
+// Initiate OAuth flow for current user
+app.get('/user-connect', async (c) => {
+  try {
+    const token = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!token) {
+      return c.json({ error: 'No authorization token provided' }, 401)
+    }
+    
+    // Decode token to get userId
+    let userId = 'unknown'
+    let companyId = 'unknown'
+    try {
+      const jwt = await import('jsonwebtoken')
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
+      userId = decoded.userId
+      
+      // Get user's company
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          companies: {
+            include: { company: true }
+          }
+        }
+      })
+      
+      if (user?.companies?.[0]?.company?.id) {
+        companyId = user.companies[0].company.id
+      }
+    } catch (err) {
+      console.error('Token verification failed:', err)
+    }
+    
+    // Get OAuth client
+    const oauth2Client = getOAuth2Client()
+    
+    // Generate OAuth URL
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.modify',
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/userinfo.email'
+      ],
+      state: JSON.stringify({ companyId, userId }),
+      prompt: 'consent'
+    })
+    
+    return c.json({ url: authUrl })
+  } catch (error: any) {
+    console.error('OAuth user-connect error:', error)
+    return c.json({ error: error.message || 'Failed to generate OAuth URL' }, 500)
+  }
+})
 
 // Initiate OAuth flow for a company
 app.get('/connect/:companyId', async (c) => {
