@@ -20,9 +20,10 @@ app.post('/ensure-setup', async (c) => {
       user = await prisma.user.create({
         data: {
           email: 'saif@erp.com',
-          name: 'Saif',
+          name: 'saif',
           password: hashedPassword,
           role: 'ADMIN',
+          linkedGmailEmail: 'saif@mspil.in',
           isActive: true
         }
       })
