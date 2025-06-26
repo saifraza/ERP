@@ -610,9 +610,28 @@ Common causes and fixes:
 - [MCP SDK](https://github.com/anthropics/mcp)
 - [Google Cloud Console](https://console.cloud.google.com)
 
+## Emergency Database Management
+
+### Clear Railway Database (USE WITH EXTREME CAUTION!)
+For emergency situations where you need to clear all data from the Railway database:
+
+```bash
+# Emergency script available locally (not in git)
+./clear-data.sh
+```
+
+This script will:
+1. Login with admin credentials
+2. Delete ALL company data and related records
+3. Keep user accounts intact
+
+**WARNING**: This is irreversible! Use only when absolutely necessary.
+
+**Note**: The `/api/simple-clear` endpoint must be temporarily enabled in `apps/cloud-api/src/index.ts` for this to work. It's disabled by default for safety.
+
 ## Contact
 Solo Developer Project
-Last Updated: 2025-01-25
+Last Updated: 2025-01-26
 
 ## Recent Updates
 

@@ -63,3 +63,6 @@ logs
 
 # Prisma
 prisma/migrations/dev/
+
+# Emergency scripts (keep locally, don't commit)
+clear-data.sh
