@@ -20,10 +20,10 @@ export function EmailSettings() {
   const [connecting, setConnecting] = useState(false)
 
   useEffect(() => {
-    if (currentCompany) {
+    if (token) {
       loadAccounts()
     }
-  }, [currentCompany])
+  }, [token])
 
   // Check for OAuth callback parameters
   useEffect(() => {
@@ -44,11 +44,9 @@ export function EmailSettings() {
   }, [])
 
   const loadAccounts = async () => {
-    if (!currentCompany) return
-
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth/accounts/${currentCompany.id}`,
+        `${import.meta.env.VITE_API_URL}/api/email-oauth/my-accounts`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -68,26 +66,45 @@ export function EmailSettings() {
     }
   }
 
-  const connectEmail = () => {
-    if (!currentCompany || !token) return
+  const connectEmail = async () => {
+    if (!token) return
 
     setConnecting(true)
 
-    // Store current state in sessionStorage for after OAuth redirect
-    sessionStorage.setItem('oauth_company_id', currentCompany.id)
-    sessionStorage.setItem('oauth_token', token)
-    
-    // Redirect to OAuth connect endpoint
-    // This endpoint doesn't require auth headers since we're redirecting
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/email-oauth/connect/${currentCompany.id}?token=${encodeURIComponent(token)}`
+    try {
+      // Get OAuth URL from user-based endpoint
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/email-oauth-user/connect`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to get OAuth URL')
+
+      const data = await response.json()
+      
+      if (data.authUrl) {
+        // Redirect to Google OAuth
+        window.location.href = data.authUrl
+      } else {
+        throw new Error('No OAuth URL received')
+      }
+    } catch (err) {
+      console.error('Failed to initiate OAuth:', err)
+      toast.error('Failed to connect email account')
+      setConnecting(false)
+    }
   }
 
   const removeAccount = async (email: string) => {
-    if (!currentCompany || !confirm(`Remove ${email}?`)) return
+    if (!confirm(`Remove ${email}?`)) return
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth/accounts/${currentCompany.id}/${email}`,
+        `${import.meta.env.VITE_API_URL}/api/email-oauth-user/disconnect`,
         {
           method: 'DELETE',
           headers: {
@@ -106,24 +123,23 @@ export function EmailSettings() {
   }
 
   const testConnection = async () => {
-    if (!currentCompany) return
-
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth/test/${currentCompany.id}`,
+        `${import.meta.env.VITE_API_URL}/api/mcp/gmail/list-emails`,
         {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ maxResults: 1 })
         }
       )
 
       const data = await response.json()
       
       if (data.success) {
-        toast.success(`Email connection working for ${data.account}`)
+        toast.success(`Email connection working! Found ${data.count} emails`)
       } else {
         toast.error(data.error || 'Email connection failed')
       }
@@ -132,14 +148,14 @@ export function EmailSettings() {
     }
   }
 
-  if (!currentCompany || !token) {
+  if (!token) {
     return (
       <div className="rounded-md bg-yellow-50 p-4">
         <div className="flex">
           <AlertCircle className="h-5 w-5 text-yellow-400" />
           <div className="ml-3">
             <p className="text-sm font-medium text-yellow-800">
-              {!currentCompany ? 'Please select a company first' : 'Please log in to continue'}
+              Please log in to continue
             </p>
           </div>
         </div>

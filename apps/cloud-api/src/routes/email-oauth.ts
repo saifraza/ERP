@@ -182,12 +182,13 @@ app.get('/my-accounts', authMiddleware, async (c) => {
   }
 })
 
-// List connected email accounts for a company (legacy)
-app.get('/accounts/:companyId', async (c) => {
+// List connected email accounts for a company (now uses userId from auth)
+app.get('/accounts/:companyId', authMiddleware, async (c) => {
   const companyId = c.req.param('companyId')
+  const userId = c.get('userId')
   
   try {
-    const accounts = await multiTenantGmail.listEmailAccounts(companyId)
+    const accounts = await multiTenantGmail.listEmailAccounts(userId)
     return c.json({
       success: true,
       accounts
@@ -201,12 +202,13 @@ app.get('/accounts/:companyId', async (c) => {
 })
 
 // Remove email account
-app.delete('/accounts/:companyId/:email', async (c) => {
+app.delete('/accounts/:companyId/:email', authMiddleware, async (c) => {
   const companyId = c.req.param('companyId')
   const email = c.req.param('email')
+  const userId = c.get('userId')
   
   try {
-    await multiTenantGmail.removeEmailAccount(companyId, email)
+    await multiTenantGmail.removeEmailAccount(userId, email)
     return c.json({
       success: true,
       message: `Email account ${email} removed`
@@ -220,12 +222,13 @@ app.delete('/accounts/:companyId/:email', async (c) => {
 })
 
 // Test email connection
-app.post('/test/:companyId', async (c) => {
+app.post('/test/:companyId', authMiddleware, async (c) => {
   const companyId = c.req.param('companyId')
+  const userId = c.get('userId')
   
   try {
     // Try to list a few emails
-    const emails = await multiTenantGmail.listEmails(companyId, 3)
+    const emails = await multiTenantGmail.listEmails(userId, 3)
     
     return c.json({
       success: true,

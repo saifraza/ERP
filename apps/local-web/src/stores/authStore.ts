@@ -7,6 +7,7 @@ interface User {
   email: string
   role: string
   divisions: string[]
+  linkedGmailEmail?: string | null
 }
 
 interface AuthState {

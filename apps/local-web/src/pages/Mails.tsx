@@ -56,10 +56,10 @@ export default function Mails() {
 
   // Load email accounts on mount
   useEffect(() => {
-    if (currentCompany) {
+    if (token) {
       loadEmailAccounts()
     }
-  }, [currentCompany])
+  }, [token])
 
   // Auto-load emails when email accounts are loaded
   useEffect(() => {
@@ -69,11 +69,9 @@ export default function Mails() {
   }, [emailAccounts])
 
   const loadEmailAccounts = async () => {
-    if (!currentCompany) return
-
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth/accounts/${currentCompany.id}`,
+        `${import.meta.env.VITE_API_URL}/api/email-oauth/my-accounts`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

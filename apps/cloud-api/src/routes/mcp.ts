@@ -16,17 +16,18 @@ const getMCPUrl = () => {
   return process.env.MCP_SERVER_URL || 'https://mcp-server-production-ac21.up.railway.app'
 }
 
-// Multi-tenant Gmail endpoints
-app.post('/company/:companyId/gmail/:action', async (c) => {
+// Multi-tenant Gmail endpoints - Now uses userId from auth
+app.post('/company/:companyId/gmail/:action', authMiddleware, async (c) => {
   try {
     const companyId = c.req.param('companyId')
     const action = c.req.param('action')
     const body = await c.req.json()
+    const userId = c.get('userId') // Get userId from auth middleware
     
     switch (action) {
       case 'list-emails': {
         const { maxResults = 20, query = '' } = body
-        const emails = await multiTenantGmail.listEmails(companyId, maxResults, query)
+        const emails = await multiTenantGmail.listEmails(userId, maxResults, query)
         return c.json({
           success: true,
           data: emails,
@@ -45,7 +46,7 @@ app.post('/company/:companyId/gmail/:action', async (c) => {
         }
         
         const result = await multiTenantGmail.sendEmail(
-          companyId,
+          userId,
           to,
           subject,
           emailBody,
@@ -57,7 +58,7 @@ app.post('/company/:companyId/gmail/:action', async (c) => {
       
       case 'list-events': {
         const { maxResults = 10 } = body
-        const events = await multiTenantGmail.listCalendarEvents(companyId, maxResults)
+        const events = await multiTenantGmail.listCalendarEvents(userId, maxResults)
         return c.json({
           success: true,
           data: events,
