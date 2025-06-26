@@ -881,12 +881,43 @@ export default function RFQManagementV3() {
                 <Mail className="h-4 w-4" />
                 Email Communication History - {rfqs.find(r => r.id === expandedRFQ)?.rfqNumber}
               </h3>
-              <button
-                onClick={() => setExpandedRFQ(null)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <XCircle className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {emailLogs[expandedRFQ]?.filter(log => log.receivedAt).length > 1 && (
+                  <button
+                    onClick={async () => {
+                      if (confirm('Remove duplicate email entries?')) {
+                        try {
+                          const response = await fetch(
+                            `${import.meta.env.VITE_API_URL}/api/rfqs/${expandedRFQ}/clean-duplicates`,
+                            {
+                              method: 'POST',
+                              headers: {
+                                Authorization: `Bearer ${token}`,
+                              },
+                            }
+                          )
+                          if (response.ok) {
+                            const result = await response.json()
+                            toast.success(result.message)
+                            await fetchEmailLogs(expandedRFQ)
+                          }
+                        } catch (error) {
+                          toast.error('Failed to clean duplicates')
+                        }
+                      }
+                    }}
+                    className="px-2 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700"
+                  >
+                    Clean Duplicates
+                  </button>
+                )}
+                <button
+                  onClick={() => setExpandedRFQ(null)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {loadingEmailLogs === expandedRFQ ? (

@@ -158,13 +158,17 @@ export default function EmailDetailModal({ isOpen, onClose, emailLog, rfqNumber 
               <div>
                 <span className="text-gray-500 dark:text-gray-400">From:</span>
                 <p className="font-medium text-gray-900 dark:text-white">
-                  {emailLog.fromEmail || `${emailLog.vendor?.name} <${emailLog.toEmail}>`}
+                  {emailLog.receivedAt 
+                    ? (emailLog.fromEmail || `${emailLog.vendor?.name} <${emailLog.vendor?.email}>`)
+                    : 'Modern Sugar & Power Industries Ltd'}
                 </p>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">To:</span>
                 <p className="font-medium text-gray-900 dark:text-white">
-                  {emailLog.toEmail || emailLog.fromEmail}
+                  {emailLog.receivedAt 
+                    ? 'procurement@mspil.in'
+                    : (emailLog.toEmail || `${emailLog.vendor?.name} <${emailLog.vendor?.email}>`)}
                 </p>
               </div>
               {emailLog.ccEmails && (

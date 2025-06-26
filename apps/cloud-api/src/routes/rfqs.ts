@@ -505,6 +505,72 @@ app.post('/:id/resend', async (c) => {
 })
 
 // Get RFQ email history
+// Clean duplicate email responses
+app.post('/:id/clean-duplicates', async (c) => {
+  const userId = c.get('userId')
+  const rfqId = c.req.param('id')
+  
+  try {
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
+    // Verify RFQ belongs to user's company
+    const rfq = await prisma.rFQ.findFirst({
+      where: {
+        id: rfqId,
+        companyId: companyUser.companyId
+      }
+    })
+    
+    if (!rfq) {
+      return c.json({ error: 'RFQ not found' }, 404)
+    }
+    
+    // Find and delete duplicates
+    const duplicates = await prisma.$queryRaw`
+      WITH DuplicateGroups AS (
+        SELECT 
+          "emailId", 
+          "rfqId", 
+          "vendorId",
+          MIN("createdAt") as earliest_created
+        FROM "RFQEmailResponse"
+        WHERE "rfqId" = ${rfqId}
+        GROUP BY "emailId", "rfqId", "vendorId"
+        HAVING COUNT(*) > 1
+      )
+      DELETE FROM "RFQEmailResponse" r
+      WHERE EXISTS (
+        SELECT 1 
+        FROM DuplicateGroups dg
+        WHERE r."emailId" = dg."emailId"
+          AND r."rfqId" = dg."rfqId"
+          AND r."vendorId" = dg."vendorId"
+          AND r."createdAt" > dg.earliest_created
+      )
+      RETURNING r.id
+    `
+    
+    const deletedCount = Array.isArray(duplicates) ? duplicates.length : 0
+    
+    return c.json({
+      success: true,
+      message: `Cleaned ${deletedCount} duplicate email responses`,
+      deletedCount
+    })
+  } catch (error: any) {
+    console.error('Error cleaning duplicates:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
 app.get('/:id/email-history', async (c) => {
   const userId = c.get('userId')
   const rfqId = c.req.param('id')
