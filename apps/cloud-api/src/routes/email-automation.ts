@@ -107,7 +107,7 @@ app.post('/debug/list-emails', authMiddleware, async (c) => {
 app.use('*', authMiddleware)
 
 // Process a specific email
-app.post('/process', async (c) => {
+app.post('/process', authMiddleware, async (c) => {
   try {
     const { emailId, companyId } = await c.req.json()
     
@@ -136,7 +136,7 @@ app.post('/process', async (c) => {
 })
 
 // Process multiple emails in batch
-app.post('/process-batch', async (c) => {
+app.post('/process-batch', authMiddleware, async (c) => {
   try {
     const userId = c.get('userId') // Get userId from auth middleware
     const body = await c.req.json()
