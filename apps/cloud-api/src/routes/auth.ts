@@ -247,10 +247,10 @@ app.post('/clear-linked-email', authMiddleware, async (c) => {
     
     console.log('Clearing email for user:', userId)
     
-    // Update user to remove linked email
+    // Update user to remove linked email (set to empty string if null not allowed)
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { linkedGmailEmail: null },
+      data: { linkedGmailEmail: '' },
       select: {
         id: true,
         email: true,
