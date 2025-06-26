@@ -115,6 +115,16 @@ app.get('/', async (c) => {
     
     console.log('Found RFQs:', rfqs.length)
     
+    // Debug: Log email log counts for each RFQ
+    for (const rfq of rfqs) {
+      const emailLogCount = await prisma.rFQEmailLog.count({
+        where: { rfqId: rfq.id }
+      })
+      if (emailLogCount > 0) {
+        console.log(`RFQ ${rfq.rfqNumber} has ${emailLogCount} email logs`)
+      }
+    }
+    
     return c.json({ success: true, rfqs })
   } catch (error: any) {
     console.error('Error fetching RFQs:', error)
@@ -544,6 +554,12 @@ app.get('/:id/email-history', async (c) => {
     if (!rfq) {
       return c.json({ error: 'RFQ not found' }, 404)
     }
+    
+    console.log(`Email history for RFQ ${rfq.rfqNumber}:`, {
+      emailLogs: rfq.emailLogs.length,
+      emailResponses: rfq.emailResponses.length,
+      vendors: rfq.vendors.length
+    })
     
     // Format communication summary
     const communicationSummary = rfq.vendors.map(v => ({
