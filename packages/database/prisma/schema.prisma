@@ -375,6 +375,10 @@ model Vendor {
   purchaseOrders    PurchaseOrder[]
   invoices          VendorInvoice[]
   evaluations       VendorEvaluation[]
+  rfqVendors        RFQVendor[]
+  rfqEmailLogs      RFQEmailLog[]
+  rfqEmailResponses RFQEmailResponse[]
+  rfqCommunicationThreads RFQCommunicationThread[]
   
   @@unique([companyId, code])
   @@index([companyId, status])
@@ -432,6 +436,7 @@ model Material {
   
   // Relations
   company           Company  @relation(fields: [companyId], references: [id])
+  rfqItems          RFQItem[]
   
   @@unique([companyId, code])
   @@index([companyId, category])
@@ -489,24 +494,33 @@ model PRItem {
 
 // Request for Quotation (RFQ)
 model RFQ {
-  id                String   @id @default(uuid())
-  companyId         String
-  rfqNumber         String
-  prId              String?
-  issueDate         DateTime
-  dueDate           DateTime
-  status            String   @default("draft") // draft, sent, closed, cancelled
-  terms             String?  @db.Text
-  createdBy         String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                      String   @id @default(uuid())
+  companyId               String
+  rfqNumber               String
+  requisitionId           String?  // Link to Purchase Requisition
+  factoryId               String?  // Link to Factory
+  issueDate               DateTime
+  submissionDeadline      DateTime // Due date for quotations
+  expectedDeliveryDate    DateTime // Expected delivery date for items
+  deliveryTerms           String
+  paymentTerms            String
+  specialInstructions     String?  @db.Text
+  quotationValidityDays   Int      @default(30)
+  status                  String   @default("OPEN") // OPEN, SENT, CLOSED, CANCELLED
+  createdBy               String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   // Relations
-  company           Company  @relation(fields: [companyId], references: [id])
-  pr                PurchaseRequisition? @relation(fields: [prId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vendors           RFQVendor[]
-  items             RFQItem[]
-  quotations        Quotation[]
+  company                 Company  @relation(fields: [companyId], references: [id])
+  requisition             Requisition? @relation(fields: [requisitionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  factory                 Factory? @relation(fields: [factoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendors                 RFQVendor[]
+  items                   RFQItem[]
+  quotations              Quotation[]
+  emailLogs               RFQEmailLog[]
+  emailResponses          RFQEmailResponse[]
+  communicationThreads    RFQCommunicationThread[]
   
   @@unique([companyId, rfqNumber])
   @@index([companyId, status])
@@ -514,29 +528,37 @@ model RFQ {
 
 // RFQ Vendors
 model RFQVendor {
-  id                String   @id @default(uuid())
-  rfqId             String
-  vendorId          String
-  emailSent         Boolean  @default(false)
-  emailSentAt       DateTime?
-  responseReceived  Boolean  @default(false)
+  id                    String   @id @default(uuid())
+  rfqId                 String
+  vendorId              String
+  emailSent             Boolean  @default(false)
+  emailSentAt           DateTime?
+  lastEmailSentAt       DateTime?
+  responseReceived      Boolean  @default(false)
+  quotationReceivedAt   DateTime?
+  reminderCount         Int      @default(0)
+  lastReminderAt        DateTime?
   
   // Relations
-  rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  rfq                   RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor                Vendor   @relation(fields: [vendorId], references: [id], onDelete: NoAction)
 }
 
 // RFQ Line Items
 model RFQItem {
   id                String   @id @default(uuid())
   rfqId             String
+  materialId        String?
   itemCode          String
   itemDescription   String
   quantity          Float
   unit              String
+  requiredDate      DateTime?
   specifications    String?  @db.Text
   
   // Relations
   rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  material          Material? @relation(fields: [materialId], references: [id], onDelete: NoAction)
 }
 
 // Vendor Quotations
@@ -774,4 +796,67 @@ model VendorPayment {
   
   @@unique([companyId, paymentNumber])
   @@index([companyId, vendorId])
+}
+
+// RFQ Email Log
+model RFQEmailLog {
+  id                String   @id @default(uuid())
+  rfqId             String
+  vendorId          String
+  emailType         String   // rfq_sent, reminder_sent, quotation_received, acknowledgment_sent
+  emailId           String?  // Email message ID
+  subject           String
+  toEmail           String
+  ccEmails          String?  @db.Text // JSON array of CC emails
+  attachments       String?  @db.Text // JSON array of attachment names
+  status            String   @default("sent") // sent, failed, bounced
+  sentAt            DateTime
+  error             String?  @db.Text
+  createdAt         DateTime @default(now())
+  
+  // Relations
+  rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: NoAction)
+}
+
+// RFQ Email Response
+model RFQEmailResponse {
+  id                String   @id @default(uuid())
+  rfqId             String
+  vendorId          String
+  emailId           String   // Email message ID
+  subject           String
+  fromEmail         String
+  receivedAt        DateTime
+  bodySnippet       String?  @db.Text
+  hasAttachments    Boolean  @default(false)
+  attachments       String?  @db.Text // JSON array of attachment names
+  processedAt       DateTime?
+  quotationCreated  Boolean  @default(false)
+  quotationId       String?
+  error             String?  @db.Text
+  createdAt         DateTime @default(now())
+  
+  // Relations
+  rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: NoAction)
+}
+
+// RFQ Communication Thread
+model RFQCommunicationThread {
+  id                String   @id @default(uuid())
+  rfqId             String
+  vendorId          String
+  threadId          String?  // Email thread ID
+  messageCount      Int      @default(0)
+  lastMessageAt     DateTime?
+  status            String   @default("active") // active, closed
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: NoAction)
+  
+  @@unique([rfqId, vendorId])
 }

@@ -532,6 +532,19 @@ Accounts Team
     console.log('Vendor IDs:', vendorIds)
     console.log('Email Options:', emailOptions)
     
+    // Debug: Check if RFQEmailLog model is accessible
+    try {
+      const testCount = await prisma.rFQEmailLog.count()
+      console.log('RFQEmailLog model is accessible, total records:', testCount)
+    } catch (modelError: any) {
+      console.error('Failed to access RFQEmailLog model:', modelError)
+      console.error('Model error details:', {
+        name: modelError.name,
+        message: modelError.message,
+        code: modelError.code
+      })
+    }
+    
     const rfq = await prisma.rFQ.findUnique({
       where: { id: rfqId },
       include: {
@@ -729,20 +742,32 @@ Accounts Team
         }
         
         // Create email log
-        await prisma.rFQEmailLog.create({
-          data: {
-            rfqId: rfq.id,
-            vendorId: vendor.id,
-            emailType: emailOptions?.isReminder ? 'reminder_sent' : 'rfq_sent',
-            emailId: emailResult.messageId,
-            subject: subject,
-            toEmail: vendor.email,
-            ccEmails: emailOptions?.ccEmails ? JSON.stringify(emailOptions.ccEmails) : null,
-            attachments: JSON.stringify([pdfFilename]),
-            status: 'sent',
-            sentAt: new Date()
-          }
-        })
+        console.log('Creating email log for vendor:', vendor.id)
+        try {
+          const emailLog = await prisma.rFQEmailLog.create({
+            data: {
+              rfqId: rfq.id,
+              vendorId: vendor.id,
+              emailType: emailOptions?.isReminder ? 'reminder_sent' : 'rfq_sent',
+              emailId: emailResult.messageId,
+              subject: subject,
+              toEmail: vendor.email,
+              ccEmails: emailOptions?.ccEmails ? JSON.stringify(emailOptions.ccEmails) : null,
+              attachments: JSON.stringify([pdfFilename]),
+              status: 'sent',
+              sentAt: new Date()
+            }
+          })
+          console.log('Email log created successfully:', emailLog.id)
+        } catch (logError: any) {
+          console.error('Failed to create email log:', logError)
+          console.error('Error details:', {
+            name: logError.name,
+            message: logError.message,
+            code: logError.code,
+            meta: logError.meta
+          })
+        }
         
         // Create or update communication thread
         await prisma.rFQCommunicationThread.upsert({
@@ -787,28 +812,38 @@ Accounts Team
         console.error(`Failed to send RFQ to vendor ${rfqVendor.vendorId}:`, error)
         
         // Create email log for failed attempt
-        try {
-          await prisma.rFQEmailLog.create({
-            data: {
-              rfqId: rfq.id,
-              vendorId: vendor.id,
-              emailType: emailOptions?.isReminder ? 'reminder_sent' : 'rfq_sent',
-              subject: subject,
-              toEmail: vendor.email,
-              ccEmails: emailOptions?.ccEmails ? JSON.stringify(emailOptions.ccEmails) : null,
-              attachments: JSON.stringify([pdfFilename]),
-              status: 'failed',
-              sentAt: new Date(),
-              error: error.message
-            }
-          })
-        } catch (logError) {
-          console.error('Failed to create email log for failed attempt:', logError)
+        if (vendor) {
+          console.log('Creating failed email log for vendor:', vendor.id)
+          try {
+            const failedLog = await prisma.rFQEmailLog.create({
+              data: {
+                rfqId: rfq.id,
+                vendorId: vendor.id,
+                emailType: emailOptions?.isReminder ? 'reminder_sent' : 'rfq_sent',
+                subject: subject || `Request for Quotation - ${rfq.rfqNumber}`,
+                toEmail: vendor.email,
+                ccEmails: emailOptions?.ccEmails ? JSON.stringify(emailOptions.ccEmails) : null,
+                attachments: JSON.stringify([pdfFilename || 'RFQ.pdf']),
+                status: 'failed',
+                sentAt: new Date(),
+                error: error.message
+              }
+            })
+            console.log('Failed email log created:', failedLog.id)
+          } catch (logError: any) {
+            console.error('Failed to create email log for failed attempt:', logError)
+            console.error('Error details:', {
+              name: logError.name,
+              message: logError.message,
+              code: logError.code,
+              meta: logError.meta
+            })
+          }
         }
         
         results.push({
-          vendorId: vendor.id,
-          vendorName: vendor.name,
+          vendorId: vendor?.id || rfqVendor.vendorId,
+          vendorName: vendor?.name || 'Unknown',
           success: false,
           error: error.message
         })
@@ -822,12 +857,32 @@ Accounts Team
       data: { status: 'SENT' }
     })
     
+    // Debug: Count email logs for this RFQ
+    const emailLogCount = await prisma.rFQEmailLog.count({
+      where: { rfqId: rfqId }
+    })
+    console.log(`Total email logs for RFQ ${rfq.rfqNumber}: ${emailLogCount}`)
+    
+    // Debug: Fetch and log all email logs for this RFQ
+    const emailLogs = await prisma.rFQEmailLog.findMany({
+      where: { rfqId: rfqId },
+      select: {
+        id: true,
+        vendorId: true,
+        emailType: true,
+        status: true,
+        sentAt: true
+      }
+    })
+    console.log('Email logs created:', emailLogs)
+    
     return {
       success: true,
       rfqNumber: rfq.rfqNumber,
       totalVendors: vendorsToProcess.length,
       sentCount: results.filter(r => r.success).length,
       failedCount: results.filter(r => !r.success).length,
+      emailLogCount,
       results
     }
   }

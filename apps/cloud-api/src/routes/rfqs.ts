@@ -116,13 +116,19 @@ app.get('/', async (c) => {
     console.log('Found RFQs:', rfqs.length)
     
     // Debug: Log email log counts for each RFQ
-    for (const rfq of rfqs) {
-      const emailLogCount = await prisma.rFQEmailLog.count({
-        where: { rfqId: rfq.id }
-      })
-      if (emailLogCount > 0) {
-        console.log(`RFQ ${rfq.rfqNumber} has ${emailLogCount} email logs`)
+    console.log('Checking email logs for RFQs...')
+    try {
+      const totalEmailLogs = await prisma.rFQEmailLog.count()
+      console.log(`Total RFQEmailLog records in database: ${totalEmailLogs}`)
+      
+      for (const rfq of rfqs) {
+        const emailLogCount = await prisma.rFQEmailLog.count({
+          where: { rfqId: rfq.id }
+        })
+        console.log(`RFQ ${rfq.rfqNumber} (${rfq.id}) has ${emailLogCount} email logs`)
       }
+    } catch (error: any) {
+      console.error('Error accessing RFQEmailLog:', error)
     }
     
     return c.json({ success: true, rfqs })
@@ -556,10 +562,16 @@ app.get('/:id/email-history', async (c) => {
     }
     
     console.log(`Email history for RFQ ${rfq.rfqNumber}:`, {
-      emailLogs: rfq.emailLogs.length,
-      emailResponses: rfq.emailResponses.length,
-      vendors: rfq.vendors.length
+      emailLogs: rfq.emailLogs?.length || 0,
+      emailResponses: rfq.emailResponses?.length || 0,
+      vendors: rfq.vendors?.length || 0
     })
+    
+    // Debug: Direct query to check email logs
+    const directEmailLogCount = await prisma.rFQEmailLog.count({
+      where: { rfqId: rfqId }
+    })
+    console.log(`Direct email log count for RFQ ${rfqId}: ${directEmailLogCount}`)
     
     // Format communication summary
     const communicationSummary = rfq.vendors.map(v => ({
