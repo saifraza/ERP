@@ -126,13 +126,20 @@ app.get('/callback', async (c) => {
       return c.redirect(`${frontendUrl}/settings/email?error=no_email`)
     }
     
-    // Store credentials
+    // Store credentials - use userId not companyId!
     await multiTenantGmail.storeCredentials(
-      companyId,
+      userId,
       userInfo.email,
       tokens.refresh_token,
       'google'
     )
+    
+    // Also update the user's linkedGmailEmail
+    const { prisma } = await import('../lib/prisma.js')
+    await prisma.user.update({
+      where: { id: userId },
+      data: { linkedGmailEmail: userInfo.email }
+    })
     
     // Redirect to frontend success page
     return c.redirect(`${frontendUrl}/settings/email?success=connected&email=${userInfo.email}`)
@@ -143,7 +150,39 @@ app.get('/callback', async (c) => {
   }
 })
 
-// List connected email accounts for a company
+// List connected email accounts for current user
+app.get('/my-accounts', authMiddleware, async (c) => {
+  const userId = c.get('userId')
+  
+  try {
+    const { prisma } = await import('../lib/prisma.js')
+    const accounts = await prisma.emailCredential.findMany({
+      where: {
+        userId,
+        isActive: true
+      },
+      select: {
+        id: true,
+        emailAddress: true,
+        provider: true,
+        lastSynced: true,
+        createdAt: true
+      }
+    })
+    
+    return c.json({
+      success: true,
+      accounts
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to list email accounts'
+    }, 500)
+  }
+})
+
+// List connected email accounts for a company (legacy)
 app.get('/accounts/:companyId', async (c) => {
   const companyId = c.req.param('companyId')
   
