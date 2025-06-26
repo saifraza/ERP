@@ -84,7 +84,7 @@ app.get('/user-connect', async (c) => {
       prompt: 'consent'
     })
     
-    return c.json({ url: authUrl })
+    return c.json({ authUrl })
   } catch (error: any) {
     console.error('OAuth user-connect error:', error)
     return c.json({ error: error.message || 'Failed to generate OAuth URL' }, 500)
