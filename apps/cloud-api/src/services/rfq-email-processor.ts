@@ -46,15 +46,39 @@ export class RFQEmailProcessor {
           const senderEmail = email.from.match(/<(.+)>/)?.[1] || email.from
           console.log(`Extracted email address: ${senderEmail}`)
           
-          // Check if email is from a vendor
-          const vendor = await prisma.vendor.findFirst({
+          // Check if email is from a vendor - handle multiple vendors with same email
+          // First check primary email field
+          let vendors = await prisma.vendor.findMany({
             where: {
               companyId,
               email: senderEmail
             }
           })
           
-          if (!vendor) {
+          // If not found in primary email, check VendorEmail table if it exists
+          if (vendors.length === 0) {
+            try {
+              // Check if VendorEmail table exists and search there
+              const vendorEmails = await prisma.$queryRaw`
+                SELECT DISTINCT v.* 
+                FROM "Vendor" v
+                INNER JOIN "VendorEmail" ve ON v.id = ve."vendorId"
+                WHERE v."companyId" = ${companyId} 
+                AND ve."email" = ${senderEmail}
+                AND ve."isActive" = true
+              ` as any[]
+              
+              if (vendorEmails.length > 0) {
+                console.log(`Found vendor(s) via VendorEmail table`)
+                vendors = vendorEmails
+              }
+            } catch (e) {
+              // VendorEmail table might not exist yet, that's ok
+              console.log(`VendorEmail table not available`)
+            }
+          }
+          
+          if (vendors.length === 0) {
             console.log(`Email from non-vendor: ${senderEmail}`)
             console.log(`Checking all vendors in company...`)
             const allVendors = await prisma.vendor.findMany({
@@ -69,12 +93,16 @@ export class RFQEmailProcessor {
               success: false,
               reason: 'not_a_vendor',
               senderEmail,
-              subject: email.subject
+              subject: email.subject,
+              suggestion: 'Consider adding this email as an alternate email for the vendor'
             })
             continue
           }
           
-          console.log(`Found vendor: ${vendor.name} (ID: ${vendor.id})`)
+          console.log(`Found ${vendors.length} vendor(s) with email ${senderEmail}:`)
+          vendors.forEach(v => console.log(`  - ${v.name} (ID: ${v.id})`))
+          
+          // We'll try to match this email to the correct vendor based on RFQ assignment
           
           // Get full email content
           const fullEmail = await multiTenantGmail.getEmailContent(companyId, email.id)
@@ -140,36 +168,85 @@ export class RFQEmailProcessor {
           
           console.log(`Found RFQ: ${rfq.rfqNumber} (Status: ${rfq.status})`)
           
-          // Check if vendor is part of this RFQ
-          const rfqVendor = await prisma.rFQVendor.findFirst({
+          // Find which vendor(s) from the email are part of this RFQ
+          const rfqVendors = await prisma.rFQVendor.findMany({
             where: {
               rfqId: rfq.id,
-              vendorId: vendor.id
+              vendorId: {
+                in: vendors.map(v => v.id)
+              }
+            },
+            include: {
+              vendor: true
             }
           })
           
-          if (!rfqVendor) {
-            console.log(`Vendor ${vendor.name} not part of RFQ ${rfqNumber}`)
-            console.log(`Checking vendors assigned to this RFQ...`)
-            const rfqVendors = await prisma.rFQVendor.findMany({
+          if (rfqVendors.length === 0) {
+            console.log(`None of the vendors with email ${senderEmail} are part of RFQ ${rfqNumber}`)
+            console.log(`Vendors with this email:`)
+            vendors.forEach(v => console.log(`  - ${v.name} (${v.id})`))
+            
+            console.log(`Checking all vendors assigned to this RFQ...`)
+            const allRfqVendors = await prisma.rFQVendor.findMany({
               where: { rfqId: rfq.id },
               include: { vendor: { select: { name: true, email: true } } }
             })
-            console.log(`RFQ has ${rfqVendors.length} assigned vendors:`)
-            rfqVendors.forEach(rv => console.log(`  - ${rv.vendor.name} (${rv.vendor.email})`))
+            console.log(`RFQ has ${allRfqVendors.length} assigned vendors:`)
+            allRfqVendors.forEach(rv => console.log(`  - ${rv.vendor.name} (${rv.vendor.email})`))
+            
+            // Check if this might be a reply from a different email of an assigned vendor
+            // In real world, vendor might use personal email, company email, etc.
+            console.log(`\nChecking for potential vendor matches...`)
+            
+            // 1. Check by sender name
+            const senderName = email.from.match(/^([^<]+)/)?.[1]?.trim() || ''
+            const matchingVendorByName = allRfqVendors.find(rv => 
+              rv.vendor.name.toLowerCase().includes(senderName.toLowerCase()) ||
+              senderName.toLowerCase().includes(rv.vendor.name.toLowerCase())
+            )
+            
+            if (matchingVendorByName) {
+              console.log(`Found potential match by name: ${matchingVendorByName.vendor.name}`)
+              console.log(`Consider adding ${senderEmail} as an alternate email for this vendor`)
+            }
+            
+            // 2. Check by email domain
+            const senderDomain = senderEmail.split('@')[1]
+            const matchingVendorByDomain = allRfqVendors.find(rv => {
+              if (!rv.vendor.email) return false
+              const vendorDomain = rv.vendor.email.split('@')[1]
+              return vendorDomain === senderDomain
+            })
+            
+            if (matchingVendorByDomain && !matchingVendorByName) {
+              console.log(`Found potential match by email domain: ${matchingVendorByDomain.vendor.name}`)
+              console.log(`Both emails use domain: @${senderDomain}`)
+              console.log(`Consider adding ${senderEmail} as an alternate email for this vendor`)
+            }
+            
+            // 3. Check if it's a common personal email replying for a company
+            const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'rediffmail.com']
+            if (personalDomains.includes(senderDomain)) {
+              console.log(`Note: Reply from personal email domain (@${senderDomain})`)
+              console.log(`This is common when vendor staff use personal emails for business`)
+            }
             
             results.push({
               emailId: email.id,
               success: false,
               reason: 'vendor_not_in_rfq',
               rfqNumber: rfq.rfqNumber,
-              vendorName: vendor.name,
+              vendorEmail: senderEmail,
+              vendorsWithEmail: vendors.map(v => v.name),
               subject: email.subject
             })
             continue
           }
           
-          console.log(`Vendor ${vendor.name} is part of RFQ ${rfq.rfqNumber}`)
+          // If multiple vendors with same email are part of this RFQ, use the first one
+          // In real world, this should be rare but we handle it gracefully
+          const vendor = rfqVendors[0].vendor
+          console.log(`Processing response from vendor: ${vendor.name} (ID: ${vendor.id}) for RFQ ${rfq.rfqNumber}`)
           
           // Process the email
           const result = await this.processVendorResponse(email, fullEmail, rfq, vendor)
