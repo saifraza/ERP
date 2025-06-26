@@ -42,8 +42,8 @@ export default function CompanyEditWizard() {
         website: currentCompany.website || '',
         fyStartMonth: currentCompany.fyStartMonth || 4,
         currentFY: currentCompany.currentFY || '2024-25',
-        logo: currentCompany.logo || undefined,
-        letterhead: currentCompany.letterhead || undefined
+        logo: undefined,
+        letterhead: undefined
       }
       setCompanyData(initialCompanyData)
 
