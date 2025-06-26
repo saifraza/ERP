@@ -47,22 +47,52 @@ export class RFQPDFFinal {
         const PDFDoc = await getPDFDocument()
         const doc = new PDFDoc({
           size: 'A4',
-          margin: 50
+          margin: 40,
+          bufferPages: true
         })
 
         const chunks: Buffer[] = []
         doc.on('data', chunk => chunks.push(chunk))
         doc.on('end', () => resolve(Buffer.concat(chunks)))
 
-        // Simple header
-        doc.fontSize(20)
-           .font('Helvetica-Bold')
-           .text('MAHAKAUSHAL SUGAR AND POWER INDUSTRIES LTD.', { align: 'center' })
-           .fontSize(10)
-           .font('Helvetica')
-           .text('Village Bachai, Dist. Narsinghpur (M.P.) - 487001', { align: 'center' })
-           .text('Email: procurement@mspil.com | Phone: +91 9131489373', { align: 'center' })
-           .moveDown(2)
+        // Header with letterhead design
+        // Background header
+        doc.rect(0, 0, doc.page.width, 120)
+           .fill('#1e3a8a') // Deep blue background
+           
+        // Company logo placeholder (white box)
+        doc.rect(50, 20, 70, 70)
+           .strokeColor('#ffffff')
+           .lineWidth(2)
+           .stroke()
+        doc.fontSize(12)
+           .fillColor('#ffffff')
+           .text('LOGO', 50, 50, { width: 70, align: 'center' })
+           
+        // Company name and details in white
+        doc.font('Helvetica-Bold')
+           .fontSize(22)
+           .fillColor('#ffffff')
+           .text('MAHAKAUSHAL SUGAR AND POWER INDUSTRIES LTD.', 140, 25)
+           
+        doc.font('Helvetica')
+           .fontSize(9)
+           .fillColor('#e0e7ff')
+           .text('CIN: U01543MP2005PLC017514 | GSTIN: 23AAECM3666P1Z1', 140, 55)
+           .text('Regd. Office: SF-11, Aakriti Business Center, Bawadiya Kalan, Bhopal-462039', 140, 70)
+           .text('Factory: Village Bachai, Dist. Narsinghpur (M.P.) - 487001', 140, 85)
+           .text('Email: procurement@mspil.com | Phone: +91 9131489373', 140, 100)
+           
+        // Golden accent line
+        doc.moveTo(0, 120)
+           .lineTo(doc.page.width, 120)
+           .strokeColor('#fbbf24')
+           .lineWidth(3)
+           .stroke()
+           
+        // Reset to black text
+        doc.fillColor('#000000')
+        doc.y = 140
 
         // Title
         doc.fontSize(16)
@@ -93,24 +123,68 @@ export class RFQPDFFinal {
            .text(rfq.requisition?.division?.name || 'General')
            .moveDown(2)
 
-        // Items
-        doc.fontSize(12)
+        // Items section with table
+        doc.fontSize(14)
            .font('Helvetica-Bold')
-           .text('ITEMS REQUIRED:')
-           .moveDown()
-
-        // Simple table
-        doc.fontSize(10)
-        rfq.items.forEach((item, index) => {
-          doc.font('Helvetica-Bold')
-             .text(`${index + 1}. ${item.itemDescription || item.material?.description || 'Item'}`)
-          doc.font('Helvetica')
-             .text(`   Quantity: ${item.quantity} ${item.unit || item.material?.uom?.code || 'Unit'}`)
-          if (item.specification) {
-            doc.text(`   Specification: ${item.specification}`)
-          }
-          doc.moveDown(0.5)
+           .fillColor('#1e3a8a')
+           .text('ITEMS REQUIRED')
+           .moveDown(0.5)
+           
+        // Table headers
+        const tableTop = doc.y
+        const colX = [50, 80, 280, 420, 480]
+        const colHeaders = ['S.No', 'Item Description', 'Specification', 'Quantity', 'Unit']
+        
+        // Header background
+        doc.rect(40, tableTop, doc.page.width - 80, 25)
+           .fill('#f3f4f6')
+           
+        // Header text
+        doc.font('Helvetica-Bold')
+           .fontSize(10)
+           .fillColor('#1f2937')
+        colHeaders.forEach((header, i) => {
+          doc.text(header, colX[i], tableTop + 8)
         })
+        
+        // Items rows
+        let currentY = tableTop + 25
+        doc.font('Helvetica')
+           .fontSize(9)
+           .fillColor('#374151')
+           
+        rfq.items.forEach((item, index) => {
+          // Alternate row background
+          if (index % 2 === 0) {
+            doc.rect(40, currentY, doc.page.width - 80, 25)
+               .fill('#f9fafb')
+               .fillColor('#374151')
+          }
+          
+          doc.text(`${index + 1}`, colX[0], currentY + 8)
+             .text(item.itemDescription || item.material?.description || 'Item', colX[1], currentY + 8, {
+               width: 190,
+               height: 25,
+               ellipsis: true
+             })
+             .text(item.specification || '-', colX[2], currentY + 8, {
+               width: 130,
+               height: 25,
+               ellipsis: true
+             })
+             .text(item.quantity.toString(), colX[3], currentY + 8)
+             .text(item.unit || item.material?.uom?.code || 'Unit', colX[4], currentY + 8)
+             
+          currentY += 25
+        })
+        
+        // Table bottom border
+        doc.moveTo(40, currentY)
+           .lineTo(doc.page.width - 40, currentY)
+           .strokeColor('#e5e7eb')
+           .stroke()
+           
+        doc.y = currentY + 10
 
         // Terms
         doc.moveDown()
@@ -134,11 +208,46 @@ export class RFQPDFFinal {
           doc.text(`${index + 1}. ${term}`)
         })
 
-        // Footer
-        doc.moveDown(3)
-           .text('For Mahakaushal Sugar and Power Industries Ltd.')
-           .moveDown(3)
-           .text('Authorized Signatory', { align: 'right' })
+        // Footer section with signature area
+        const footerY = doc.page.height - 120
+        
+        // Signature area background
+        doc.rect(40, footerY, doc.page.width - 80, 60)
+           .strokeColor('#e5e7eb')
+           .lineWidth(1)
+           .stroke()
+           
+        doc.fontSize(10)
+           .fillColor('#1f2937')
+           .text('For Mahakaushal Sugar and Power Industries Ltd.', 50, footerY + 10)
+           
+        doc.fontSize(9)
+           .fillColor('#6b7280')
+           .text('_______________________', doc.page.width - 200, footerY + 40)
+           .text('Authorized Signatory', doc.page.width - 190, footerY + 45)
+           
+        // Add page number
+        const range = doc.bufferedPageRange()
+        for (let i = range.start; i < range.start + range.count; i++) {
+          doc.switchToPage(i)
+          
+          // Footer line
+          doc.moveTo(40, doc.page.height - 40)
+             .lineTo(doc.page.width - 40, doc.page.height - 40)
+             .strokeColor('#e5e7eb')
+             .lineWidth(1)
+             .stroke()
+             
+          doc.font('Helvetica')
+             .fontSize(8)
+             .fillColor('#6b7280')
+             .text(
+               `Page ${i + 1} of ${range.count} | RFQ: ${rfq.rfqNumber} | Generated on ${new Date().toLocaleDateString('en-IN')}`,
+               40,
+               doc.page.height - 30,
+               { align: 'center', width: doc.page.width - 80 }
+             )
+        }
 
         doc.end()
       } catch (error) {

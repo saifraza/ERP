@@ -921,7 +921,7 @@ export default function RFQManagementV3() {
                 <ArrowUpFromLine className="h-5 w-5 text-blue-500 mx-auto mb-1" />
                 <p className="text-xs text-gray-600 dark:text-gray-400">Emails Sent</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
-                  {emailLogs[expandedRFQ]?.filter(l => l.emailType === 'rfq_sent' && l.status === 'sent').length || 0}
+                  {emailLogs[expandedRFQ]?.filter(l => l.sentAt && !l.receivedAt && l.status === 'sent').length || 0}
                 </p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700">
