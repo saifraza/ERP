@@ -123,8 +123,8 @@ export default function CompanyInfo({ initialData, onSubmit }: CompanyInfoProps)
     // Log the final form data for debugging
     console.log('Company form data before submit:', {
       ...formData,
-      logo: formData.logo ? `${typeof formData.logo} (${formData.logo?.length || 0} chars)` : 'undefined',
-      letterhead: formData.letterhead ? `${typeof formData.letterhead} (${formData.letterhead?.length || 0} chars)` : 'undefined'
+      logo: formData.logo ? `${typeof formData.logo} (${typeof formData.logo === 'string' ? formData.logo.length : 0} chars)` : 'undefined',
+      letterhead: formData.letterhead ? `${typeof formData.letterhead} (${typeof formData.letterhead === 'string' ? formData.letterhead.length : 0} chars)` : 'undefined'
     })
     
     setTimeout(() => {
