@@ -6,7 +6,7 @@ import {
   Users, Mail, Building2, Settings,
   FileText, DollarSign, Zap, Command
 } from 'lucide-react'
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+// import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts' // Removed shortcuts system
 
 interface CommandItem {
   id: string
@@ -179,50 +179,45 @@ export default function CommandPalette() {
     return acc
   }, {} as Record<string, CommandItem[]>)
 
-  // Keyboard shortcuts for the palette itself
-  useKeyboardShortcuts([
-    {
-      key: 'p',
-      cmd: true,
-      description: 'Open command palette',
-      global: true,
-      action: () => setIsOpen(true)
-    },
-    {
-      key: 'Escape',
-      description: 'Close command palette',
-      action: () => setIsOpen(false),
-      enabled: isOpen
-    },
-    {
-      key: 'ArrowDown',
-      description: 'Next item',
-      action: () => {
-        setSelectedIndex(prev => 
-          Math.min(prev + 1, filteredCommands.length - 1)
-        )
-      },
-      enabled: isOpen
-    },
-    {
-      key: 'ArrowUp',
-      description: 'Previous item',
-      action: () => {
-        setSelectedIndex(prev => Math.max(prev - 1, 0))
-      },
-      enabled: isOpen
-    },
-    {
-      key: 'Enter',
-      description: 'Execute command',
-      action: () => {
-        if (filteredCommands[selectedIndex]) {
-          executeCommand(filteredCommands[selectedIndex])
-        }
-      },
-      enabled: isOpen
+  // Keyboard event handling for the palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+P to open palette
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+        e.preventDefault()
+        setIsOpen(true)
+        return
+      }
+
+      if (!isOpen) return
+
+      switch (e.key) {
+        case 'Escape':
+          e.preventDefault()
+          setIsOpen(false)
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          setSelectedIndex(prev => 
+            Math.min(prev + 1, filteredCommands.length - 1)
+          )
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setSelectedIndex(prev => Math.max(prev - 1, 0))
+          break
+        case 'Enter':
+          e.preventDefault()
+          if (filteredCommands[selectedIndex]) {
+            executeCommand(filteredCommands[selectedIndex])
+          }
+          break
+      }
     }
-  ], [isOpen, selectedIndex, filteredCommands])
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, selectedIndex, filteredCommands])
 
   const executeCommand = (cmd: CommandItem) => {
     cmd.action()

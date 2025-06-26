@@ -13,7 +13,7 @@ import { toast } from 'react-hot-toast'
 import AddRequisitionModal from '../../components/procurement/AddRequisitionModal'
 import PRWorkflowInfo from '../../components/procurement/PRWorkflowInfo'
 import PRStatusSummary from '../../components/procurement/PRStatusSummary'
-import { useKeyboardShortcuts, useListNavigation, type KeyboardShortcut } from '../../hooks/useKeyboardShortcuts'
+// import { useKeyboardShortcuts, useListNavigation, type KeyboardShortcut } from '../../hooks/useKeyboardShortcuts' // Removed shortcuts system
 import DenseTable, { Column } from '../../components/DenseTable'
 
 interface RequisitionItem {

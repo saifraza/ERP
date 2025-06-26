@@ -18,7 +18,7 @@ import { cn } from '../lib/utils'
 import CompanySelector from '../components/CompanySelector'
 import CommandPalette from '../components/CommandPalette'
 import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp'
-import { useGlobalKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+// import { useGlobalKeyboardShortcuts } from '../hooks/useKeyboardShortcuts' // Removed shortcuts system
 import DensityToggle from '../components/DensityToggle'
 
 interface UltraModernLayoutProps {
@@ -238,7 +238,7 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
   const { user, logout } = useAuthStore()
   
   // Initialize global keyboard shortcuts
-  useGlobalKeyboardShortcuts()
+  // useGlobalKeyboardShortcuts() // Removed shortcuts system
 
   // Auto-expand active sections
   useEffect(() => {
