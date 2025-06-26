@@ -35,6 +35,7 @@ import checkEmailTablesRoutes from './routes/check-email-tables.js'
 import fixRfqDuplicatesRoutes from './routes/fix-rfq-duplicates.js'
 import setupCompanyRoutes from './routes/setup-company.js'
 import clearDatabaseRoutes from './routes/clear-database.js'
+import simpleClearRoutes from './routes/simple-clear.js'
 
 const app = new Hono()
 
@@ -110,6 +111,7 @@ app.route('/api/rfq-email-history', rfqEmailHistoryRoutes)
 // app.route('/api/fix-rfq-duplicates', fixRfqDuplicatesRoutes) // Debug route - disabled in production
 app.route('/api/setup-company', setupCompanyRoutes)
 app.route('/api/clear-database', clearDatabaseRoutes) // DANGEROUS - only for development
+app.route('/api/simple-clear', simpleClearRoutes) // Simple clear endpoint
 
 // Debug endpoint to check users (only in development)
 if (process.env.NODE_ENV !== 'production') {
