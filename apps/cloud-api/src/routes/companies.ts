@@ -10,7 +10,7 @@ app.get('/', authMiddleware, async (c) => {
   try {
     const userId = c.get('userId')
     
-    // Get companies where user has access
+    // Get companies where user has access AND company is active
     const companyUsers = await prisma.companyUser.findMany({
       where: { userId },
       include: {
@@ -22,7 +22,10 @@ app.get('/', authMiddleware, async (c) => {
       }
     })
     
-    const companies = companyUsers.map(cu => cu.company)
+    // Filter out inactive companies
+    const companies = companyUsers
+      .map(cu => cu.company)
+      .filter(company => company.isActive)
     
     return c.json({ companies })
   } catch (error) {
@@ -140,6 +143,7 @@ app.delete('/:id', authMiddleware, async (c) => {
   try {
     const companyId = c.req.param('id')
     const userId = c.get('userId')
+    const hardDelete = c.req.query('hard') === 'true'
     
     // Only OWNER or ADMIN can delete company
     const companyUser = await prisma.companyUser.findFirst({
@@ -154,16 +158,39 @@ app.delete('/:id', authMiddleware, async (c) => {
       return c.json({ error: 'Only company owner or admin can delete company' }, 403)
     }
     
-    // Soft delete by marking as inactive
-    await prisma.company.update({
-      where: { id: companyId },
-      data: {
-        isActive: false,
-        updatedAt: new Date()
-      }
-    })
-    
-    return c.json({ message: 'Company deleted successfully' })
+    if (hardDelete && process.env.NODE_ENV !== 'production') {
+      // Hard delete for testing - remove all related data
+      await prisma.$transaction(async (tx) => {
+        // Delete all related data first
+        await tx.companyUser.deleteMany({ where: { companyId } })
+        await tx.factory.deleteMany({ where: { companyId } })
+        await tx.division.deleteMany({ where: { companyId } })
+        await tx.vendor.deleteMany({ where: { companyId } })
+        await tx.material.deleteMany({ where: { companyId } })
+        await tx.customer.deleteMany({ where: { companyId } })
+        await tx.taxRate.deleteMany({ where: { companyId } })
+        await tx.hSNCode.deleteMany({ where: { companyId } })
+        await tx.uOM.deleteMany({ where: { companyId } })
+        await tx.account.deleteMany({ where: { companyId } })
+        await tx.emailCredential.deleteMany({ where: { companyId } })
+        
+        // Finally delete the company
+        await tx.company.delete({ where: { id: companyId } })
+      })
+      
+      return c.json({ message: 'Company permanently deleted' })
+    } else {
+      // Soft delete by marking as inactive
+      await prisma.company.update({
+        where: { id: companyId },
+        data: {
+          isActive: false,
+          updatedAt: new Date()
+        }
+      })
+      
+      return c.json({ message: 'Company deleted successfully' })
+    }
   } catch (error) {
     console.error('Error deleting company:', error)
     return c.json({ error: 'Failed to delete company' }, 500)
