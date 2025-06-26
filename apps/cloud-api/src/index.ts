@@ -109,7 +109,7 @@ app.route('/api/rfq-email-history', rfqEmailHistoryRoutes)
 // app.route('/api/check-email-tables', checkEmailTablesRoutes) // Debug route - disabled in production
 // app.route('/api/fix-rfq-duplicates', fixRfqDuplicatesRoutes) // Debug route - disabled in production
 app.route('/api/setup-company', setupCompanyRoutes)
-// app.route('/api/clear-database', clearDatabaseRoutes) // DANGEROUS - only for development
+app.route('/api/clear-database', clearDatabaseRoutes) // DANGEROUS - only for development
 
 // Debug endpoint to check users (only in development)
 if (process.env.NODE_ENV !== 'production') {
