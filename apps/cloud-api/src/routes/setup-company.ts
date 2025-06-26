@@ -182,14 +182,14 @@ app.post('/complete', async (c) => {
         const divisionTypes = [...new Set(data.factories.map(f => f.type))]
         
         for (const type of divisionTypes) {
-          const divisionType = type === 'integrated' ? 'SUGAR' : type.toUpperCase()
+          const divisionName = type.charAt(0).toUpperCase() + type.slice(1)
+          const divisionCode = type.toUpperCase().slice(0, 4)
+          
           await tx.division.create({
             data: {
               companyId: company.id,
-              code: divisionType.slice(0, 3),
-              name: `${type.charAt(0).toUpperCase() + type.slice(1)} Division`,
-              type: divisionType as any,
-              description: `${type} operations division`
+              code: divisionCode,
+              name: `${divisionName} Division`
             }
           })
         }
