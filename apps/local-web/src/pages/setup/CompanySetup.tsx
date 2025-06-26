@@ -48,6 +48,7 @@ export interface FactoryData {
   crushingCapacity?: number
   powerCapacity?: number
   ethanolCapacity?: number
+  feedCapacity?: number
   gstNumber?: string
   factoryLicense?: string
   pollutionLicense?: string
@@ -137,20 +138,25 @@ export default function CompanySetup() {
       // Also try API call but don't fail if it doesn't work
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+        const requestBody = {
+          company: companyData,
+          factories: factories,
+          masterDataTemplate: template
+        }
+        console.log('Sending setup request:', requestBody)
+        
         const response = await fetch(`${apiUrl}/api/setup-company/complete`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
-          body: JSON.stringify({
-            company: companyData,
-            factories: factories,
-            masterDataTemplate: template
-          })
+          body: JSON.stringify(requestBody)
         })
         
         if (!response.ok) {
+          const errorData = await response.json()
+          console.error('Setup API error:', errorData)
           console.warn('API call failed, but data saved locally')
         }
       } catch (apiError) {
