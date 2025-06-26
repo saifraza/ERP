@@ -18,7 +18,14 @@ app.post('/company', authMiddleware, async (c) => {
       return c.json({ error: 'Unauthorized - Admin only' }, 403)
     }
     
-    // Just delete companies - CASCADE will handle the rest
+    // Delete in correct order to avoid foreign key constraints
+    // First delete all related data
+    await prisma.companyUser.deleteMany({})
+    await prisma.emailCredential.deleteMany({})
+    await prisma.division.deleteMany({})
+    await prisma.factory.deleteMany({})
+    
+    // Then delete companies
     const deleted = await prisma.company.deleteMany({})
     
     return c.json({ 
