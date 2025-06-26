@@ -76,11 +76,12 @@ app.get('/test', async (c) => {
 // Debug endpoint to list emails (requires auth)
 app.post('/debug/list-emails', authMiddleware, async (c) => {
   try {
+    const userId = c.get('userId') // Get userId from auth
     const { companyId, maxResults = 5 } = await c.req.json()
     
-    console.log('Debug list emails - companyId:', companyId)
+    console.log('Debug list emails - userId:', userId, 'companyId:', companyId)
     
-    const emails = await multiTenantGmail.listEmails(companyId, maxResults) // Remove query due to scope limitations
+    const emails = await multiTenantGmail.listEmails(userId, maxResults) // Use userId instead
     
     return c.json({
       success: true,
@@ -137,17 +138,17 @@ app.post('/process', async (c) => {
 // Process multiple emails in batch
 app.post('/process-batch', async (c) => {
   try {
+    const userId = c.get('userId') // Get userId from auth middleware
     const body = await c.req.json()
-    const { companyId, maxResults = 10 } = body // Removed query parameter
+    const { companyId, maxResults = 10 } = body
     
-    console.log(`Processing batch emails - Company: ${companyId}, MaxResults: ${maxResults}`)
+    console.log(`Processing batch emails - User: ${userId}, Company: ${companyId}, MaxResults: ${maxResults}`)
     console.log('Request body:', JSON.stringify(body))
-    console.log('User:', c.get('user'))
     
-    // Get unprocessed emails
+    // Get unprocessed emails using userId
     let emails = []
     try {
-      emails = await multiTenantGmail.listEmails(companyId, maxResults) // No query parameter
+      emails = await multiTenantGmail.listEmails(userId, maxResults) // Use userId instead of companyId
     } catch (gmailError: any) {
       console.error('Gmail list error:', gmailError)
       throw new Error(`Failed to list emails: ${gmailError.message}`)
