@@ -25,9 +25,28 @@ async function main() {
   }
 
   // Create default users
+  const saifPassword = await bcrypt.hash('1234', 10)
   const adminPassword = await bcrypt.hash('admin123', 10)
   const managerPassword = await bcrypt.hash('manager123', 10)
   const operatorPassword = await bcrypt.hash('operator123', 10)
+  
+  // Create saif user (main admin)
+  const saifUser = await prisma.user.upsert({
+    where: { email: 'saif@erp.com' },
+    update: {
+      password: saifPassword,
+      name: 'saif',
+      linkedGmailEmail: 'saif@mspil.in'
+    },
+    create: {
+      email: 'saif@erp.com',
+      name: 'saif',
+      password: saifPassword,
+      role: 'ADMIN',
+      linkedGmailEmail: 'saif@mspil.in',
+      isActive: true
+    }
+  })
   
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@erp.com' },
@@ -37,6 +56,7 @@ async function main() {
       name: 'Admin User',
       password: adminPassword,
       role: 'ADMIN',
+      linkedGmailEmail: 'admin@mspil.in',
       isActive: true
     }
   })
@@ -49,6 +69,7 @@ async function main() {
       name: 'Manager User',
       password: managerPassword,
       role: 'MANAGER',
+      linkedGmailEmail: 'manager@mspil.in',
       isActive: true
     }
   })
@@ -61,6 +82,7 @@ async function main() {
       name: 'Operator User',
       password: operatorPassword,
       role: 'OPERATOR',
+      linkedGmailEmail: 'operator@mspil.in',
       isActive: true
     }
   })
@@ -117,6 +139,23 @@ async function main() {
   console.log('✅ Created factory:', factory.name)
 
   // Link users to company
+  await prisma.companyUser.upsert({
+    where: {
+      companyId_userId: {
+        companyId: company.id,
+        userId: saifUser.id
+      }
+    },
+    update: {},
+    create: {
+      userId: saifUser.id,
+      companyId: company.id,
+      role: 'ADMIN',
+      permissions: JSON.stringify(['ALL']),
+      isDefault: true
+    }
+  })
+  
   await prisma.companyUser.upsert({
     where: {
       companyId_userId: {
