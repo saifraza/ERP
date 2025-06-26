@@ -37,28 +37,64 @@ export class RFQEmailProcessor {
       const results = []
       
       for (const email of emails) {
-        console.log(`Processing email: ${email.subject} from ${email.from}`)
+        console.log(`\n=== Processing email ===`)
+        console.log(`Subject: ${email.subject}`)
+        console.log(`From: ${email.from}`)
+        
         try {
+          // Extract email address from sender
+          const senderEmail = email.from.match(/<(.+)>/)?.[1] || email.from
+          console.log(`Extracted email address: ${senderEmail}`)
+          
           // Check if email is from a vendor
           const vendor = await prisma.vendor.findFirst({
             where: {
               companyId,
-              email: email.from.match(/<(.+)>/)?.[1] || email.from
+              email: senderEmail
             }
           })
           
           if (!vendor) {
-            console.log(`Email from non-vendor: ${email.from}`)
+            console.log(`Email from non-vendor: ${senderEmail}`)
+            console.log(`Checking all vendors in company...`)
+            const allVendors = await prisma.vendor.findMany({
+              where: { companyId },
+              select: { email: true, name: true }
+            })
+            console.log(`Company has ${allVendors.length} vendors:`)
+            allVendors.forEach(v => console.log(`  - ${v.name}: ${v.email}`))
+            
+            results.push({
+              emailId: email.id,
+              success: false,
+              reason: 'not_a_vendor',
+              senderEmail,
+              subject: email.subject
+            })
             continue
           }
+          
+          console.log(`Found vendor: ${vendor.name} (ID: ${vendor.id})`)
           
           // Get full email content
           const fullEmail = await multiTenantGmail.getEmailContent(companyId, email.id)
           
           // Check if this is a response to an RFQ
           const rfqNumber = this.extractRFQNumber(email.subject, fullEmail.textBody || fullEmail.htmlBody || '')
+          console.log(`Extracted RFQ number: ${rfqNumber}`)
+          
           if (!rfqNumber) {
             console.log(`No RFQ number found in email from ${vendor.name}`)
+            console.log(`Subject: ${email.subject}`)
+            console.log(`Body preview: ${(fullEmail.textBody || fullEmail.htmlBody || '').substring(0, 200)}...`)
+            
+            results.push({
+              emailId: email.id,
+              success: false,
+              reason: 'no_rfq_number',
+              vendorName: vendor.name,
+              subject: email.subject
+            })
             continue
           }
           
@@ -82,9 +118,27 @@ export class RFQEmailProcessor {
           }
           
           if (!rfq) {
-            console.log(`RFQ ${rfqNumber} not found`)
+            console.log(`RFQ ${rfqNumber} not found in database`)
+            console.log(`Checking all RFQs in company...`)
+            const allRFQs = await prisma.rFQ.findMany({
+              where: { companyId },
+              select: { rfqNumber: true, status: true }
+            })
+            console.log(`Company has ${allRFQs.length} RFQs:`)
+            allRFQs.forEach(r => console.log(`  - ${r.rfqNumber} (${r.status})`))
+            
+            results.push({
+              emailId: email.id,
+              success: false,
+              reason: 'rfq_not_found',
+              rfqNumber,
+              vendorName: vendor.name,
+              subject: email.subject
+            })
             continue
           }
+          
+          console.log(`Found RFQ: ${rfq.rfqNumber} (Status: ${rfq.status})`)
           
           // Check if vendor is part of this RFQ
           const rfqVendor = await prisma.rFQVendor.findFirst({
@@ -96,8 +150,26 @@ export class RFQEmailProcessor {
           
           if (!rfqVendor) {
             console.log(`Vendor ${vendor.name} not part of RFQ ${rfqNumber}`)
+            console.log(`Checking vendors assigned to this RFQ...`)
+            const rfqVendors = await prisma.rFQVendor.findMany({
+              where: { rfqId: rfq.id },
+              include: { vendor: { select: { name: true, email: true } } }
+            })
+            console.log(`RFQ has ${rfqVendors.length} assigned vendors:`)
+            rfqVendors.forEach(rv => console.log(`  - ${rv.vendor.name} (${rv.vendor.email})`))
+            
+            results.push({
+              emailId: email.id,
+              success: false,
+              reason: 'vendor_not_in_rfq',
+              rfqNumber: rfq.rfqNumber,
+              vendorName: vendor.name,
+              subject: email.subject
+            })
             continue
           }
+          
+          console.log(`Vendor ${vendor.name} is part of RFQ ${rfq.rfqNumber}`)
           
           // Process the email
           const result = await this.processVendorResponse(email, fullEmail, rfq, vendor)
@@ -137,7 +209,16 @@ export class RFQEmailProcessor {
         success: true,
         processed: results.length,
         results,
-        summary
+        summary,
+        debug: {
+          totalEmailsFound: emails.length,
+          failureReasons: {
+            notAVendor: results.filter(r => r.reason === 'not_a_vendor').length,
+            noRfqNumber: results.filter(r => r.reason === 'no_rfq_number').length,
+            rfqNotFound: results.filter(r => r.reason === 'rfq_not_found').length,
+            vendorNotInRfq: results.filter(r => r.reason === 'vendor_not_in_rfq').length
+          }
+        }
       }
     } catch (error) {
       console.error('Error processing RFQ emails:', error)

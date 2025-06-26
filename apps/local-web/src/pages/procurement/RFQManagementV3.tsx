@@ -307,9 +307,31 @@ export default function RFQManagementV3() {
             },
           })
         } else if (data.processed === 0 && data.summary?.totalEmails > 0) {
-          toast(`Found ${data.summary.totalEmails} emails but none matched active RFQs`, {
+          // Show detailed failure reasons
+          const debug = data.debug
+          let message = `Found ${data.summary.totalEmails} emails but none matched active RFQs:\n`
+          
+          if (debug?.failureReasons) {
+            if (debug.failureReasons.notAVendor > 0) {
+              message += `• ${debug.failureReasons.notAVendor} from non-vendors\n`
+            }
+            if (debug.failureReasons.noRfqNumber > 0) {
+              message += `• ${debug.failureReasons.noRfqNumber} missing RFQ number\n`
+            }
+            if (debug.failureReasons.rfqNotFound > 0) {
+              message += `• ${debug.failureReasons.rfqNotFound} RFQ not found\n`
+            }
+            if (debug.failureReasons.vendorNotInRfq > 0) {
+              message += `• ${debug.failureReasons.vendorNotInRfq} vendor not in RFQ\n`
+            }
+          }
+          
+          toast(message, {
             icon: '⚠️',
-            duration: 5000
+            duration: 7000,
+            style: {
+              whiteSpace: 'pre-line'
+            }
           })
         } else {
           const summary = data.summary || {}
