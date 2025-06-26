@@ -334,52 +334,8 @@ export default function RFQManagementV3() {
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       
-      // Create a new window with an embedded PDF viewer
-      const pdfWindow = window.open('', '_blank', 'width=800,height=600')
-      
-      if (pdfWindow) {
-        pdfWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>RFQ ${rfqNumber}</title>
-            <style>
-              body { margin: 0; padding: 0; height: 100vh; overflow: hidden; }
-              #toolbar { 
-                background: #f3f4f6; 
-                padding: 10px; 
-                display: flex; 
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 1px solid #e5e7eb;
-              }
-              #toolbar h3 { margin: 0; color: #1f2937; }
-              #toolbar button {
-                background: #3b82f6;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                cursor: pointer;
-              }
-              #toolbar button:hover { background: #2563eb; }
-              embed { width: 100%; height: calc(100vh - 51px); }
-            </style>
-          </head>
-          <body>
-            <div id="toolbar">
-              <h3>RFQ: ${rfqNumber}</h3>
-              <button onclick="window.print()">Print</button>
-            </div>
-            <embed src="${url}" type="application/pdf" />
-          </body>
-          </html>
-        `)
-        pdfWindow.document.close()
-      } else {
-        // If popup blocked, try direct navigation
-        window.location.href = url
-      }
+      // Just open the blob URL directly - let the browser handle it
+      window.open(url, '_blank')
       
       // Clean up blob URL after a delay
       setTimeout(() => URL.revokeObjectURL(url), 60000)
