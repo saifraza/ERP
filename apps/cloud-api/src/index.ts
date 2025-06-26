@@ -12,6 +12,7 @@ import mcpRoutes from './routes/mcp.js'
 // import fixDataRoutes from './routes/fix-data.js' // Debug route - not used
 import storageRoutes from './routes/storage.js'
 import emailOAuthRoutes from './routes/email-oauth.js'
+import emailOAuthUserRoutes from './routes/email-oauth-user.js'
 import assistantRoutes from './routes/assistant.js'
 // import debugRoutes from './routes/debug.js' // Debug route - not used
 import emailRoutes from './routes/email.js'
@@ -28,6 +29,7 @@ import materialsRoutes from './routes/materials.js'
 import factoriesRoutes from './routes/factories.js'
 import procurementDashboardRoutes from './routes/procurement-dashboard.js'
 import procurementStatsRoutes from './routes/procurement-stats.js'
+import debugEmailRoutes from './routes/debug-email.js'
 // import debugRfqRoutes from './routes/debug-rfq.js' // Debug route - not used
 import rfqEmailHistoryRoutes from './routes/rfq-email-history.js'
 // import testEmailLogRoutes from './routes/test-email-log.js' // Debug route - not used
@@ -86,6 +88,7 @@ app.route('/api/mcp', mcpRoutes)
 // app.route('/api/fix-data', fixDataRoutes) // Debug route - disabled in production
 app.route('/api/storage', storageRoutes)
 app.route('/api/email-oauth', emailOAuthRoutes)
+app.route('/api/email-oauth-user', emailOAuthUserRoutes)
 app.route('/api/assistant', assistantRoutes)
 // app.route('/api/debug', debugRoutes) // Debug route - disabled in production
 app.route('/api/email', emailRoutes)
@@ -102,6 +105,7 @@ app.route('/api/materials', materialsRoutes)
 app.route('/api/factories', factoriesRoutes)
 app.route('/api/procurement/dashboard', procurementDashboardRoutes)
 app.route('/api/procurement/stats', procurementStatsRoutes)
+app.route('/api/debug-email', debugEmailRoutes)
 // app.route('/api/debug-rfq', debugRfqRoutes) // Debug route - disabled in production
 app.route('/api/rfq-email-history', rfqEmailHistoryRoutes)
 // app.route('/api/test-email-log', testEmailLogRoutes) // Debug route - disabled in production
