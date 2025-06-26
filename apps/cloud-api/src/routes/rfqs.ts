@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
 import { procurementAutomation } from '../services/procurement-automation.js'
-import { rfqPDFGeneratorV2 } from '../services/rfq-pdf-generator-v2.js'
+import { rfqPDFFinal } from '../services/rfq-pdf-final.js'
 import { z } from 'zod'
 
 const app = new Hono()
@@ -810,7 +810,7 @@ app.get('/:id/pdf', async (c) => {
     
     try {
       // Generate PDF
-      const pdfBuffer = await rfqPDFGeneratorV2.generateRFQPDF(rfqId)
+      const pdfBuffer = await rfqPDFFinal.generateRFQPDF(rfqId)
       
       // Set response headers for PDF
       c.header('Content-Type', 'application/pdf')

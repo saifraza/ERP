@@ -30,7 +30,7 @@ import VendorsProcurement from './pages/procurement/Vendors'
 import VendorDetail from './pages/procurement/VendorDetail'
 import PurchaseRequisitions from './pages/procurement/PurchaseRequisitions'
 import PurchaseRequisitionDetail from './pages/procurement/PurchaseRequisitionDetail'
-import RFQManagement from './pages/procurement/RFQManagement'
+import RFQManagementV2 from './pages/procurement/RFQManagementV2'
 import ProcurementDashboard from './pages/procurement/ProcurementDashboard'
 import PendingApprovals from './pages/procurement/PendingApprovals'
 import ConvertToRFQ from './pages/procurement/ConvertToRFQ'
@@ -128,7 +128,7 @@ function App() {
                     <Route path="/procurement/requisitions/:id" element={<PurchaseRequisitionDetail />} />
                     <Route path="/procurement/requisitions/:id/convert-to-rfq" element={<ConvertToRFQ />} />
                     <Route path="/procurement/approvals" element={<PendingApprovals />} />
-                    <Route path="/procurement/rfqs" element={<RFQManagement />} />
+                    <Route path="/procurement/rfqs" element={<RFQManagementV2 />} />
                     <Route path="/procurement/rfqs/:id" element={<RFQDetail />} />
                     <Route path="/procurement/rfqs/:id/email-history" element={<RFQEmailHistory />} />
                     <Route path="/procurement/rfqs/:id/comparison" element={<QuotationComparison />} />
