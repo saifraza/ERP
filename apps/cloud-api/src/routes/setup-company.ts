@@ -8,6 +8,32 @@ const app = new Hono()
 // Apply auth middleware to all routes
 app.use('*', authMiddleware)
 
+// Check if user has company
+app.get('/check-status', async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      include: {
+        company: {
+          include: {
+            factories: true
+          }
+        }
+      }
+    })
+    
+    return c.json({
+      hasCompany: !!companyUser,
+      company: companyUser?.company || null
+    })
+  } catch (error) {
+    console.error('Check status error:', error)
+    return c.json({ error: 'Failed to check status' }, 500)
+  }
+})
+
 // Schema for company setup
 const companySetupSchema = z.object({
   company: z.object({
@@ -55,15 +81,35 @@ app.post('/complete', async (c) => {
     const userId = c.get('userId')
     const body = await c.req.json()
     
-    const data = companySetupSchema.parse(body)
+    console.log('Setup company request:', JSON.stringify(body, null, 2))
+    
+    // Validate the data
+    let data
+    try {
+      data = companySetupSchema.parse(body)
+    } catch (error) {
+      console.error('Validation error:', error)
+      if (error instanceof z.ZodError) {
+        return c.json({ 
+          error: 'Validation failed', 
+          details: error.errors 
+        }, 400)
+      }
+      throw error
+    }
     
     // Check if user already has a company
     const existingCompany = await prisma.companyUser.findFirst({
-      where: { userId }
+      where: { userId },
+      include: { company: true }
     })
     
     if (existingCompany) {
-      return c.json({ error: 'User already belongs to a company' }, 400)
+      console.log('User already has company:', existingCompany.company.name)
+      return c.json({ 
+        error: 'User already belongs to a company',
+        companyName: existingCompany.company.name 
+      }, 400)
     }
     
     // Start transaction
@@ -202,11 +248,12 @@ app.post('/complete', async (c) => {
       factories: result.factories
     })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json({ error: 'Invalid input', details: error.errors }, 400)
-    }
     console.error('Company setup error:', error)
-    return c.json({ error: 'Failed to complete company setup' }, 500)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({ 
+      error: 'Failed to complete company setup',
+      details: errorMessage 
+    }, 500)
   }
 })
 
