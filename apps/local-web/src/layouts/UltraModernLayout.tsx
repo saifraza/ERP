@@ -20,13 +20,58 @@ import CommandPalette from '../components/CommandPalette'
 import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp'
 // import { useGlobalKeyboardShortcuts } from '../hooks/useKeyboardShortcuts' // Removed shortcuts system
 import DensityToggle from '../components/DensityToggle'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../utils/api'
 
 interface UltraModernLayoutProps {
   children: React.ReactNode
 }
 
-// Enhanced navigation structure with all divisions and modules
-const navigation = [
+// Map division codes to icons
+const divisionIcons: Record<string, any> = {
+  SUGAR: Factory,
+  POWER: Zap,
+  ETHANOL: Beaker,
+  FEED: Wheat,
+  COMMON: Building2
+}
+
+// Division-specific menu items
+const divisionMenuItems: Record<string, any[]> = {
+  SUGAR: [
+    { name: 'Cane Yard', href: '/sugar/cane-yard', icon: Truck },
+    { name: 'Weighbridge', href: '/sugar/weighbridge', icon: Scale },
+    { name: 'Crushing', href: '/sugar/crushing', icon: Factory },
+    { name: 'Processing', href: '/sugar/processing', icon: Activity },
+    { name: 'Quality Lab', href: '/sugar/lab', icon: Beaker },
+    { name: 'Packing', href: '/sugar/packing', icon: Package2 },
+  ],
+  POWER: [
+    { name: 'Generation', href: '/power/generation', icon: Activity },
+    { name: 'Boilers', href: '/power/boilers', icon: Factory },
+    { name: 'Turbines', href: '/power/turbines', icon: Zap },
+    { name: 'Grid Export', href: '/power/grid', icon: Globe },
+    { name: 'Maintenance', href: '/power/maintenance', icon: Settings },
+  ],
+  ETHANOL: [
+    { name: 'Fermentation', href: '/ethanol/fermentation', icon: Beaker },
+    { name: 'Distillation', href: '/ethanol/distillation', icon: Factory },
+    { name: 'Storage Tanks', href: '/ethanol/storage', icon: Database },
+    { name: 'Quality Control', href: '/ethanol/quality', icon: FileCheck },
+    { name: 'Dispatch', href: '/ethanol/dispatch', icon: Truck },
+  ],
+  FEED: [
+    { name: 'Raw Materials', href: '/feed/materials', icon: Package },
+    { name: 'Formulation', href: '/feed/formulation', icon: ClipboardList },
+    { name: 'Production', href: '/feed/production', icon: Factory },
+    { name: 'Packaging', href: '/feed/packaging', icon: Package2 },
+  ],
+  COMMON: [
+    { name: 'Shared Services', href: '/common/services', icon: Building2 },
+  ]
+}
+// Static navigation items (non-division specific)
+const getStaticNavigation = () => [
   {
     title: 'Main',
     items: [
@@ -36,55 +81,6 @@ const navigation = [
       { name: 'Gmail Test', href: '/gmail-test', icon: Mail, badge: 'TEST' },
       { name: 'Documents', href: '/documents', icon: FileText },
       { name: 'Storage', href: '/storage', icon: Database },
-    ]
-  },
-  {
-    title: 'Operations',
-    items: [
-      {
-        name: 'Sugar Division',
-        icon: Factory,
-        children: [
-          { name: 'Cane Yard', href: '/sugar/cane-yard', icon: Truck },
-          { name: 'Weighbridge', href: '/sugar/weighbridge', icon: Scale },
-          { name: 'Crushing', href: '/sugar/crushing', icon: Factory },
-          { name: 'Processing', href: '/sugar/processing', icon: Activity },
-          { name: 'Quality Lab', href: '/sugar/lab', icon: Beaker },
-          { name: 'Packing', href: '/sugar/packing', icon: Package2 },
-        ]
-      },
-      {
-        name: 'Power Division',
-        icon: Zap,
-        children: [
-          { name: 'Generation', href: '/power/generation', icon: Activity },
-          { name: 'Boilers', href: '/power/boilers', icon: Factory },
-          { name: 'Turbines', href: '/power/turbines', icon: Zap },
-          { name: 'Grid Export', href: '/power/grid', icon: Globe },
-          { name: 'Maintenance', href: '/power/maintenance', icon: Settings },
-        ]
-      },
-      {
-        name: 'Ethanol Division',
-        icon: Beaker,
-        children: [
-          { name: 'Fermentation', href: '/ethanol/fermentation', icon: Beaker },
-          { name: 'Distillation', href: '/ethanol/distillation', icon: Factory },
-          { name: 'Storage Tanks', href: '/ethanol/storage', icon: Database },
-          { name: 'Quality Control', href: '/ethanol/quality', icon: FileCheck },
-          { name: 'Dispatch', href: '/ethanol/dispatch', icon: Truck },
-        ]
-      },
-      {
-        name: 'Feed Division',
-        icon: Wheat,
-        children: [
-          { name: 'Raw Materials', href: '/feed/materials', icon: Package },
-          { name: 'Formulation', href: '/feed/formulation', icon: ClipboardList },
-          { name: 'Production', href: '/feed/production', icon: Factory },
-          { name: 'Packaging', href: '/feed/packaging', icon: Package2 },
-        ]
-      }
     ]
   },
   {
@@ -240,6 +236,34 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
   // Initialize global keyboard shortcuts
   // useGlobalKeyboardShortcuts() // Removed shortcuts system
 
+  // Fetch divisions from API
+  const { data: divisionsData } = useQuery({
+    queryKey: ['divisions'],
+    queryFn: async () => {
+      const response = await api.get('/divisions')
+      return response.data
+    },
+    enabled: !!user,
+  })
+
+  // Build navigation with dynamic divisions
+  const navigation = getStaticNavigation()
+  
+  // Add Operations section with dynamic divisions if available
+  if (divisionsData?.divisions && divisionsData.divisions.length > 0) {
+    const operationsSection = {
+      title: 'Operations',
+      items: divisionsData.divisions.map((division: any) => ({
+        name: division.name,
+        icon: divisionIcons[division.code] || Building2,
+        children: divisionMenuItems[division.code] || []
+      }))
+    }
+    
+    // Insert Operations section after Main section
+    navigation.splice(1, 0, operationsSection)
+  }
+
   // Auto-expand active sections
   useEffect(() => {
     const path = location.pathname
@@ -251,7 +275,7 @@ export default function UltraModernLayout({ children }: UltraModernLayoutProps) 
     if (activeSection.length > 0) {
       setExpandedSections(prev => [...new Set([...prev, activeSection[0].name])])
     }
-  }, [location.pathname])
+  }, [location.pathname, navigation])
 
   const toggleSection = (name: string) => {
     setExpandedSections(prev =>

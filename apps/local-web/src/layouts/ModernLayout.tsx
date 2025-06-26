@@ -5,18 +5,39 @@ import {
   Home, Package, DollarSign, Users, FileText, Settings,
   ChevronDown, Menu, X, LogOut, Bell, Search, 
   ShoppingCart, Warehouse, CreditCard, BarChart3,
-  Building, ChevronRight, Layers, Grid, Mail
+  Building, ChevronRight, Layers, Grid, Mail,
+  Factory, Zap, Droplets, Package2, Building2
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { cn } from '../lib/utils'
 import CompanySelector from '../components/CompanySelector'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../utils/api'
 
 interface ModernLayoutProps {
   children: React.ReactNode
 }
 
-// Navigation structure with nested items
-const navigation = [
+// Map division codes to icons
+const divisionIcons: Record<string, any> = {
+  SUGAR: Factory,
+  POWER: Zap,
+  ETHANOL: Droplets,
+  FEED: Package2,
+  COMMON: Building2
+}
+
+// Map division codes to href
+const divisionHrefs: Record<string, string> = {
+  SUGAR: '/sugar',
+  POWER: '/power',
+  ETHANOL: '/ethanol',
+  FEED: '/feed',
+  COMMON: '/common'
+}
+
+// Static navigation structure
+const getStaticNavigation = () => [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Mails', href: '/mails', icon: Mail },
@@ -71,6 +92,33 @@ export default function ModernLayout({ children }: ModernLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>(['Store', 'Finance'])
   const { user, logout } = useAuthStore()
+
+  // Fetch divisions from API
+  const { data: divisionsData } = useQuery({
+    queryKey: ['divisions'],
+    queryFn: async () => {
+      const response = await api.get('/divisions')
+      return response.data
+    },
+    enabled: !!user,
+  })
+
+  // Build navigation with dynamic divisions
+  const navigation = getStaticNavigation()
+  
+  // Add divisions to navigation if available
+  if (divisionsData?.divisions && divisionsData.divisions.length > 0) {
+    divisionsData.divisions.forEach((division: any) => {
+      navigation.push({
+        name: division.name,
+        icon: divisionIcons[division.code] || Building2,
+        children: [
+          { name: 'Dashboard', href: `${divisionHrefs[division.code] || `/${division.code.toLowerCase()}`}/dashboard` },
+          { name: 'Reports', href: `${divisionHrefs[division.code] || `/${division.code.toLowerCase()}`}/reports` },
+        ]
+      })
+    })
+  }
 
   const toggleExpanded = (name: string) => {
     setExpandedItems(prev =>

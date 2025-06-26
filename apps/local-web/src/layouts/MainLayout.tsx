@@ -3,32 +3,77 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
   Home, Factory, Zap, Droplets, Package2, Users, Scale, 
-  DollarSign, Settings, Menu, X, LogOut, FileText 
+  DollarSign, Settings, Menu, X, LogOut, FileText, Building2 
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { cn } from '../lib/utils'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../utils/api'
 
 interface MainLayoutProps {
   children: ReactNode
 }
 
-const navigation = [
+// Map division codes to icons
+const divisionIcons: Record<string, any> = {
+  SUGAR: Factory,
+  POWER: Zap,
+  ETHANOL: Droplets,
+  FEED: Package2,
+  COMMON: Building2
+}
+
+// Map division codes to href
+const divisionHrefs: Record<string, string> = {
+  SUGAR: '/sugar',
+  POWER: '/power',
+  ETHANOL: '/ethanol',
+  FEED: '/feed',
+  COMMON: '/common'
+}
+
+// Static navigation items
+const staticNavigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Documents', href: '/documents', icon: FileText },
-  { name: 'Sugar Division', href: '/sugar', icon: Factory },
-  { name: 'Power Division', href: '/power', icon: Zap },
-  { name: 'Ethanol Division', href: '/ethanol', icon: Droplets },
-  { name: 'Animal Feed', href: '/feed', icon: Package2 },
-  { name: 'Farmers', href: '/farmers', icon: Users },
-  { name: 'Weighbridge', href: '/weighbridge', icon: Scale },
-  { name: 'Finance', href: '/finance', icon: DollarSign },
-  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const logout = useAuthStore((state) => state.logout)
+  const { user, logout } = useAuthStore()
+
+  // Fetch divisions from API
+  const { data: divisionsData } = useQuery({
+    queryKey: ['divisions'],
+    queryFn: async () => {
+      const response = await api.get('/divisions')
+      return response.data
+    },
+    enabled: !!user,
+  })
+
+  // Build navigation with dynamic divisions
+  const navigation = [...staticNavigation]
+  
+  // Add divisions if available
+  if (divisionsData?.divisions && divisionsData.divisions.length > 0) {
+    divisionsData.divisions.forEach((division: any) => {
+      navigation.push({
+        name: division.name,
+        href: divisionHrefs[division.code] || `/${division.code.toLowerCase()}`,
+        icon: divisionIcons[division.code] || Building2
+      })
+    })
+  }
+  
+  // Add remaining static items
+  navigation.push(
+    { name: 'Farmers', href: '/farmers', icon: Users },
+    { name: 'Weighbridge', href: '/weighbridge', icon: Scale },
+    { name: 'Finance', href: '/finance', icon: DollarSign },
+    { name: 'Settings', href: '/settings', icon: Settings },
+  )
 
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">
@@ -54,14 +99,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
-          <SidebarContent location={location} />
+          <SidebarContent location={location} navigation={navigation} />
         </div>
       </div>
 
       {/* Static sidebar for desktop */}
       <div className="hidden md:flex md:flex-shrink-0">
         <div className="flex flex-col w-64">
-          <SidebarContent location={location} />
+          <SidebarContent location={location} navigation={navigation} />
         </div>
       </div>
 
@@ -87,7 +132,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   )
 }
 
-function SidebarContent({ location }: { location: any }) {
+function SidebarContent({ location, navigation }: { location: any, navigation: any[] }) {
   const { user, logout } = useAuthStore()
   
   return (
