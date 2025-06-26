@@ -109,8 +109,8 @@ app.post('/force-clear', async (c) => {
     let clearedCreds = false
     
     try {
-      // Use raw SQL to ensure it clears
-      const result = await prisma.$executeRaw`UPDATE "User" SET "linkedGmailEmail" = NULL WHERE id = ${userId}`
+      // Use raw SQL to ensure it clears - use empty string
+      const result = await prisma.$executeRaw`UPDATE "User" SET "linkedGmailEmail" = '' WHERE id = ${userId}`
       console.log('Updated user rows:', result)
       clearedEmail = true
     } catch (e) {
@@ -161,10 +161,10 @@ app.post('/clear-linked-email', async (c) => {
       linkedGmailEmail: currentUser?.linkedGmailEmail
     })
     
-    // Now clear the linkedGmailEmail field
+    // Now clear the linkedGmailEmail field - use empty string
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { linkedGmailEmail: null }
+      data: { linkedGmailEmail: '' }
     })
     
     console.log('User after clear:', {
@@ -214,7 +214,7 @@ app.post('/fix-email/:userId', async (c) => {
     try {
       result = await prisma.$executeRaw`
         UPDATE "User" 
-        SET "linkedGmailEmail" = NULL 
+        SET "linkedGmailEmail" = '' 
         WHERE id = ${targetUserId} 
         AND "linkedGmailEmail" = 'perchase@mspil.in'
       `
@@ -228,7 +228,7 @@ app.post('/fix-email/:userId', async (c) => {
       try {
         result = await prisma.$executeRaw`
           UPDATE "User" 
-          SET "linkedGmailEmail" = NULL 
+          SET "linkedGmailEmail" = '' 
           WHERE id = ${targetUserId}
         `
         console.log('Approach 2 result:', result)
@@ -242,7 +242,7 @@ app.post('/fix-email/:userId', async (c) => {
       try {
         await prisma.user.update({
           where: { id: targetUserId },
-          data: { linkedGmailEmail: null }
+          data: { linkedGmailEmail: '' }
         })
         result = 1
         console.log('Approach 3 succeeded')
@@ -292,11 +292,11 @@ app.post('/nuclear-clear/:userId', async (c) => {
         where: { userId: targetUserId }
       })
       
-      // Force update user
+      // Force update user - use empty string instead of null
       const user = await tx.user.update({
         where: { id: targetUserId },
         data: { 
-          linkedGmailEmail: null,
+          linkedGmailEmail: '', // Empty string instead of null
           updatedAt: new Date() // Force a change
         }
       })

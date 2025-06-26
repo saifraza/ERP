@@ -338,7 +338,7 @@ export function EmailSettings() {
             <div className="mt-4 p-4 bg-gray-100 rounded-lg text-sm">
               <p className="font-medium text-gray-900 mb-2">Debug Information:</p>
               <p className="text-gray-700">User Email: {debugInfo.user?.email}</p>
-              <p className="text-gray-700">Linked Gmail: {debugInfo.user?.linkedGmailEmail || 'None'}</p>
+              <p className="text-gray-700">Linked Gmail: {debugInfo.user?.linkedGmailEmail && debugInfo.user.linkedGmailEmail !== '' ? debugInfo.user.linkedGmailEmail : 'None'}</p>
               <p className="text-gray-700">Has Credentials: {debugInfo.status?.hasCredentials ? 'Yes' : 'No'}</p>
               <p className="text-gray-700">Credentials Count: {debugInfo.emailCredentials?.length || 0}</p>
               {debugInfo.emailCredentials?.length > 0 && (
@@ -349,7 +349,7 @@ export function EmailSettings() {
                   ))}
                 </div>
               )}
-              {debugInfo?.user?.linkedGmailEmail && (
+              {debugInfo?.user?.linkedGmailEmail && debugInfo.user.linkedGmailEmail !== '' && (
                 <div className="mt-2 space-y-2">
                   <button
                     onClick={forceClear}

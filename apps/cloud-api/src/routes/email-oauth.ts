@@ -341,7 +341,7 @@ app.post('/clear-credentials', authMiddleware, async (c) => {
       // Clear linkedGmailEmail from user (this is the main issue)
       const updatedUser = await prisma.user.update({
         where: { id: userId },
-        data: { linkedGmailEmail: null }
+        data: { linkedGmailEmail: '' } // Empty string since field is required
       })
       console.log('Cleared linkedGmailEmail from user:', updatedUser.email)
       
