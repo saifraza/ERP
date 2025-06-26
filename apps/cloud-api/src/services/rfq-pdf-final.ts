@@ -60,14 +60,21 @@ export class RFQPDFFinal {
         doc.rect(0, 0, doc.page.width, 120)
            .fill('#1e3a8a') // Deep blue background
            
-        // Company logo placeholder (white box)
-        doc.rect(50, 20, 70, 70)
+        // Company logo area with stylized text logo
+        doc.save()
+        doc.rect(50, 25, 60, 60)
            .strokeColor('#ffffff')
-           .lineWidth(2)
+           .lineWidth(1)
            .stroke()
-        doc.fontSize(12)
+           
+        // Stylized text logo
+        doc.font('Helvetica-Bold')
+           .fontSize(32)
            .fillColor('#ffffff')
-           .text('LOGO', 50, 50, { width: 70, align: 'center' })
+           .text('MS', 50, 40, { width: 60, align: 'center' })
+        doc.fontSize(8)
+           .text('POWER', 50, 67, { width: 60, align: 'center' })
+        doc.restore()
            
         // Company name and details in white
         doc.font('Helvetica-Bold')
@@ -90,38 +97,91 @@ export class RFQPDFFinal {
            .lineWidth(3)
            .stroke()
            
+        // Add watermark
+        doc.save()
+        doc.opacity(0.03)
+        doc.fontSize(80)
+           .fillColor('#1e3a8a')
+           .rotate(-45, { origin: [doc.page.width / 2, doc.page.height / 2] })
+           .text('MAHAKAUSHAL', doc.page.width / 2 - 200, doc.page.height / 2 - 40)
+        doc.restore()
+           
         // Reset to black text
         doc.fillColor('#000000')
         doc.y = 140
 
-        // Title
-        doc.fontSize(16)
+        // Title with underline
+        doc.fontSize(18)
            .font('Helvetica-Bold')
+           .fillColor('#1e3a8a')
            .text('REQUEST FOR QUOTATION', { align: 'center' })
+           
+        // Underline
+        const titleY = doc.y
+        doc.moveTo(doc.page.width / 2 - 100, titleY)
+           .lineTo(doc.page.width / 2 + 100, titleY)
+           .strokeColor('#fbbf24')
+           .lineWidth(2)
+           .stroke()
            .moveDown()
 
-        // RFQ Details
-        doc.fontSize(11)
+        // RFQ Details in a box
+        const detailsY = doc.y + 10
+        doc.rect(40, detailsY, doc.page.width - 80, 80)
+           .strokeColor('#e5e7eb')
+           .lineWidth(1)
+           .stroke()
+           
+        doc.fillColor('#000000')
+        doc.y = detailsY + 10
+        
+        // Left column
+        doc.fontSize(10)
            .font('Helvetica-Bold')
-           .text('RFQ Number: ', { continued: true })
+           .fillColor('#1e3a8a')
+           .text('RFQ Number:', 50, doc.y)
            .font('Helvetica')
-           .text(rfq.rfqNumber)
+           .fillColor('#374151')
+           .text(rfq.rfqNumber, 140, doc.y - 10)
            
         doc.font('Helvetica-Bold')
-           .text('Issue Date: ', { continued: true })
+           .fillColor('#1e3a8a')
+           .text('Issue Date:', 50, doc.y + 5)
            .font('Helvetica')
-           .text(new Date(rfq.issueDate).toLocaleDateString('en-IN'))
+           .fillColor('#374151')
+           .text(new Date(rfq.issueDate).toLocaleDateString('en-IN'), 140, doc.y - 10)
+           
+        // Right column
+        doc.font('Helvetica-Bold')
+           .fillColor('#1e3a8a')
+           .text('Due Date:', 300, detailsY + 10)
+           .font('Helvetica')
+           .fillColor('#374151')
+           .text(new Date(rfq.submissionDeadline).toLocaleDateString('en-IN'), 380, detailsY + 10)
            
         doc.font('Helvetica-Bold')
-           .text('Due Date: ', { continued: true })
+           .fillColor('#1e3a8a')
+           .text('Division:', 300, detailsY + 25)
            .font('Helvetica')
-           .text(new Date(rfq.submissionDeadline).toLocaleDateString('en-IN'))
+           .fillColor('#374151')
+           .text(rfq.requisition?.division?.name || 'General', 380, detailsY + 25)
+           
+        // Delivery info
+        doc.font('Helvetica-Bold')
+           .fillColor('#1e3a8a')
+           .text('Delivery Terms:', 50, detailsY + 45)
+           .font('Helvetica')
+           .fillColor('#374151')
+           .text(rfq.deliveryTerms || 'Ex-Works', 140, detailsY + 45)
            
         doc.font('Helvetica-Bold')
-           .text('Division: ', { continued: true })
+           .fillColor('#1e3a8a')
+           .text('Payment Terms:', 300, detailsY + 45)
            .font('Helvetica')
-           .text(rfq.requisition?.division?.name || 'General')
-           .moveDown(2)
+           .fillColor('#374151')
+           .text(rfq.paymentTerms || 'As per company policy', 380, detailsY + 45)
+           
+        doc.y = detailsY + 90
 
         // Items section with table
         doc.fontSize(14)

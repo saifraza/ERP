@@ -334,28 +334,25 @@ export default function RFQManagementV3() {
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       
-      // Open in new window for preview
-      const pdfWindow = window.open('', '_blank')
-      if (pdfWindow) {
-        pdfWindow.document.write(`
-          <html>
-            <head>
-              <title>RFQ ${rfqNumber}</title>
-              <style>
-                body { margin: 0; padding: 0; }
-                iframe { border: none; }
-              </style>
-            </head>
-            <body>
-              <iframe src="${url}" width="100%" height="100%"></iframe>
-            </body>
-          </html>
-        `)
+      // Create a direct window.open with the blob URL
+      // This should trigger the browser's PDF viewer directly
+      const pdfWindow = window.open(url, '_blank')
+      
+      if (!pdfWindow) {
+        // Fallback: create a link and click it
+        const link = document.createElement('a')
+        link.href = url
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
       }
       
-      // Clean up after a delay
+      // Clean up blob URL after a delay
       setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch (error) {
+      console.error('PDF view error:', error)
       toast.error('Failed to view PDF')
     }
   }
