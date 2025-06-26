@@ -432,7 +432,8 @@ app.post('/:id/send', async (c) => {
       {
         customSubject: body.customSubject,
         customBody: body.customBody,
-        ccEmails: body.ccEmails
+        ccEmails: body.ccEmails,
+        userId: userId  // Pass the current user's ID
       }
     )
     console.log('Send result:', result)

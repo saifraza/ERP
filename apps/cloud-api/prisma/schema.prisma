@@ -17,6 +17,7 @@ model User {
   password      String
   name          String
   role          UserRole  @default(OPERATOR)
+  linkedGmailEmail String @unique  // Mandatory work Gmail account for sending/receiving emails
   isActive      Boolean   @default(true)
   lastLogin     DateTime?
   createdAt     DateTime  @default(now())
@@ -41,6 +42,7 @@ model User {
   
   @@index([email])
   @@index([role])
+  @@index([linkedGmailEmail])
 }
 
 enum UserRole {

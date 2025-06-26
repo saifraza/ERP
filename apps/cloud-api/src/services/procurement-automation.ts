@@ -525,6 +525,7 @@ Accounts Team
       customBody?: string
       ccEmails?: string[]
       isReminder?: boolean
+      userId?: string  // Add userId to know who is sending
     }
   ) {
     console.log('=== sendRFQToVendors START ===')
@@ -721,8 +722,13 @@ Accounts Team
           // Prepare CC emails if provided
           const ccEmails = emailOptions?.ccEmails?.join(', ') || undefined
           
+          // Use userId from options or throw error if not provided
+          if (!emailOptions?.userId) {
+            throw new Error('User ID is required to send emails')
+          }
+          
           emailResult = await multiTenantGmail.sendEmailWithAttachment(
-            rfq.companyId,
+            emailOptions.userId,  // Use user ID instead of company ID
             vendor.email,
             subject,
             emailBody,

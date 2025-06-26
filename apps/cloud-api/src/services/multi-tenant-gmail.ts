@@ -6,24 +6,24 @@ export class MultiTenantGmailService {
   private clients: Map<string, OAuth2Client> = new Map()
   
   /**
-   * Get OAuth client for a specific company or user
+   * Get OAuth client for a specific user (no longer supports company-level)
    */
-  async getClient(companyId?: string, userId?: string): Promise<{
+  async getClient(userId: string): Promise<{
     client: OAuth2Client,
     email: string
   }> {
-    const cacheKey = companyId || userId || 'default'
+    const cacheKey = `user_${userId}`
     
     // Check cache
     if (this.clients.has(cacheKey)) {
       const client = this.clients.get(cacheKey)!
       // Get email from database
-      const cred = await this.getCredentials(companyId, userId)
+      const cred = await this.getCredentials(userId)
       return { client, email: cred.emailAddress }
     }
     
     // Load credentials from database
-    const credentials = await this.getCredentials(companyId, userId)
+    const credentials = await this.getCredentials(userId)
     
     if (!credentials.googleRefreshToken) {
       throw new Error(`No Google refresh token for ${credentials.emailAddress}`)
@@ -49,46 +49,47 @@ export class MultiTenantGmailService {
   }
   
   /**
-   * Get credentials from database or use default
+   * Get credentials from database for a specific user
    */
-  private async getCredentials(companyId?: string, userId?: string) {
-    // If specific company/user requested, fetch from database
-    if (companyId || userId) {
-      const cred = await prisma.emailCredential.findFirst({
-        where: {
-          AND: [
-            companyId ? { companyId } : {},
-            userId ? { userId } : {},
-            { provider: 'google' },
-            { isActive: true }
-          ]
-        }
+  private async getCredentials(userId: string) {
+    // Fetch user-specific credentials from database
+    const cred = await prisma.emailCredential.findFirst({
+      where: {
+        userId,
+        provider: 'google',
+        isActive: true
+      }
+    })
+    
+    if (!cred) {
+      // Check if user has linkedEmail
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { linkedEmail: true }
       })
       
-      if (cred) return cred
+      if (!user?.linkedEmail) {
+        throw new Error('User has not linked an email account')
+      }
+      
+      throw new Error(`No email credentials found for user. Please link your email account: ${user.linkedEmail}`)
     }
     
-    // Fall back to environment variable (current approach)
-    // Don't show default@erp.com in the UI
-    return {
-      emailAddress: process.env.GOOGLE_USER_EMAIL || 'saifraza@mspil.in',
-      googleRefreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-      provider: 'google'
-    }
+    return cred
   }
   
   /**
-   * List emails for a specific company
+   * List emails for a specific user
    */
   async listEmails(
-    companyId: string | undefined,
+    userId: string,
     maxResults: number = 10,
     query?: string
   ) {
-    const { client, email } = await this.getClient(companyId)
+    const { client, email } = await this.getClient(userId)
     const gmail = google.gmail({ version: 'v1', auth: client })
     
-    console.log(`Listing emails for ${email} (company: ${companyId || 'default'})`)
+    console.log(`Listing emails for ${email} (user: ${userId})`)
     console.log(`Query: ${query}, MaxResults: ${maxResults}`)
     
     try {
@@ -152,10 +153,10 @@ export class MultiTenantGmailService {
    * Get full email content
    */
   async getEmailContent(
-    companyId: string | undefined,
+    userId: string,
     messageId: string
   ) {
-    const { client, email } = await this.getClient(companyId)
+    const { client, email } = await this.getClient(userId)
     const gmail = google.gmail({ version: 'v1', auth: client })
     
     console.log(`Getting full email content for ${messageId} from ${email}`)
@@ -251,14 +252,14 @@ export class MultiTenantGmailService {
    * Send email from a specific company account
    */
   async sendEmail(
-    companyId: string | undefined,
+    userId: string,
     to: string,
     subject: string,
     body: string,
     cc?: string,
     bcc?: string
   ) {
-    const { client, email } = await this.getClient(companyId)
+    const { client, email } = await this.getClient(userId)
     const gmail = google.gmail({ version: 'v1', auth: client })
     
     console.log(`Sending email from ${email} to ${to}`)
@@ -300,7 +301,7 @@ export class MultiTenantGmailService {
    * Send email with attachments from a specific company account
    */
   async sendEmailWithAttachment(
-    companyId: string | undefined,
+    userId: string,
     to: string,
     subject: string,
     body: string,
@@ -312,7 +313,7 @@ export class MultiTenantGmailService {
     cc?: string,
     bcc?: string
   ) {
-    const { client, email } = await this.getClient(companyId)
+    const { client, email } = await this.getClient(userId)
     const gmail = google.gmail({ version: 'v1', auth: client })
     
     console.log(`Sending email with ${attachments.length} attachment(s) from ${email} to ${to}`)
@@ -410,8 +411,8 @@ export class MultiTenantGmailService {
   /**
    * Mark email as read
    */
-  async markAsRead(companyId: string | undefined, messageId: string) {
-    const { client } = await this.getClient(companyId)
+  async markAsRead(userId: string, messageId: string) {
+    const { client } = await this.getClient(userId)
     const gmail = google.gmail({ version: 'v1', auth: client })
     
     try {
@@ -431,17 +432,20 @@ export class MultiTenantGmailService {
   }
   
   /**
-   * Store OAuth credentials for a company
+   * Store OAuth credentials for a user
    */
   async storeCredentials(
-    companyId: string,
+    userId: string,
     emailAddress: string,
     refreshToken: string,
     provider: 'google' | 'microsoft' = 'google'
   ) {
-    // Check if credentials already exist
-    const existing = await prisma.emailCredential.findUnique({
-      where: { emailAddress }
+    // Check if credentials already exist for this user
+    const existing = await prisma.emailCredential.findFirst({
+      where: { 
+        userId,
+        emailAddress 
+      }
     })
     
     if (existing) {
@@ -449,7 +453,6 @@ export class MultiTenantGmailService {
       return await prisma.emailCredential.update({
         where: { id: existing.id },
         data: {
-          companyId,
           googleRefreshToken: provider === 'google' ? refreshToken : undefined,
           microsoftRefreshToken: provider === 'microsoft' ? refreshToken : undefined,
           isActive: true,
@@ -461,7 +464,7 @@ export class MultiTenantGmailService {
     // Create new
     return await prisma.emailCredential.create({
       data: {
-        companyId,
+        userId,
         emailAddress,
         googleRefreshToken: provider === 'google' ? refreshToken : undefined,
         microsoftRefreshToken: provider === 'microsoft' ? refreshToken : undefined,
@@ -472,12 +475,12 @@ export class MultiTenantGmailService {
   }
   
   /**
-   * List all email accounts for a company
+   * List all email accounts for a user
    */
-  async listEmailAccounts(companyId: string) {
+  async listEmailAccounts(userId: string) {
     return await prisma.emailCredential.findMany({
       where: {
-        companyId,
+        userId,
         isActive: true
       },
       select: {
@@ -493,10 +496,10 @@ export class MultiTenantGmailService {
   /**
    * Remove email account
    */
-  async removeEmailAccount(companyId: string, emailAddress: string) {
+  async removeEmailAccount(userId: string, emailAddress: string) {
     return await prisma.emailCredential.updateMany({
       where: {
-        companyId,
+        userId,
         emailAddress
       },
       data: {
@@ -508,9 +511,10 @@ export class MultiTenantGmailService {
   /**
    * Get email attachment
    */
-  async getAttachment(companyId: string, messageId: string, attachmentId: string): Promise<any> {
+  async getAttachment(userId: string, messageId: string, attachmentId: string): Promise<any> {
     try {
-      const { gmail } = await this.getClient(companyId)
+      const { client } = await this.getClient(userId)
+      const gmail = google.gmail({ version: 'v1', auth: client })
       
       const response = await gmail.users.messages.attachments.get({
         userId: 'me',
@@ -562,13 +566,13 @@ export class MultiTenantGmailService {
    * List calendar events for a specific company account
    */
   async listCalendarEvents(
-    companyId: string | undefined,
+    userId: string,
     maxResults: number = 10
   ) {
-    const { client, email } = await this.getClient(companyId)
+    const { client, email } = await this.getClient(userId)
     const calendar = google.calendar({ version: 'v3', auth: client })
     
-    console.log(`Listing calendar events for ${email} (company: ${companyId || 'default'})`)
+    console.log(`Listing calendar events for ${email} (user: ${userId})`)
     
     try {
       const response = await calendar.events.list({

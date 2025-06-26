@@ -19,6 +19,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(1),
+  linkedEmail: z.string().email(), // Mandatory work email for sending/receiving emails
   role: z.enum(['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER']).optional()
 })
 
@@ -101,6 +102,7 @@ app.post('/register', async (c) => {
         email: data.email,
         password: hashedPassword,
         name: data.name,
+        linkedEmail: data.linkedEmail,
         role: data.role || 'VIEWER'
       }
     })

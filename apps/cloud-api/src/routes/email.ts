@@ -13,28 +13,16 @@ app.get('/linked-email', async (c) => {
   try {
     const userId = c.get('userId')
     
-    // Try to get the linked email from company credentials
     const { prisma } = await import('../lib/prisma.js')
     
-    const companyUser = await prisma.companyUser.findFirst({
-      where: { userId },
-      select: { companyId: true }
+    // First check if user has linkedGmailEmail in their profile
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedGmailEmail: true }
     })
     
-    if (companyUser?.companyId) {
-      // Check for company-specific email credential
-      const emailCred = await prisma.emailCredential.findFirst({
-        where: {
-          companyId: companyUser.companyId,
-          provider: 'google',
-          isActive: true
-        },
-        select: { emailAddress: true }
-      })
-      
-      if (emailCred?.emailAddress) {
-        return c.json({ email: emailCred.emailAddress })
-      }
+    if (user?.linkedGmailEmail) {
+      return c.json({ email: user.linkedGmailEmail })
     }
     
     // Check for user-specific email credential
@@ -51,9 +39,8 @@ app.get('/linked-email', async (c) => {
       return c.json({ email: userEmailCred.emailAddress })
     }
     
-    // Fall back to environment variable
-    const defaultEmail = process.env.GOOGLE_USER_EMAIL || 'saifraza@mspil.in'
-    return c.json({ email: defaultEmail })
+    // No linked email found
+    return c.json({ email: null, error: 'No linked email found. Please link your work email account.' })
     
   } catch (error: any) {
     console.error('Error fetching linked email:', error)
@@ -78,16 +65,10 @@ app.get('/message/:messageId', async (c) => {
     }
     
     // Get the appropriate Gmail service
-    let gmail
-    
-    if (companyId) {
-      const { client } = await multiTenantGmail.getClient(companyId)
-      const { google } = await import('googleapis')
-      gmail = google.gmail({ version: 'v1', auth: client })
-    } else {
-      const gmailService = getGmailService()
-      gmail = gmailService.gmail
-    }
+    const userId = c.get('userId')
+    const { client } = await multiTenantGmail.getClient(userId)
+    const { google } = await import('googleapis')
+    const gmail = google.gmail({ version: 'v1', auth: client })
     
     // Fetch full message
     const response = await gmail.users.messages.get({
@@ -167,19 +148,8 @@ app.get('/content/:emailId', async (c) => {
   const emailId = c.req.param('emailId')
   
   try {
-    // Get user's company
-    const { prisma } = await import('../lib/prisma.js')
-    const companyUser = await prisma.companyUser.findFirst({
-      where: { userId },
-      select: { companyId: true }
-    })
-    
-    if (!companyUser?.companyId) {
-      return c.json({ error: 'User not associated with a company' }, 400)
-    }
-    
-    // Fetch full email content from Gmail
-    const emailContent = await multiTenantGmail.getEmailContent(companyUser.companyId, emailId)
+    // Fetch full email content from Gmail using user's credentials
+    const emailContent = await multiTenantGmail.getEmailContent(userId, emailId)
     
     return c.json(emailContent)
   } catch (error: any) {
@@ -195,19 +165,8 @@ app.get('/attachment/:emailId/:attachmentId', async (c) => {
   const attachmentId = c.req.param('attachmentId')
   
   try {
-    // Get user's company
-    const { prisma } = await import('../lib/prisma.js')
-    const companyUser = await prisma.companyUser.findFirst({
-      where: { userId },
-      select: { companyId: true }
-    })
-    
-    if (!companyUser?.companyId) {
-      return c.json({ error: 'User not associated with a company' }, 400)
-    }
-    
-    // Get attachment from Gmail
-    const attachment = await multiTenantGmail.getAttachment(companyUser.companyId, emailId, attachmentId)
+    // Get attachment from Gmail using user's credentials
+    const attachment = await multiTenantGmail.getAttachment(userId, emailId, attachmentId)
     
     if (!attachment) {
       return c.json({ error: 'Attachment not found' }, 404)

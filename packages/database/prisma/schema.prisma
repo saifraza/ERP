@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -15,6 +15,7 @@ model User {
   name      String
   role      String   @default("USER") // SUPER_ADMIN, ADMIN, MANAGER, OPERATOR, USER
   active    Boolean  @default(true)
+  linkedEmail String? // User's work email for sending/receiving emails (mandatory at creation)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -47,7 +48,6 @@ model Company {
   grns              GRN[]
   vendorInvoices    VendorInvoice[]
   users             CompanyUser[]
-  emailCredentials  EmailCredential[]
 }
 
 model CompanyUser {
@@ -314,14 +314,13 @@ model DocumentAnalysis {
   document      Document @relation(fields: [documentId], references: [id])
 }
 
-// Email Integration - Multi-tenant support
+// Email Integration - User-specific only
 model EmailCredential {
   id                    String    @id @default(uuid())
-  companyId            String?
-  userId               String?
+  userId               String    // Now mandatory - each credential belongs to a user
   emailAddress         String    @unique
-  googleRefreshToken   String?   @db.Text
-  microsoftRefreshToken String?   @db.Text
+  googleRefreshToken   String?
+  microsoftRefreshToken String?
   provider             String    @default("google") // google, microsoft, imap
   isActive             Boolean   @default(true)
   lastSynced           DateTime?
@@ -329,11 +328,10 @@ model EmailCredential {
   updatedAt            DateTime  @updatedAt
 
   // Relations
-  company              Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user                 User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([companyId])
   @@index([userId])
+  @@unique([userId, emailAddress]) // One email per user
 }
 
 // ==================== PROCUREMENT SYSTEM ====================
@@ -365,7 +363,7 @@ model Vendor {
   rating            Float    @default(3) // 1-5 rating
   status            String   @default("active") // active, inactive, blacklisted
   qualificationDate DateTime?
-  notes             String?  @db.Text
+  notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -395,7 +393,7 @@ model VendorEvaluation {
   serviceScore      Float    // 1-5
   overallScore      Float    // Calculated average
   evaluatedBy       String
-  comments          String?  @db.Text
+  comments          String?
   recommendation    String   // continue, review, terminate
   createdAt         DateTime @default(now())
 
@@ -409,7 +407,7 @@ model Material {
   companyId         String
   code              String
   name              String
-  description       String?  @db.Text
+  description       String?
   category          String   // raw_material, consumable, spare_part, chemical, packing, other
   subCategory       String?
   industryCategory  String?  // Industry-specific category (e.g., process_chemical, fermentation, boiler_consumable)
@@ -418,7 +416,7 @@ model Material {
   hsnCode           String?
   technicalGrade    String?  // For chemicals: AR, LR, Commercial, Food Grade, etc.
   complianceStandard String? // IS, BIS, FSSAI, ISO, etc.
-  specifications    String?  @db.Text
+  specifications    String?
   criticalItem      Boolean  @default(false) // For critical spares and materials
   shelfLife         Int?     // In days, for chemicals and perishables
   storageConditions String?  // Temperature, humidity requirements
@@ -461,7 +459,7 @@ model PurchaseRequisition {
   approvedBy        String?
   approvalDate      DateTime?
   rejectionReason   String?
-  notes             String?  @db.Text
+  notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -484,7 +482,7 @@ model PRItem {
   quantity          Float
   unit              String
   estimatedPrice    Float?
-  specifications    String?  @db.Text
+  specifications    String?
   preferredVendor   String?
   justification     String?
   
@@ -498,13 +496,12 @@ model RFQ {
   companyId               String
   rfqNumber               String
   requisitionId           String?  // Link to Purchase Requisition
-  factoryId               String?  // Link to Factory
   issueDate               DateTime
   submissionDeadline      DateTime // Due date for quotations
   expectedDeliveryDate    DateTime // Expected delivery date for items
   deliveryTerms           String
   paymentTerms            String
-  specialInstructions     String?  @db.Text
+  specialInstructions     String?
   quotationValidityDays   Int      @default(30)
   status                  String   @default("OPEN") // OPEN, SENT, CLOSED, CANCELLED
   createdBy               String
@@ -513,8 +510,7 @@ model RFQ {
 
   // Relations
   company                 Company  @relation(fields: [companyId], references: [id])
-  requisition             Requisition? @relation(fields: [requisitionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  factory                 Factory? @relation(fields: [factoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requisition             PurchaseRequisition? @relation(fields: [requisitionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   vendors                 RFQVendor[]
   items                   RFQItem[]
   quotations              Quotation[]
@@ -554,8 +550,7 @@ model RFQItem {
   quantity          Float
   unit              String
   requiredDate      DateTime?
-  specifications    String?  @db.Text
-  
+  specifications    String?    
   // Relations
   rfq               RFQ      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   material          Material? @relation(fields: [materialId], references: [id], onDelete: NoAction)
@@ -579,7 +574,7 @@ model Quotation {
   status            String   @default("received") // received, under_review, approved, rejected
   emailId           String?  // Reference to email that contained this quotation
   attachmentPath    String?
-  notes             String?  @db.Text
+  notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -656,7 +651,7 @@ model PurchaseOrder {
   emailSentAt       DateTime?
   vendorAcknowledged Boolean @default(false)
   acknowledgedAt    DateTime?
-  notes             String?  @db.Text
+  notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -709,7 +704,7 @@ model GRN {
   qualityChecked    Boolean  @default(false)
   qualityRemarks    String?
   storageLocation   String?
-  notes             String?  @db.Text
+  notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -759,7 +754,7 @@ model VendorInvoice {
   verifiedAt        DateTime?
   approvedBy        String?
   approvedAt        DateTime?
-  notes             String?  @db.Text
+  notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -807,11 +802,11 @@ model RFQEmailLog {
   emailId           String?  // Email message ID
   subject           String
   toEmail           String
-  ccEmails          String?  @db.Text // JSON array of CC emails
-  attachments       String?  @db.Text // JSON array of attachment names
+  ccEmails          String?  // JSON array of CC emails
+  attachments       String?  // JSON array of attachment names
   status            String   @default("sent") // sent, failed, bounced
   sentAt            DateTime
-  error             String?  @db.Text
+  error             String?
   createdAt         DateTime @default(now())
   
   // Relations
@@ -828,13 +823,13 @@ model RFQEmailResponse {
   subject           String
   fromEmail         String
   receivedAt        DateTime
-  bodySnippet       String?  @db.Text
+  bodySnippet       String?
   hasAttachments    Boolean  @default(false)
-  attachments       String?  @db.Text // JSON array of attachment names
+  attachments       String?  // JSON array of attachment names
   processedAt       DateTime?
   quotationCreated  Boolean  @default(false)
   quotationId       String?
-  error             String?  @db.Text
+  error             String?
   createdAt         DateTime @default(now())
   
   // Relations
