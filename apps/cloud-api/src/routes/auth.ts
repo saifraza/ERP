@@ -3,6 +3,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../lib/prisma.js'
+import { authMiddleware } from '../middleware/auth.js'
 
 const app = new Hono()
 
