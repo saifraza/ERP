@@ -9,11 +9,11 @@ import authRoutes from './routes/auth.js'
 import companiesRoutes from './routes/companies.js'
 import setupRoutes from './routes/setup.js'
 import mcpRoutes from './routes/mcp.js'
-import fixDataRoutes from './routes/fix-data.js'
+// import fixDataRoutes from './routes/fix-data.js' // Debug route - not used
 import storageRoutes from './routes/storage.js'
 import emailOAuthRoutes from './routes/email-oauth.js'
 import assistantRoutes from './routes/assistant.js'
-import debugRoutes from './routes/debug.js'
+// import debugRoutes from './routes/debug.js' // Debug route - not used
 import emailRoutes from './routes/email.js'
 import geminiAssistantRoutes from './routes/gemini-assistant.js'
 import emailAutomationRoutes from './routes/email-automation.js'
@@ -28,14 +28,12 @@ import materialsRoutes from './routes/materials.js'
 import factoriesRoutes from './routes/factories.js'
 import procurementDashboardRoutes from './routes/procurement-dashboard.js'
 import procurementStatsRoutes from './routes/procurement-stats.js'
-import debugRfqRoutes from './routes/debug-rfq.js'
+// import debugRfqRoutes from './routes/debug-rfq.js' // Debug route - not used
 import rfqEmailHistoryRoutes from './routes/rfq-email-history.js'
-import testEmailLogRoutes from './routes/test-email-log.js'
-import checkEmailTablesRoutes from './routes/check-email-tables.js'
-import fixRfqDuplicatesRoutes from './routes/fix-rfq-duplicates.js'
+// import testEmailLogRoutes from './routes/test-email-log.js' // Debug route - not used
+// import checkEmailTablesRoutes from './routes/check-email-tables.js' // Debug route - not used
+// import fixRfqDuplicatesRoutes from './routes/fix-rfq-duplicates.js' // Debug route - not used
 import setupCompanyRoutes from './routes/setup-company.js'
-import clearDatabaseRoutes from './routes/clear-database.js'
-import simpleClearRoutes from './routes/simple-clear.js'
 
 const app = new Hono()
 
@@ -110,8 +108,6 @@ app.route('/api/rfq-email-history', rfqEmailHistoryRoutes)
 // app.route('/api/check-email-tables', checkEmailTablesRoutes) // Debug route - disabled in production
 // app.route('/api/fix-rfq-duplicates', fixRfqDuplicatesRoutes) // Debug route - disabled in production
 app.route('/api/setup-company', setupCompanyRoutes)
-app.route('/api/clear-database', clearDatabaseRoutes) // DANGEROUS - only for development
-app.route('/api/simple-clear', simpleClearRoutes) // Simple clear endpoint
 
 // Debug endpoint to check users (only in development)
 if (process.env.NODE_ENV !== 'production') {
@@ -177,66 +173,66 @@ app.get('/api/db-status', async (c) => {
   }
 })
 
-// Run migrations endpoint (temporary for setup)
-app.post('/api/run-migrations', async (c) => {
-  try {
-    const { execSync } = await import('child_process')
-    
-    // First generate client to ensure types are available
-    execSync('npx prisma generate', {
-      cwd: process.cwd(),
-      encoding: 'utf8'
-    })
-    
-    // Run migrations
-    const migrationOutput = execSync('npx prisma migrate deploy', {
-      cwd: process.cwd(),
-      encoding: 'utf8'
-    })
-    
-    // Run seed
-    const seedOutput = execSync('npm run seed', {
-      cwd: process.cwd(),
-      encoding: 'utf8'
-    })
-    
-    return c.json({
-      status: 'success',
-      migration: migrationOutput,
-      seed: seedOutput
-    })
-  } catch (error) {
-    console.error('Migration error:', error)
-    return c.json({
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, 500)
-  }
-})
+// Run migrations endpoint (disabled in production)
+// app.post('/api/run-migrations', async (c) => {
+//   try {
+//     const { execSync } = await import('child_process')
+//     
+//     // First generate client to ensure types are available
+//     execSync('npx prisma generate', {
+//       cwd: process.cwd(),
+//       encoding: 'utf8'
+//     })
+//     
+//     // Run migrations
+//     const migrationOutput = execSync('npx prisma migrate deploy', {
+//       cwd: process.cwd(),
+//       encoding: 'utf8'
+//     })
+//     
+//     // Run seed
+//     const seedOutput = execSync('npm run seed', {
+//       cwd: process.cwd(),
+//       encoding: 'utf8'
+//     })
+//     
+//     return c.json({
+//       status: 'success',
+//       migration: migrationOutput,
+//       seed: seedOutput
+//     })
+//   } catch (error) {
+//     console.error('Migration error:', error)
+//     return c.json({
+//       status: 'error',
+//       error: error instanceof Error ? error.message : 'Unknown error'
+//     }, 500)
+//   }
+// })
 
-// Fix failed migration
-app.get('/api/fix-failed-migration', async (c) => {
-  try {
-    const { prisma } = await import('./lib/prisma.js')
-    
-    // Delete the failed migration record
-    await prisma.$executeRaw`
-      DELETE FROM _prisma_migrations 
-      WHERE migration_name = '20250625_add_quotation_model'
-    `
-    
-    return c.json({
-      status: 'success',
-      message: 'Failed migration removed'
-    })
-  } catch (error) {
-    console.error('Fix migration error:', error)
-    return c.json({
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, 500)
-  }
-})
+// Fix failed migration (disabled in production)
+// app.get('/api/fix-failed-migration', async (c) => {
+//   try {
+//     const { prisma } = await import('./lib/prisma.js')
+//     
+//     // Delete the failed migration record
+//     await prisma.$executeRaw`
+//       DELETE FROM _prisma_migrations 
+//       WHERE migration_name = '20250625_add_quotation_model'
+//     `
+//     
+//     return c.json({
+//       status: 'success',
+//       message: 'Failed migration removed'
+//     })
+//   } catch (error) {
+//     console.error('Fix migration error:', error)
+//     return c.json({
+//       status: 'error',
+//       error: error instanceof Error ? error.message : 'Unknown error'
+//     }, 500)
+//   }
+// })
 
 
 // Error handling
