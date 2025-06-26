@@ -61,6 +61,7 @@ interface CompanyStore {
   setCurrentFactory: (factory: Factory) => void
   setCompanies: (companies: Company[]) => void
   loadCompanies: () => Promise<void>
+  fetchCompanies: () => Promise<void>
   checkSetupStatus: () => Promise<boolean>
   clearSelection: () => void
 }
@@ -172,6 +173,11 @@ export const useCompanyStore = create<CompanyStore>()(
         } finally {
           set({ isLoading: false })
         }
+      },
+
+      fetchCompanies: async () => {
+        // Alias for loadCompanies for backward compatibility
+        await get().loadCompanies()
       },
 
       checkSetupStatus: async () => {

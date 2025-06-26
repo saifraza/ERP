@@ -144,7 +144,9 @@ export default function VendorMaster() {
 
   const handleImport = () => {
     // TODO: Implement import functionality
-    toast.info('Import functionality coming soon')
+    toast('Import functionality coming soon', {
+      icon: '🚧',
+    })
   }
 
   const getStatusBadge = (isActive: boolean) => {
