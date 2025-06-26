@@ -13,11 +13,12 @@ interface EmailAccount {
 }
 
 export function EmailSettings() {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const { currentCompany } = useCompanyStore()
   const [accounts, setAccounts] = useState<EmailAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   useEffect(() => {
     if (token) {
@@ -173,6 +174,26 @@ export function EmailSettings() {
     }
   }
 
+  const checkDebugInfo = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/debug-email/check`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to load debug info')
+
+      const data = await response.json()
+      setDebugInfo(data)
+    } catch (err) {
+      console.error('Failed to load debug info:', err)
+    }
+  }
+
   if (!token) {
     return (
       <div className="rounded-md bg-yellow-50 p-4">
@@ -260,15 +281,20 @@ export function EmailSettings() {
                 {connecting ? 'Connecting...' : 'Connect Email Account'}
               </button>
 
-              {accounts.length > 0 && (
-                <button
-                  onClick={clearAllCredentials}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  <AlertCircle className="mr-2 h-4 w-4" />
-                  Clear All Email Credentials
-                </button>
-              )}
+              <button
+                onClick={clearAllCredentials}
+                className="w-full flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                <AlertCircle className="mr-2 h-4 w-4" />
+                Clear All Email Credentials
+              </button>
+
+              <button
+                onClick={checkDebugInfo}
+                className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Check What Email is Actually Linked
+              </button>
             </div>
           </div>
 
@@ -280,6 +306,25 @@ export function EmailSettings() {
               <li>IMAP (coming soon)</li>
             </ul>
           </div>
+
+          {/* Debug Info */}
+          {debugInfo && (
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-sm">
+              <p className="font-medium text-gray-900 mb-2">Debug Information:</p>
+              <p className="text-gray-700">User Email: {debugInfo.user?.email}</p>
+              <p className="text-gray-700">Linked Gmail: {debugInfo.user?.linkedGmailEmail || 'None'}</p>
+              <p className="text-gray-700">Has Credentials: {debugInfo.status?.hasCredentials ? 'Yes' : 'No'}</p>
+              <p className="text-gray-700">Credentials Count: {debugInfo.emailCredentials?.length || 0}</p>
+              {debugInfo.emailCredentials?.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-medium">Stored Credentials:</p>
+                  {debugInfo.emailCredentials.map((cred: any) => (
+                    <p key={cred.id} className="text-gray-600 ml-2">- {cred.emailAddress}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
