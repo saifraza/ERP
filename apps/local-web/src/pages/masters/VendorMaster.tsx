@@ -9,6 +9,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import AddVendorModal from '../../components/procurement/AddVendorModal'
+import EditVendorModal from '../../components/procurement/EditVendorModal'
 
 interface Vendor {
   id: string
@@ -36,6 +37,8 @@ export default function VendorMaster() {
   const [selectedType, setSelectedType] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
 
   useEffect(() => {
     fetchVendors()
@@ -349,6 +352,10 @@ export default function VendorMaster() {
                           <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </button>
                         <button 
+                          onClick={() => {
+                            setSelectedVendor(vendor)
+                            setShowEditModal(true)
+                          }}
                           className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                           title="Edit"
                         >
@@ -378,6 +385,21 @@ export default function VendorMaster() {
           setShowAddModal(false)
           fetchVendors()
         }}
+      />
+      
+      {/* Edit Vendor Modal */}
+      <EditVendorModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedVendor(null)
+        }}
+        onSuccess={() => {
+          setShowEditModal(false)
+          setSelectedVendor(null)
+          fetchVendors()
+        }}
+        vendor={selectedVendor}
       />
     </div>
   )
