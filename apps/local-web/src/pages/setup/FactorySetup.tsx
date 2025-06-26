@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Factory, Plus, Trash2, MapPin, Gauge, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
+import { Factory, Plus, Trash2, MapPin, Gauge, ChevronLeft, ChevronRight, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import type { FactoryData } from './CompanySetup'
 
 interface FactorySetupProps {
@@ -30,6 +30,7 @@ export default function FactorySetup({ companyName, initialData, onSubmit, onBac
     initialData.length > 0 ? initialData : [createEmptyFactory()]
   )
   const [currentFactoryIndex, setCurrentFactoryIndex] = useState(0)
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
   const {
     register,
@@ -69,6 +70,21 @@ export default function FactorySetup({ companyName, initialData, onSubmit, onBac
     }
   }
 
+  const copyAddressFromFirstFactory = () => {
+    if (factories.length > 0 && currentFactoryIndex > 0) {
+      const firstFactory = factories[0]
+      const currentFormData = watch()
+      reset({
+        ...currentFormData,
+        addressLine1: firstFactory.addressLine1,
+        addressLine2: firstFactory.addressLine2,
+        city: firstFactory.city,
+        state: firstFactory.state,
+        pincode: firstFactory.pincode
+      })
+    }
+  }
+
   const addFactory = () => {
     const newFactory = createEmptyFactory()
     setFactories([...factories, newFactory])
@@ -100,6 +116,7 @@ export default function FactorySetup({ companyName, initialData, onSubmit, onBac
     // Switch to new factory
     setCurrentFactoryIndex(index)
     reset(factories[index])
+    setShowAdvancedOptions(false) // Reset advanced options view
   }
 
   const handleFinalSubmit = () => {
@@ -113,6 +130,14 @@ export default function FactorySetup({ companyName, initialData, onSubmit, onBac
         <p className="mt-2 text-sm text-gray-600">
           Add all factories and plants under <span className="font-medium">{companyName}</span>
         </p>
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-700 flex items-center">
+            <svg className="h-4 w-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">Quick Setup:</span>&nbsp;Only required fields are shown. Click "Advanced Options" below for capacity and registration details.
+          </p>
+        </div>
       </div>
 
       {/* Factory Tabs */}
@@ -213,9 +238,21 @@ export default function FactorySetup({ companyName, initialData, onSubmit, onBac
 
         {/* Location */}
         <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-            <MapPin className="h-5 w-5 mr-2 text-gray-400" />
-            Factory Location
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-gray-400" />
+              Factory Location
+            </div>
+            {currentFactoryIndex > 0 && (
+              <button
+                type="button"
+                onClick={copyAddressFromFirstFactory}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Same address as Factory 1
+              </button>
+            )}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
@@ -302,107 +339,128 @@ export default function FactorySetup({ companyName, initialData, onSubmit, onBac
           </div>
         </div>
 
-        {/* Capacity Information */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-            <Gauge className="h-5 w-5 mr-2 text-gray-400" />
-            Capacity Information (Optional)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(currentType === 'sugar' || currentType === 'integrated') && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Crushing Capacity (TCD)
-                </label>
-                <input
-                  type="number"
-                  {...register('crushingCapacity', { valueAsNumber: true })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="5000"
-                />
-              </div>
+        {/* Advanced Options Toggle */}
+        <div className="border-t pt-6">
+          <button
+            type="button"
+            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+            className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            {showAdvancedOptions ? (
+              <ChevronUp className="h-4 w-4 mr-2" />
+            ) : (
+              <ChevronDown className="h-4 w-4 mr-2" />
             )}
-
-            {(currentType === 'ethanol' || currentType === 'integrated') && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ethanol Capacity (KL/day)
-                </label>
-                <input
-                  type="number"
-                  {...register('ethanolCapacity', { valueAsNumber: true })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="100"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Power Generation (MW)
-              </label>
-              <input
-                type="number"
-                {...register('powerCapacity', { valueAsNumber: true })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="25"
-              />
-            </div>
-          </div>
+            Advanced Options (Capacity & Registration Details)
+          </button>
         </div>
 
-        {/* Registration Details */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Registration Details (Optional)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Advanced Options - Hidden by default */}
+        {showAdvancedOptions && (
+          <>
+            {/* Capacity Information */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                GST Number (if different from company)
-              </label>
-              <input
-                type="text"
-                {...register('gstNumber', {
-                  pattern: {
-                    value: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
-                    message: 'Invalid GST number format'
-                  }
-                })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="29ABCDE1234F1Z5"
-                maxLength={15}
-              />
-              {errors.gstNumber && (
-                <p className="mt-1 text-sm text-red-600">{errors.gstNumber.message}</p>
-              )}
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Gauge className="h-5 w-5 mr-2 text-gray-400" />
+                Capacity Information (Optional)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(currentType === 'sugar' || currentType === 'integrated') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Crushing Capacity (TCD)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('crushingCapacity', { valueAsNumber: true })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="5000"
+                    />
+                  </div>
+                )}
+
+                {(currentType === 'ethanol' || currentType === 'integrated') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ethanol Capacity (KL/day)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('ethanolCapacity', { valueAsNumber: true })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="100"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Power Generation (MW)
+                  </label>
+                  <input
+                    type="number"
+                    {...register('powerCapacity', { valueAsNumber: true })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="25"
+                  />
+                </div>
+              </div>
             </div>
 
+            {/* Registration Details */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Factory License Number
-              </label>
-              <input
-                type="text"
-                {...register('factoryLicense')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="FL/2024/12345"
-              />
-            </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Registration Details (Optional)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    GST Number (if different from company)
+                  </label>
+                  <input
+                    type="text"
+                    {...register('gstNumber', {
+                      pattern: {
+                        value: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                        message: 'Invalid GST number format'
+                      }
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="29ABCDE1234F1Z5"
+                    maxLength={15}
+                  />
+                  {errors.gstNumber && (
+                    <p className="mt-1 text-sm text-red-600">{errors.gstNumber.message}</p>
+                  )}
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pollution Control License
-              </label>
-              <input
-                type="text"
-                {...register('pollutionLicense')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="PCB/2024/67890"
-              />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Factory License Number
+                  </label>
+                  <input
+                    type="text"
+                    {...register('factoryLicense')}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="FL/2024/12345"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pollution Control License
+                  </label>
+                  <input
+                    type="text"
+                    {...register('pollutionLicense')}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="PCB/2024/67890"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-between pt-6">
