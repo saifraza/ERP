@@ -11,16 +11,38 @@ interface EmailDetailModalProps {
 }
 
 export default function EmailDetailModal({ isOpen, onClose, emailLog, rfqNumber }: EmailDetailModalProps) {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [emailContent, setEmailContent] = useState<any>(null)
   const [attachments, setAttachments] = useState<any[]>([])
+  const [linkedEmail, setLinkedEmail] = useState<string>('')
 
   useEffect(() => {
     if (isOpen && emailLog?.emailId) {
       fetchEmailContent()
+      fetchLinkedEmail()
     }
   }, [isOpen, emailLog])
+
+  const fetchLinkedEmail = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/email/linked-email`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setLinkedEmail(data.email || user?.email || '')
+      }
+    } catch (error) {
+      // Fallback to user email
+      setLinkedEmail(user?.email || '')
+    }
+  }
 
   const fetchEmailContent = async () => {
     setLoading(true)
@@ -160,14 +182,14 @@ export default function EmailDetailModal({ isOpen, onClose, emailLog, rfqNumber 
                 <p className="font-medium text-gray-900 dark:text-white">
                   {emailLog.receivedAt 
                     ? (emailLog.fromEmail || `${emailLog.vendor?.name} <${emailLog.vendor?.email}>`)
-                    : 'Modern Sugar & Power Industries Ltd'}
+                    : (linkedEmail || user?.email || 'Modern Sugar & Power Industries Ltd')}
                 </p>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">To:</span>
                 <p className="font-medium text-gray-900 dark:text-white">
                   {emailLog.receivedAt 
-                    ? 'procurement@mspil.in'
+                    ? (linkedEmail || user?.email || emailLog.toEmail)
                     : (emailLog.toEmail || `${emailLog.vendor?.name} <${emailLog.vendor?.email}>`)}
                 </p>
               </div>

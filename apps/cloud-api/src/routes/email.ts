@@ -8,6 +8,62 @@ const app = new Hono()
 // Protect all email routes
 app.use('*', authMiddleware)
 
+// Get linked email for the current user
+app.get('/linked-email', async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Try to get the linked email from company credentials
+    const { prisma } = await import('../lib/prisma.js')
+    
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (companyUser?.companyId) {
+      // Check for company-specific email credential
+      const emailCred = await prisma.emailCredential.findFirst({
+        where: {
+          companyId: companyUser.companyId,
+          provider: 'google',
+          isActive: true
+        },
+        select: { emailAddress: true }
+      })
+      
+      if (emailCred?.emailAddress) {
+        return c.json({ email: emailCred.emailAddress })
+      }
+    }
+    
+    // Check for user-specific email credential
+    const userEmailCred = await prisma.emailCredential.findFirst({
+      where: {
+        userId,
+        provider: 'google',
+        isActive: true
+      },
+      select: { emailAddress: true }
+    })
+    
+    if (userEmailCred?.emailAddress) {
+      return c.json({ email: userEmailCred.emailAddress })
+    }
+    
+    // Fall back to environment variable
+    const defaultEmail = process.env.GOOGLE_USER_EMAIL || 'saifraza@mspil.in'
+    return c.json({ email: defaultEmail })
+    
+  } catch (error: any) {
+    console.error('Error fetching linked email:', error)
+    return c.json({ 
+      error: 'Failed to fetch linked email',
+      email: 'saifraza@mspil.in' // Fallback
+    }, 500)
+  }
+})
+
 // Get full email content
 app.get('/message/:messageId', async (c) => {
   try {
