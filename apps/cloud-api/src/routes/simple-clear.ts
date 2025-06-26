@@ -22,81 +22,92 @@ app.post('/company', authMiddleware, async (c) => {
     console.log('Starting complete database clear...')
     
     try {
+      // Helper function to safely delete
+      const safeDelete = async (model: any, name: string) => {
+        try {
+          if (model) {
+            const count = await model.deleteMany({})
+            console.log(`Deleted ${count.count} records from ${name}`)
+          }
+        } catch (e) {
+          console.log(`Skipping ${name}: ${e.message}`)
+        }
+      }
+
       // Level 1: Most dependent tables
-      await prisma.rFQEmailResponse.deleteMany({})
-      await prisma.rFQEmailLog.deleteMany({})
-      await prisma.rFQCommunicationThread.deleteMany({})
-      await prisma.quotationItem.deleteMany({})
-      await prisma.rFQVendor.deleteMany({})
-      await prisma.rFQItem.deleteMany({})
-      await prisma.purchaseOrderItem.deleteMany({})
-      await prisma.goodsReceiptItem.deleteMany({})
-      await prisma.stockTransferItem.deleteMany({})
-      await prisma.requisitionItem.deleteMany({})
-      await prisma.pRItem.deleteMany({})
-      await prisma.journalEntry.deleteMany({})
-      await prisma.documentActivity.deleteMany({})
+      await safeDelete(prisma.rFQEmailResponse, 'RFQEmailResponse')
+      await safeDelete(prisma.rFQEmailLog, 'RFQEmailLog')
+      await safeDelete(prisma.rFQCommunicationThread, 'RFQCommunicationThread')
+      await safeDelete(prisma.quotationItem, 'QuotationItem')
+      await safeDelete(prisma.rFQVendor, 'RFQVendor')
+      await safeDelete(prisma.rFQItem, 'RFQItem')
+      await safeDelete(prisma.purchaseOrderItem, 'PurchaseOrderItem')
+      await safeDelete(prisma.goodsReceiptItem, 'GoodsReceiptItem')
+      await safeDelete(prisma.stockTransferItem, 'StockTransferItem')
+      await safeDelete(prisma.requisitionItem, 'RequisitionItem')
+      await safeDelete(prisma.journalEntry, 'JournalEntry')
+      await safeDelete(prisma.documentActivity, 'DocumentActivity')
       
       // Level 2: Tables that depend on Level 1
-      await prisma.quotationComparison.deleteMany({})
-      await prisma.quotation.deleteMany({})
-      await prisma.rFQ.deleteMany({})
-      await prisma.purchaseOrder.deleteMany({})
-      await prisma.goodsReceipt.deleteMany({})
-      await prisma.stockTransfer.deleteMany({})
-      await prisma.requisition.deleteMany({})
-      await prisma.purchaseRequisition.deleteMany({})
-      await prisma.journal.deleteMany({})
-      await prisma.document.deleteMany({})
+      await safeDelete(prisma.quotationComparison, 'QuotationComparison')
+      await safeDelete(prisma.quotation, 'Quotation')
+      await safeDelete(prisma.rFQ, 'RFQ')
+      await safeDelete(prisma.purchaseOrder, 'PurchaseOrder')
+      await safeDelete(prisma.goodsReceipt, 'GoodsReceipt')
+      await safeDelete(prisma.stockTransfer, 'StockTransfer')
+      await safeDelete(prisma.requisition, 'Requisition')
+      await safeDelete(prisma.purchaseRequisition, 'PurchaseRequisition')
+      await safeDelete(prisma.journal, 'Journal')
+      await safeDelete(prisma.document, 'Document')
       
       // Level 3: Operations and transactions
-      await prisma.invoice.deleteMany({})
-      await prisma.payment.deleteMany({})
-      await prisma.receipt.deleteMany({})
-      await prisma.vendorInvoice.deleteMany({})
-      await prisma.farmerPayment.deleteMany({})
-      await prisma.caneDelivery.deleteMany({})
-      await prisma.maintenance.deleteMany({})
-      await prisma.alertLog.deleteMany({})
+      await safeDelete(prisma.invoice, 'Invoice')
+      await safeDelete(prisma.payment, 'Payment')
+      await safeDelete(prisma.receipt, 'Receipt')
+      await safeDelete(prisma.vendorInvoice, 'VendorInvoice')
+      await safeDelete(prisma.farmerPayment, 'FarmerPayment')
+      await safeDelete(prisma.caneDelivery, 'CaneDelivery')
+      await safeDelete(prisma.maintenance, 'Maintenance')
+      await safeDelete(prisma.alertLog, 'AlertLog')
       
       // Level 4: Production data
-      await prisma.sugarProduction.deleteMany({})
-      await prisma.ethanolProduction.deleteMany({})
-      await prisma.powerGeneration.deleteMany({})
-      await prisma.feedProduction.deleteMany({})
-      await prisma.plantMetrics.deleteMany({})
+      await safeDelete(prisma.sugarProduction, 'SugarProduction')
+      await safeDelete(prisma.ethanolProduction, 'EthanolProduction')
+      await safeDelete(prisma.powerGeneration, 'PowerGeneration')
+      await safeDelete(prisma.feedProduction, 'FeedProduction')
+      await safeDelete(prisma.plantMetrics, 'PlantMetrics')
       
       // Level 5: Master data
-      await prisma.inventory.deleteMany({})
-      await prisma.material.deleteMany({})
-      await prisma.vendor.deleteMany({})
-      await prisma.customer.deleteMany({})
-      await prisma.farmer.deleteMany({})
-      await prisma.banking.deleteMany({})
-      await prisma.approvalMatrix.deleteMany({})
-      await prisma.dashboardConfig.deleteMany({})
+      await safeDelete(prisma.inventory, 'Inventory')
+      await safeDelete(prisma.material, 'Material')
+      await safeDelete(prisma.vendor, 'Vendor')
+      await safeDelete(prisma.customer, 'Customer')
+      await safeDelete(prisma.farmer, 'Farmer')
+      await safeDelete(prisma.banking, 'Banking')
+      await safeDelete(prisma.approvalMatrix, 'ApprovalMatrix')
+      await safeDelete(prisma.dashboardConfig, 'DashboardConfig')
       
       // Level 6: Factory and division related
-      await prisma.weighbridgeEntry.deleteMany({})
-      await prisma.equipment.deleteMany({})
-      await prisma.department.deleteMany({})
-      await prisma.factory.deleteMany({})
-      await prisma.division.deleteMany({})
+      await safeDelete(prisma.weighbridgeEntry, 'WeighbridgeEntry')
+      await safeDelete(prisma.equipment, 'Equipment')
+      await safeDelete(prisma.department, 'Department')
+      await safeDelete(prisma.factory, 'Factory')
+      await safeDelete(prisma.division, 'Division')
       
       // Level 7: Company related
-      await prisma.companyUser.deleteMany({})
-      await prisma.emailCredential.deleteMany({})
+      await safeDelete(prisma.companyUser, 'CompanyUser')
+      await safeDelete(prisma.emailCredential, 'EmailCredential')
       
       // Level 8: Core tables
-      await prisma.hSNCode.deleteMany({})
-      await prisma.taxRate.deleteMany({})
-      await prisma.uOM.deleteMany({})
-      await prisma.account.deleteMany({})
+      await safeDelete(prisma.hSNCode, 'HSNCode')
+      await safeDelete(prisma.taxRate, 'TaxRate')
+      await safeDelete(prisma.uOM, 'UOM')
+      await safeDelete(prisma.account, 'Account')
       
       // Finally delete companies
       const deleted = await prisma.company.deleteMany({})
-      
-      console.log(`Cleared all data! Deleted ${deleted.count} companies`)
+      console.log(`Deleted ${deleted.count} companies`)
+      console.log('Database cleared successfully!')
       
       return c.json({ 
         message: 'All data cleared successfully',
