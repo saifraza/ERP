@@ -3,7 +3,7 @@ import { authMiddleware } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
 import { procurementAutomation } from '../services/procurement-automation.js'
 import { rfqPDFFinal } from '../services/rfq-pdf-final.js'
-import { rfqPDFGeneratorV2 } from '../services/rfq-pdf-generator-v2.js'
+// import { rfqPDFGeneratorV2 } from '../services/rfq-pdf-generator-v2.js' // Removed - using rfq-pdf-final
 import { z } from 'zod'
 
 const app = new Hono()
@@ -997,7 +997,7 @@ app.get('/:id/pdf/:vendorId', async (c) => {
     
     try {
       // Generate vendor-specific PDF
-      const pdfBuffer = await rfqPDFGeneratorV2.generateVendorRFQPDF(rfqId, vendorId)
+      const pdfBuffer = await rfqPDFFinal.generateVendorRFQPDF(rfqId, vendorId)
       
       // Get vendor info for filename
       const vendor = await prisma.vendor.findUnique({
