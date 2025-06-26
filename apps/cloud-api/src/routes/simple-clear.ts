@@ -19,15 +19,27 @@ app.post('/company', authMiddleware, async (c) => {
     }
     
     // Delete in correct order to avoid foreign key constraints
-    // Start with the most dependent tables
+    console.log('Starting deletion process...')
+    
+    // Delete all procurement-related tables first
+    await prisma.purchaseRequisitionItem.deleteMany({})
+    await prisma.purchaseRequisition.deleteMany({})
+    await prisma.requisitionItem.deleteMany({})
+    await prisma.requisition.deleteMany({})
+    
+    // Delete department and divisions
     await prisma.department.deleteMany({})
     await prisma.division.deleteMany({})
+    
+    // Delete company-related tables
     await prisma.companyUser.deleteMany({})
     await prisma.emailCredential.deleteMany({})
     await prisma.factory.deleteMany({})
     
-    // Then delete companies
+    // Finally delete companies
     const deleted = await prisma.company.deleteMany({})
+    
+    console.log(`Deleted ${deleted.count} companies`)
     
     return c.json({ 
       message: 'Companies deleted successfully',
