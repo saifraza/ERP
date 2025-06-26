@@ -76,6 +76,7 @@ model Company {
   fyStartMonth  Int       @default(4)
   currentFY     String
   logo          String?
+  letterhead    String?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

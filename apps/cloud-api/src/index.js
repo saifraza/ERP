@@ -18,48 +18,53 @@ import emailRoutes from './routes/email.js'
 import geminiAssistantRoutes from './routes/gemini-assistant.js'
 import emailAutomationRoutes from './routes/email-automation.js'
 import vendorsRoutes from './routes/vendors.js'
-import purchaseRequisitionsRoutes from './routes/purchase-requisitions.js'
+import requisitionsRoutes from './routes/requisitions.js'
 import rfqsRoutes from './routes/rfqs.js'
+import rfqEmailProcessingRoutes from './routes/rfq-email-processing.js'
 import divisionsRoutes from './routes/divisions.js'
+import setupDivisionsRoutes from './routes/setup-divisions.js'
+import departmentsRoutes from './routes/departments.js'
 import materialsRoutes from './routes/materials.js'
+import factoriesRoutes from './routes/factories.js'
+import procurementDashboardRoutes from './routes/procurement-dashboard.js'
+import procurementStatsRoutes from './routes/procurement-stats.js'
+import debugRfqRoutes from './routes/debug-rfq.js'
+import rfqEmailHistoryRoutes from './routes/rfq-email-history.js'
+import testEmailLogRoutes from './routes/test-email-log.js'
+import checkEmailTablesRoutes from './routes/check-email-tables.js'
+import fixRfqDuplicatesRoutes from './routes/fix-rfq-duplicates.js'
+import setupCompanyRoutes from './routes/setup-company.js'
 
 const app = new Hono()
 
 // Middleware
 app.use('*', logger())
 app.use('*', prettyJSON())
-app.use('*', cors({
-  origin: (origin) => {
-    // Allow requests from Railway domains and localhost
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://frontend-production-adfe.up.railway.app',
-      'https://erp-frontend.up.railway.app'
-    ]
-    
-    // Allow if origin is in the list or if no origin (same-origin requests)
-    if (!origin || allowedOrigins.includes(origin)) {
-      return origin || '*'
-    }
-    
-    // Also allow any Railway subdomain
-    if (origin?.includes('.up.railway.app')) {
-      return origin
-    }
-    
-    return null
-  },
-  credentials: true,
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposeHeaders: ['Content-Length', 'Content-Type'],
-  maxAge: 3600
-}))
 
-// Handle OPTIONS requests for CORS preflight
-app.options('*', (c) => {
-  return c.text('', 204)
+// Simple CORS middleware that works
+app.use('*', async (c, next) => {
+  // Get origin from request
+  const origin = c.req.header('Origin')
+  
+  // Always set CORS headers
+  if (origin) {
+    c.header('Access-Control-Allow-Origin', origin)
+  } else {
+    c.header('Access-Control-Allow-Origin', '*')
+  }
+  
+  c.header('Access-Control-Allow-Credentials', 'true')
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
+  c.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type')
+  
+  // Handle OPTIONS preflight requests
+  if (c.req.method === 'OPTIONS') {
+    c.header('Access-Control-Max-Age', '86400') // 24 hours
+    return c.text('', 204)
+  }
+  
+  await next()
 })
 
 // Health check
@@ -87,10 +92,22 @@ app.route('/api/email', emailRoutes)
 app.route('/api/gemini', geminiAssistantRoutes)
 app.route('/api/email-automation', emailAutomationRoutes)
 app.route('/api/vendors', vendorsRoutes)
-app.route('/api/purchase-requisitions', purchaseRequisitionsRoutes)
+app.route('/api/requisitions', requisitionsRoutes)
 app.route('/api/rfqs', rfqsRoutes)
+app.route('/api/rfq-emails', rfqEmailProcessingRoutes)
 app.route('/api/divisions', divisionsRoutes)
+app.route('/api/setup-divisions', setupDivisionsRoutes)
+app.route('/api/departments', departmentsRoutes)
 app.route('/api/materials', materialsRoutes)
+app.route('/api/factories', factoriesRoutes)
+app.route('/api/procurement/dashboard', procurementDashboardRoutes)
+app.route('/api/procurement/stats', procurementStatsRoutes)
+app.route('/api/debug-rfq', debugRfqRoutes)
+app.route('/api/rfq-email-history', rfqEmailHistoryRoutes)
+app.route('/api/test-email-log', testEmailLogRoutes)
+app.route('/api/check-email-tables', checkEmailTablesRoutes)
+app.route('/api/fix-rfq-duplicates', fixRfqDuplicatesRoutes)
+app.route('/api/setup-company', setupCompanyRoutes)
 
 // Debug endpoint to check users (remove in production)
 app.get('/api/debug/users', async (c) => {
@@ -184,6 +201,30 @@ app.post('/api/run-migrations', async (c) => {
     })
   } catch (error) {
     console.error('Migration error:', error)
+    return c.json({
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
+  }
+})
+
+// Fix failed migration
+app.get('/api/fix-failed-migration', async (c) => {
+  try {
+    const { prisma } = await import('./lib/prisma.js')
+    
+    // Delete the failed migration record
+    await prisma.$executeRaw`
+      DELETE FROM _prisma_migrations 
+      WHERE migration_name = '20250625_add_quotation_model'
+    `
+    
+    return c.json({
+      status: 'success',
+      message: 'Failed migration removed'
+    })
+  } catch (error) {
+    console.error('Fix migration error:', error)
     return c.json({
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error'

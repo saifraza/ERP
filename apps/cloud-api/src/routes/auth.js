@@ -19,6 +19,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(1),
+  linkedEmail: z.string().email(), // Mandatory work email for sending/receiving emails
   role: z.enum(['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER']).optional()
 })
 
@@ -101,6 +102,7 @@ app.post('/register', async (c) => {
         email: data.email,
         password: hashedPassword,
         name: data.name,
+        linkedEmail: data.linkedEmail,
         role: data.role || 'VIEWER'
       }
     })
@@ -125,6 +127,95 @@ app.post('/register', async (c) => {
     }
     console.error('Register error:', error)
     return c.json({ error: 'Registration failed' }, 500)
+  }
+})
+
+// Get current user profile
+app.get('/me', async (c) => {
+  try {
+    const token = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!token) {
+      return c.json({ error: 'No token provided' }, 401)
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    
+    // Get fresh user data
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        linkedGmailEmail: true,
+        isActive: true,
+        lastLogin: true,
+        createdAt: true
+      }
+    })
+    
+    if (!user || !user.isActive) {
+      return c.json({ error: 'User not found or inactive' }, 401)
+    }
+    
+    return c.json({ user })
+  } catch (error) {
+    console.error('Get user profile error:', error)
+    return c.json({ error: 'Invalid token' }, 401)
+  }
+})
+
+// Link Gmail account to user
+app.post('/link-email', async (c) => {
+  try {
+    const token = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!token) {
+      return c.json({ error: 'No token provided' }, 401)
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const { email } = await c.req.json()
+    
+    if (!email || !email.includes('@')) {
+      return c.json({ error: 'Invalid email address' }, 400)
+    }
+    
+    // Check if email is already linked to another user
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        linkedGmailEmail: email,
+        id: { not: decoded.userId }
+      }
+    })
+    
+    if (existingUser) {
+      return c.json({ error: 'This email is already linked to another user' }, 400)
+    }
+    
+    // Update user with linked email
+    const updatedUser = await prisma.user.update({
+      where: { id: decoded.userId },
+      data: { linkedGmailEmail: email },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        linkedGmailEmail: true
+      }
+    })
+    
+    return c.json({ 
+      message: 'Email linked successfully',
+      user: updatedUser 
+    })
+  } catch (error) {
+    console.error('Link email error:', error)
+    return c.json({ error: 'Failed to link email' }, 500)
   }
 })
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Building, Mail, Phone, Globe, Calendar, MapPin, FileText, ChevronRight } from 'lucide-react'
+import { Building, Mail, Phone, Globe, Calendar, MapPin, FileText, ChevronRight, Upload, Image } from 'lucide-react'
 import type { CompanyData } from './CompanySetup'
 
 interface CompanyInfoProps {
@@ -25,6 +25,8 @@ const financialYearMonths = [
 
 export default function CompanyInfo({ initialData, onSubmit }: CompanyInfoProps) {
   const [isValidating, setIsValidating] = useState(false)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [letterheadPreview, setLetterheadPreview] = useState<string | null>(null)
   const currentYear = new Date().getFullYear()
   
   const {
@@ -55,13 +57,60 @@ export default function CompanyInfo({ initialData, onSubmit }: CompanyInfoProps)
     }
   }
 
-  const onFormSubmit = (data: CompanyData) => {
+  // Handle file uploads
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleLetterheadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLetterheadPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const onFormSubmit = async (data: CompanyData) => {
     setIsValidating(true)
-    // Add any additional validation here
+    
+    // Convert file data to base64 if present
+    const formData = { ...data }
+    
+    if (data.logo && data.logo instanceof FileList && data.logo[0]) {
+      const logoFile = data.logo[0]
+      const logoBase64 = await fileToBase64(logoFile)
+      formData.logo = logoBase64
+    }
+    
+    if (data.letterhead && data.letterhead instanceof FileList && data.letterhead[0]) {
+      const letterheadFile = data.letterhead[0]
+      const letterheadBase64 = await fileToBase64(letterheadFile)
+      formData.letterhead = letterheadBase64
+    }
+    
     setTimeout(() => {
       setIsValidating(false)
-      onSubmit(data)
+      onSubmit(formData as CompanyData)
     }, 500)
+  }
+  
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = error => reject(error)
+    })
   }
 
   return (
@@ -360,6 +409,123 @@ export default function CompanyInfo({ initialData, onSubmit }: CompanyInfoProps)
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Letterhead & Logo */}
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <Image className="h-5 w-5 mr-2 text-gray-400" />
+            Company Branding
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Company Logo
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                {logoPreview ? (
+                  <div className="space-y-4">
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="mx-auto h-24 object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLogoPreview(null)}
+                      className="text-sm text-red-600 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">
+                      Upload your company logo
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PNG, JPG up to 5MB
+                    </p>
+                  </>
+                )}
+                <input
+                  type="file"
+                  {...register('logo')}
+                  onChange={handleLogoChange}
+                  accept="image/png,image/jpeg,image/jpg"
+                  className="hidden"
+                  id="logo-upload"
+                />
+                <label
+                  htmlFor="logo-upload"
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 cursor-pointer"
+                >
+                  {logoPreview ? 'Change Logo' : 'Choose File'}
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Letterhead Template
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                {letterheadPreview ? (
+                  <div className="space-y-4">
+                    {letterheadPreview.includes('application/pdf') ? (
+                      <div className="mx-auto">
+                        <FileText className="mx-auto h-16 w-16 text-gray-400" />
+                        <p className="mt-2 text-sm text-gray-600">PDF Letterhead Uploaded</p>
+                      </div>
+                    ) : (
+                      <img
+                        src={letterheadPreview}
+                        alt="Letterhead preview"
+                        className="mx-auto h-32 object-contain"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setLetterheadPreview(null)}
+                      className="text-sm text-red-600 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">
+                      Upload letterhead sample
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PDF, PNG, JPG up to 10MB
+                    </p>
+                  </>
+                )}
+                <input
+                  type="file"
+                  {...register('letterhead')}
+                  onChange={handleLetterheadChange}
+                  accept=".pdf,image/png,image/jpeg,image/jpg"
+                  className="hidden"
+                  id="letterhead-upload"
+                />
+                <label
+                  htmlFor="letterhead-upload"
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 cursor-pointer"
+                >
+                  {letterheadPreview ? 'Change Letterhead' : 'Choose File'}
+                </label>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-900">
+              <strong>Note:</strong> Your logo and letterhead will be used in all generated PDFs including Purchase Orders, RFQs, Invoices, and other documents.
+            </p>
           </div>
         </div>
 

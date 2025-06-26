@@ -33,6 +33,8 @@ export interface CompanyData {
   website?: string
   fyStartMonth: number
   currentFY: string
+  logo?: string | File | FileList
+  letterhead?: string | File | FileList
 }
 
 export interface FactoryData {
@@ -135,7 +137,7 @@ export default function CompanySetup() {
       // Also try API call but don't fail if it doesn't work
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-        const response = await fetch(`${apiUrl}/api/setup/complete`, {
+        const response = await fetch(`${apiUrl}/api/setup-company/complete`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

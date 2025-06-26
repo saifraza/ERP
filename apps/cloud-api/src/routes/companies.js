@@ -101,7 +101,16 @@ app.put('/:id', authMiddleware, async (c) => {
     })
     
     if (!companyUser) {
-      return c.json({ error: 'Access denied. Admin role required.' }, 403)
+      // Check what role the user actually has
+      const userRole = await prisma.companyUser.findFirst({
+        where: { userId, companyId },
+        select: { role: true }
+      })
+      
+      console.log(`User ${userId} has role ${userRole?.role} for company ${companyId}`)
+      return c.json({ 
+        error: `Access denied. Admin role required. Your role: ${userRole?.role || 'none'}` 
+      }, 403)
     }
     
     // Update company
@@ -109,8 +118,7 @@ app.put('/:id', authMiddleware, async (c) => {
       where: { id: companyId },
       data: {
         ...data,
-        updatedAt: new Date(),
-        updatedBy: userId
+        updatedAt: new Date()
       },
       include: {
         factories: true
@@ -151,8 +159,7 @@ app.delete('/:id', authMiddleware, async (c) => {
       where: { id: companyId },
       data: {
         isActive: false,
-        updatedAt: new Date(),
-        updatedBy: userId
+        updatedAt: new Date()
       }
     })
     
@@ -160,6 +167,50 @@ app.delete('/:id', authMiddleware, async (c) => {
   } catch (error) {
     console.error('Error deleting company:', error)
     return c.json({ error: 'Failed to delete company' }, 500)
+  }
+})
+
+// Get factories for user's current company
+app.get('/my/factories', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Get user's company
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: userId },
+      select: { companyId: true }
+    })
+    
+    const companyId = companyUser?.companyId
+    
+    if (!companyId) {
+      return c.json({ success: true, factories: [] })
+    }
+    
+    const factories = await prisma.factory.findMany({
+      where: {
+        companyId: companyId,
+        isActive: true
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        type: true,
+        city: true,
+        state: true,
+        crushingCapacity: true,
+        powerCapacity: true,
+        ethanolCapacity: true,
+        feedCapacity: true
+      },
+      orderBy: { name: 'asc' }
+    })
+    
+    return c.json({ success: true, factories })
+  } catch (error: any) {
+    console.error('Error fetching factories:', error)
+    return c.json({ success: false, error: error.message }, 500)
   }
 })
 
