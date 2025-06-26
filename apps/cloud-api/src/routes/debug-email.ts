@@ -150,21 +150,82 @@ app.post('/clear-linked-email', async (c) => {
   try {
     const userId = c.get('userId')
     
-    // Just clear the linkedGmailEmail field
-    const user = await prisma.user.update({
+    // First get the current user to see what's there
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+    
+    console.log('Current user before clear:', {
+      id: currentUser?.id,
+      email: currentUser?.email,
+      linkedGmailEmail: currentUser?.linkedGmailEmail
+    })
+    
+    // Now clear the linkedGmailEmail field
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { linkedGmailEmail: null }
+    })
+    
+    console.log('User after clear:', {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      linkedGmailEmail: updatedUser.linkedGmailEmail
     })
     
     return c.json({
       success: true,
       message: 'Cleared linked email',
-      previousEmail: user.linkedGmailEmail
+      previousEmail: currentUser?.linkedGmailEmail,
+      currentEmail: updatedUser.linkedGmailEmail
     })
   } catch (error: any) {
     console.error('Clear linked email error:', error)
     return c.json({ 
       error: 'Failed to clear linked email', 
+      details: error.message 
+    }, 500)
+  }
+})
+
+// Direct update with specific user ID
+app.post('/fix-email/:userId', async (c) => {
+  try {
+    const targetUserId = c.req.param('userId')
+    const authUserId = c.get('userId')
+    
+    // Only allow if it's the same user
+    if (targetUserId !== authUserId) {
+      return c.json({ error: 'Unauthorized' }, 403)
+    }
+    
+    console.log('Fixing email for user:', targetUserId)
+    
+    // Direct database update
+    const result = await prisma.$executeRaw`
+      UPDATE "User" 
+      SET "linkedGmailEmail" = NULL 
+      WHERE id = ${targetUserId} 
+      AND "linkedGmailEmail" = 'perchase@mspil.in'
+    `
+    
+    console.log('Update result:', result)
+    
+    // Verify the update
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId }
+    })
+    
+    return c.json({
+      success: true,
+      message: 'Fixed email issue',
+      updatedRows: result,
+      currentLinkedEmail: user?.linkedGmailEmail
+    })
+  } catch (error: any) {
+    console.error('Fix email error:', error)
+    return c.json({ 
+      error: 'Failed to fix email', 
       details: error.message 
     }, 500)
   }
