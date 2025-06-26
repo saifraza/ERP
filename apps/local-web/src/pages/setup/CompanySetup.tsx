@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building, Factory, Database, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Building, Factory, Database, CheckCircle, ChevronRight, ChevronLeft, Mail } from 'lucide-react'
 import { useCompanyStore } from '../../stores/companyStore'
 import CompanyInfo from './CompanyInfo'
 import FactorySetup from './FactorySetup'
 import MasterDataSetup from './MasterDataSetup'
+import EmailSetup from './EmailSetup'
 import SetupComplete from './SetupComplete'
 
 const steps = [
-  { id: 1, name: 'Company Information', icon: Building },
-  { id: 2, name: 'Factory Setup', icon: Factory },
-  { id: 3, name: 'Master Data', icon: Database },
-  { id: 4, name: 'Complete', icon: CheckCircle },
+  { id: 1, name: 'Email Setup', icon: Mail },
+  { id: 2, name: 'Company Information', icon: Building },
+  { id: 3, name: 'Factory Setup', icon: Factory },
+  { id: 4, name: 'Master Data', icon: Database },
+  { id: 5, name: 'Complete', icon: CheckCircle },
 ]
 
 export interface CompanyData {
@@ -168,12 +170,19 @@ export default function CompanySetup() {
     switch (currentStep) {
       case 1:
         return (
+          <EmailSetup
+            onNext={handleNext}
+            isFirstStep={true}
+          />
+        )
+      case 2:
+        return (
           <CompanyInfo
             initialData={companyData}
             onSubmit={handleCompanySubmit}
           />
         )
-      case 2:
+      case 3:
         return (
           <FactorySetup
             companyName={companyData?.name || ''}
@@ -182,7 +191,7 @@ export default function CompanySetup() {
             onBack={handleBack}
           />
         )
-      case 3:
+      case 4:
         return (
           <MasterDataSetup
             industryType={factories[0]?.type || 'integrated'}
@@ -191,7 +200,7 @@ export default function CompanySetup() {
             isSubmitting={isSubmitting}
           />
         )
-      case 4:
+      case 5:
         return (
           <SetupComplete
             companyName={companyData?.name || ''}

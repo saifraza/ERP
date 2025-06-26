@@ -168,6 +168,57 @@ app.get('/me', async (c) => {
   }
 })
 
+// Link Gmail account to user
+app.post('/link-email', async (c) => {
+  try {
+    const token = c.req.header('Authorization')?.replace('Bearer ', '')
+    
+    if (!token) {
+      return c.json({ error: 'No token provided' }, 401)
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const { email } = await c.req.json()
+    
+    if (!email || !email.includes('@')) {
+      return c.json({ error: 'Invalid email address' }, 400)
+    }
+    
+    // Check if email is already linked to another user
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        linkedGmailEmail: email,
+        id: { not: decoded.userId }
+      }
+    })
+    
+    if (existingUser) {
+      return c.json({ error: 'This email is already linked to another user' }, 400)
+    }
+    
+    // Update user with linked email
+    const updatedUser = await prisma.user.update({
+      where: { id: decoded.userId },
+      data: { linkedGmailEmail: email },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        linkedGmailEmail: true
+      }
+    })
+    
+    return c.json({ 
+      message: 'Email linked successfully',
+      user: updatedUser 
+    })
+  } catch (error) {
+    console.error('Link email error:', error)
+    return c.json({ error: 'Failed to link email' }, 500)
+  }
+})
+
 // Verify token endpoint
 app.get('/verify', async (c) => {
   try {
