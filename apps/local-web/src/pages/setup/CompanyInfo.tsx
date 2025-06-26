@@ -86,17 +86,46 @@ export default function CompanyInfo({ initialData, onSubmit }: CompanyInfoProps)
     // Convert file data to base64 if present
     const formData = { ...data }
     
-    if (data.logo && data.logo instanceof FileList && data.logo[0]) {
-      const logoFile = data.logo[0]
-      const logoBase64 = await fileToBase64(logoFile)
-      formData.logo = logoBase64
+    // Handle logo field
+    if (data.logo) {
+      if (data.logo instanceof FileList) {
+        if (data.logo[0]) {
+          const logoFile = data.logo[0]
+          const logoBase64 = await fileToBase64(logoFile)
+          formData.logo = logoBase64
+        } else {
+          // No file selected, remove the field
+          delete formData.logo
+        }
+      } else if (typeof data.logo === 'object') {
+        // If it's still an object but not FileList, remove it
+        delete formData.logo
+      }
     }
     
-    if (data.letterhead && data.letterhead instanceof FileList && data.letterhead[0]) {
-      const letterheadFile = data.letterhead[0]
-      const letterheadBase64 = await fileToBase64(letterheadFile)
-      formData.letterhead = letterheadBase64
+    // Handle letterhead field
+    if (data.letterhead) {
+      if (data.letterhead instanceof FileList) {
+        if (data.letterhead[0]) {
+          const letterheadFile = data.letterhead[0]
+          const letterheadBase64 = await fileToBase64(letterheadFile)
+          formData.letterhead = letterheadBase64
+        } else {
+          // No file selected, remove the field
+          delete formData.letterhead
+        }
+      } else if (typeof data.letterhead === 'object') {
+        // If it's still an object but not FileList, remove it
+        delete formData.letterhead
+      }
     }
+    
+    // Log the final form data for debugging
+    console.log('Company form data before submit:', {
+      ...formData,
+      logo: formData.logo ? `${typeof formData.logo} (${formData.logo?.length || 0} chars)` : 'undefined',
+      letterhead: formData.letterhead ? `${typeof formData.letterhead} (${formData.letterhead?.length || 0} chars)` : 'undefined'
+    })
     
     setTimeout(() => {
       setIsValidating(false)
