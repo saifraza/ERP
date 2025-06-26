@@ -80,8 +80,12 @@ app.post('/clear-all', authMiddleware, async (c) => {
       
       // Keep users but clear their linked emails
       await tx.user.updateMany({
-        data: { linkedGmailEmail: null }
+        data: { 
+          linkedGmailEmail: null 
+        }
       })
+      
+      console.log('Users updated - linkedGmailEmail cleared')
     })
     
     console.log('Database cleared successfully')

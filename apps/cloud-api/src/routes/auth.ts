@@ -180,6 +180,26 @@ app.post('/link-email', async (c) => {
     const decoded = jwt.verify(token, JWT_SECRET) as any
     const { email } = await c.req.json()
     
+    // Allow empty string to clear email
+    if (email === '') {
+      const updatedUser = await prisma.user.update({
+        where: { id: decoded.userId },
+        data: { linkedGmailEmail: null },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          name: true,
+          linkedGmailEmail: true
+        }
+      })
+      
+      return c.json({ 
+        message: 'Email unlinked successfully',
+        user: updatedUser 
+      })
+    }
+    
     if (!email || !email.includes('@')) {
       return c.json({ error: 'Invalid email address' }, 400)
     }
