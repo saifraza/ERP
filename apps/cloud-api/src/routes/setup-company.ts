@@ -194,15 +194,15 @@ app.post('/complete', async (c) => {
           })
         }
         
-        // Create default UOMs
+        // Create default UOMs (without category field)
         const defaultUOMs = [
-          { code: 'KG', name: 'Kilogram', category: 'WEIGHT' },
-          { code: 'MT', name: 'Metric Ton', category: 'WEIGHT' },
-          { code: 'L', name: 'Liter', category: 'VOLUME' },
-          { code: 'KL', name: 'Kiloliter', category: 'VOLUME' },
-          { code: 'NOS', name: 'Numbers', category: 'COUNT' },
-          { code: 'M', name: 'Meter', category: 'LENGTH' },
-          { code: 'SQM', name: 'Square Meter', category: 'AREA' }
+          { code: 'KG', name: 'Kilogram' },
+          { code: 'MT', name: 'Metric Ton', conversionFactor: 1000, baseUOM: 'KG' },
+          { code: 'L', name: 'Liter' },
+          { code: 'KL', name: 'Kiloliter', conversionFactor: 1000, baseUOM: 'L' },
+          { code: 'NOS', name: 'Numbers' },
+          { code: 'M', name: 'Meter' },
+          { code: 'SQM', name: 'Square Meter' }
         ]
         
         await Promise.all(
@@ -210,22 +210,21 @@ app.post('/complete', async (c) => {
             tx.uOM.create({
               data: {
                 companyId: company.id,
-                ...uom
+                code: uom.code,
+                name: uom.name,
+                conversionFactor: uom.conversionFactor || 1,
+                baseUOM: uom.baseUOM || null
               }
             })
           )
         )
         
-        // Create default tax rates
+        // Create default tax rates (matching actual schema)
         const defaultTaxRates = [
-          { code: 'GST5', name: 'GST 5%', rate: 5, type: 'GST' },
-          { code: 'GST12', name: 'GST 12%', rate: 12, type: 'GST' },
-          { code: 'GST18', name: 'GST 18%', rate: 18, type: 'GST' },
-          { code: 'GST28', name: 'GST 28%', rate: 28, type: 'GST' },
-          { code: 'IGST5', name: 'IGST 5%', rate: 5, type: 'IGST' },
-          { code: 'IGST12', name: 'IGST 12%', rate: 12, type: 'IGST' },
-          { code: 'IGST18', name: 'IGST 18%', rate: 18, type: 'IGST' },
-          { code: 'IGST28', name: 'IGST 28%', rate: 28, type: 'IGST' }
+          { name: 'GST 5%', cgstRate: 2.5, sgstRate: 2.5, igstRate: 5 },
+          { name: 'GST 12%', cgstRate: 6, sgstRate: 6, igstRate: 12 },
+          { name: 'GST 18%', cgstRate: 9, sgstRate: 9, igstRate: 18 },
+          { name: 'GST 28%', cgstRate: 14, sgstRate: 14, igstRate: 28 }
         ]
         
         await Promise.all(
@@ -233,7 +232,12 @@ app.post('/complete', async (c) => {
             tx.taxRate.create({
               data: {
                 companyId: company.id,
-                ...tax
+                name: tax.name,
+                cgstRate: tax.cgstRate,
+                sgstRate: tax.sgstRate,
+                igstRate: tax.igstRate,
+                cessRate: 0,
+                effectiveFrom: new Date()
               }
             })
           )
