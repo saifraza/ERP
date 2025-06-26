@@ -524,6 +524,7 @@ Accounts Team
       customSubject?: string
       customBody?: string
       ccEmails?: string[]
+      isReminder?: boolean
     }
   ) {
     console.log('=== sendRFQToVendors START ===')
@@ -727,43 +728,43 @@ Accounts Team
           throw emailError
         }
         
-        // TODO: Uncomment after database migration
         // Create email log
-        // await prisma.rFQEmailLog.create({
-        //   data: {
-        //     rfqId: rfq.id,
-        //     vendorId: vendor.id,
-        //     emailType: 'rfq_sent',
-        //     emailId: emailResult.messageId,
-        //     subject: subject,
-        //     toEmail: vendor.email,
-        //     attachments: JSON.stringify([pdfFilename]),
-        //     status: 'sent',
-        //     sentAt: new Date()
-        //   }
-        // })
+        await prisma.rFQEmailLog.create({
+          data: {
+            rfqId: rfq.id,
+            vendorId: vendor.id,
+            emailType: emailOptions?.isReminder ? 'reminder_sent' : 'rfq_sent',
+            emailId: emailResult.messageId,
+            subject: subject,
+            toEmail: vendor.email,
+            ccEmails: emailOptions?.ccEmails ? JSON.stringify(emailOptions.ccEmails) : null,
+            attachments: JSON.stringify([pdfFilename]),
+            status: 'sent',
+            sentAt: new Date()
+          }
+        })
         
         // Create or update communication thread
-        // await prisma.rFQCommunicationThread.upsert({
-        //   where: {
-        //     rfqId_vendorId: {
-        //       rfqId: rfq.id,
-        //       vendorId: vendor.id
-        //     }
-        //   },
-        //   create: {
-        //     rfqId: rfq.id,
-        //     vendorId: vendor.id,
-        //     threadId: emailResult.threadId,
-        //     messageCount: 1,
-        //     lastMessageAt: new Date(),
-        //     status: 'active'
-        //   },
-        //   update: {
-        //     messageCount: { increment: 1 },
-        //     lastMessageAt: new Date()
-        //   }
-        // })
+        await prisma.rFQCommunicationThread.upsert({
+          where: {
+            rfqId_vendorId: {
+              rfqId: rfq.id,
+              vendorId: vendor.id
+            }
+          },
+          create: {
+            rfqId: rfq.id,
+            vendorId: vendor.id,
+            threadId: emailResult.threadId,
+            messageCount: 1,
+            lastMessageAt: new Date(),
+            status: 'active'
+          },
+          update: {
+            messageCount: { increment: 1 },
+            lastMessageAt: new Date()
+          }
+        })
         
         // Update RFQ vendor status
         await prisma.rFQVendor.update({
@@ -784,8 +785,30 @@ Accounts Team
         })
       } catch (error: any) {
         console.error(`Failed to send RFQ to vendor ${rfqVendor.vendorId}:`, error)
+        
+        // Create email log for failed attempt
+        try {
+          await prisma.rFQEmailLog.create({
+            data: {
+              rfqId: rfq.id,
+              vendorId: vendor.id,
+              emailType: emailOptions?.isReminder ? 'reminder_sent' : 'rfq_sent',
+              subject: subject,
+              toEmail: vendor.email,
+              ccEmails: emailOptions?.ccEmails ? JSON.stringify(emailOptions.ccEmails) : null,
+              attachments: JSON.stringify([pdfFilename]),
+              status: 'failed',
+              sentAt: new Date(),
+              error: error.message
+            }
+          })
+        } catch (logError) {
+          console.error('Failed to create email log for failed attempt:', logError)
+        }
+        
         results.push({
-          vendorId: rfqVendor.vendorId,
+          vendorId: vendor.id,
+          vendorName: vendor.name,
           success: false,
           error: error.message
         })

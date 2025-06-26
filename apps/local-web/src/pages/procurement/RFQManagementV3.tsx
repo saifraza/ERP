@@ -318,10 +318,46 @@ export default function RFQManagementV3() {
     return diff
   }
 
-  const viewPDF = (rfqId: string, rfqNumber: string, e?: React.MouseEvent) => {
+  const viewPDF = async (rfqId: string, rfqNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    // Open PDF in new window with auth token
-    window.open(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/pdf?token=${token}`, '_blank')
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rfqs/${rfqId}/pdf`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to load PDF')
+      }
+      
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      
+      // Open in new window for preview
+      const pdfWindow = window.open('', '_blank')
+      if (pdfWindow) {
+        pdfWindow.document.write(`
+          <html>
+            <head>
+              <title>RFQ ${rfqNumber}</title>
+              <style>
+                body { margin: 0; padding: 0; }
+                iframe { border: none; }
+              </style>
+            </head>
+            <body>
+              <iframe src="${url}" width="100%" height="100%"></iframe>
+            </body>
+          </html>
+        `)
+      }
+      
+      // Clean up after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch (error) {
+      toast.error('Failed to view PDF')
+    }
   }
 
   const downloadPDF = async (rfqId: string, rfqNumber: string, e?: React.MouseEvent) => {
@@ -892,7 +928,7 @@ export default function RFQManagementV3() {
                 <ArrowDownToLine className="h-5 w-5 text-green-500 mx-auto mb-1" />
                 <p className="text-xs text-gray-600 dark:text-gray-400">Responses</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
-                  {emailLogs[expandedRFQ]?.filter(l => l.emailType === 'quotation_received').length || 0}
+                  {emailLogs[expandedRFQ]?.filter(l => l.receivedAt && !l.sentAt).length || 0}
                 </p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700">

@@ -473,7 +473,9 @@ app.post('/:id/resend', async (c) => {
     })
     
     // Send reminder emails
-    const result = await procurementAutomation.sendRFQToVendors(rfqId, vendorIds)
+    const result = await procurementAutomation.sendRFQToVendors(rfqId, vendorIds, {
+      isReminder: true
+    })
     
     return c.json({
       success: true,
