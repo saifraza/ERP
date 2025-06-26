@@ -64,4 +64,38 @@ app.get('/check', async (c) => {
   }
 })
 
+// Test email connection
+app.get('/test-connection', async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Try to list emails
+    const { multiTenantGmail } = await import('../services/multi-tenant-gmail.js')
+    
+    try {
+      const emails = await multiTenantGmail.listEmails(userId, 1)
+      return c.json({
+        success: true,
+        message: 'Email connection is working',
+        emailCount: emails.length,
+        firstEmail: emails[0] ? {
+          subject: emails[0].subject,
+          from: emails[0].from,
+          date: emails[0].date
+        } : null
+      })
+    } catch (error: any) {
+      return c.json({
+        success: false,
+        error: 'Email connection failed',
+        details: error.message,
+        userId: userId
+      }, 500)
+    }
+  } catch (error) {
+    console.error('Test connection error:', error)
+    return c.json({ error: 'Failed to test connection' }, 500)
+  }
+})
+
 export default app
