@@ -18,6 +18,7 @@ import VendorsModern from './pages/finance/VendorsModern'
 import CompanySetup from './pages/setup/CompanySetup'
 import Companies from './pages/masters/Companies'
 import CompanyEdit from './pages/masters/CompanyEdit'
+import CompanyEditWizard from './pages/masters/CompanyEditWizard'
 import Divisions from './pages/masters/Divisions'
 import Departments from './pages/masters/Departments'
 import VendorMaster from './pages/masters/VendorMaster'
@@ -140,6 +141,7 @@ function App() {
                     {/* Masters Module Routes */}
                     <Route path="/masters/companies" element={<Companies />} />
                     <Route path="/masters/companies/edit" element={<CompanyEdit />} />
+                    <Route path="/masters/companies/edit-wizard" element={<CompanyEditWizard />} />
                     <Route path="/masters/divisions" element={<Divisions />} />
                     <Route path="/masters/departments" element={<Departments />} />
                     <Route path="/masters/materials" element={<MaterialMaster />} />

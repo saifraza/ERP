@@ -9,7 +9,7 @@ export default function Companies() {
   const navigate = useNavigate()
   const { companies, currentCompany, setCurrentCompany, fetchCompanies } = useCompanyStore()
   const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
+  // const [showEditModal, setShowEditModal] = useState(false) // Using wizard now
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<any>(null)
 
@@ -72,8 +72,10 @@ export default function Companies() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      setSelectedCompany(company)
-                      setShowEditModal(true)
+                      // Set current company first so the wizard has the data
+                      setCurrentCompany(company)
+                      // Navigate to the wizard
+                      navigate('/masters/companies/edit-wizard')
                     }}
                     className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
                     title="Edit Company"
@@ -173,20 +175,7 @@ export default function Companies() {
         }}
       />
 
-      {/* Edit Company Modal */}
-      <EditCompanyModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false)
-          setSelectedCompany(null)
-        }}
-        onSuccess={() => {
-          setShowEditModal(false)
-          setSelectedCompany(null)
-          fetchCompanies()
-        }}
-        company={selectedCompany}
-      />
+      {/* Edit Company Modal - Replaced with wizard navigation */}
 
       {/* Delete Company Modal */}
       <DeleteCompanyModal
