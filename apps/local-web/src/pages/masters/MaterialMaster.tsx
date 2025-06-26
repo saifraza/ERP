@@ -272,6 +272,109 @@ export default function MaterialMaster() {
     toast.success('Materials exported successfully')
   }
 
+  const handleImport = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.csv'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        try {
+          const csv = event.target?.result as string
+          const lines = csv.split('\n').filter(line => line.trim())
+          const headers = lines[0].split(',').map(h => h.trim())
+          
+          // Validate headers
+          const expectedHeaders = ['Code', 'Name', 'Category', 'Division', 'Unit', 'Status']
+          if (!expectedHeaders.every(h => headers.includes(h))) {
+            toast.error('Invalid CSV format. Expected headers: ' + expectedHeaders.join(', '))
+            return
+          }
+          
+          const materialsData = []
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim())
+            if (values.length !== headers.length) continue
+            
+            const material: any = {}
+            headers.forEach((header, index) => {
+              material[header] = values[index]
+            })
+            
+            // Map CSV data to API format
+            materialsData.push({
+              code: material.Code,
+              name: material.Name,
+              category: getCategoryFromLabel(material.Category),
+              division: getDivisionFromLabel(material.Division),
+              unit: material.Unit,
+              isActive: material.Status === 'Active'
+            })
+          }
+          
+          if (materialsData.length === 0) {
+            toast.error('No valid materials found in CSV')
+            return
+          }
+          
+          // Send to API
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/materials/import`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ materials: materialsData }),
+            }
+          )
+          
+          if (response.ok) {
+            const result = await response.json()
+            toast.success(`Imported ${result.imported} materials successfully`)
+            fetchMaterials()
+          } else {
+            const error = await response.json()
+            toast.error(error.message || 'Failed to import materials')
+          }
+        } catch (error) {
+          console.error('Error parsing CSV:', error)
+          toast.error('Failed to parse CSV file')
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
+  
+  const getCategoryFromLabel = (label: string): string => {
+    const categoryMap: Record<string, string> = {
+      'Raw Material': 'RAW_MATERIAL',
+      'Finished Product': 'FINISHED_PRODUCT',
+      'Semi-Finished': 'SEMI_FINISHED',
+      'Consumable': 'CONSUMABLE',
+      'Spare Parts': 'SPARE_PARTS',
+      'Service': 'SERVICE',
+      'Other': 'OTHER'
+    }
+    return categoryMap[label] || 'OTHER'
+  }
+  
+  const getDivisionFromLabel = (label: string): string => {
+    const divisionMap: Record<string, string> = {
+      'Sugar': 'SUGAR',
+      'Ethanol': 'ETHANOL',
+      'Power': 'POWER',
+      'Animal Feed': 'FEED',
+      'Common': 'COMMON'
+    }
+    return divisionMap[label] || 'COMMON'
+  }
+
   const getCategoryColor = (category: string) => {
     const colors = {
       RAW_MATERIAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -335,9 +438,7 @@ export default function MaterialMaster() {
         <div className="flex gap-3">
           <button 
             className="btn-secondary flex items-center gap-2"
-            onClick={() => toast('Import feature coming soon', {
-              icon: '🚧',
-            })}
+            onClick={handleImport}
           >
             <Upload className="h-4 w-4" />
             Import

@@ -1,10 +1,17 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building, Edit2, Factory, MapPin, Phone, Mail, Plus } from 'lucide-react'
+import { Building, Edit2, Factory, MapPin, Phone, Mail, Plus, Trash2 } from 'lucide-react'
 import { useCompanyStore } from '../../stores/companyStore'
+import { AddCompanyModal, EditCompanyModal, DeleteCompanyModal } from '../../components/masters/CompanyModals'
+import { toast } from 'react-hot-toast'
 
 export default function Companies() {
   const navigate = useNavigate()
-  const { companies, currentCompany, setCurrentCompany } = useCompanyStore()
+  const { companies, currentCompany, setCurrentCompany, fetchCompanies } = useCompanyStore()
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState<any>(null)
 
   return (
     <div className="p-6">
@@ -15,7 +22,7 @@ export default function Companies() {
           <p className="text-sm text-gray-600 mt-1">Manage your company details and factories</p>
         </div>
         <button
-          onClick={() => navigate('/setup')}
+          onClick={() => setShowAddModal(true)}
           className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -30,7 +37,7 @@ export default function Companies() {
           <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
           <p className="text-gray-600 mb-4">Get started by adding your first company</p>
           <button
-            onClick={() => navigate('/setup')}
+            onClick={() => setShowAddModal(true)}
             className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -62,15 +69,32 @@ export default function Companies() {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setCurrentCompany(company)
-                    navigate('/masters/companies/edit')
-                  }}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedCompany(company)
+                      setShowEditModal(true)
+                    }}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                    title="Edit Company"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (currentCompany?.id === company.id) {
+                        toast.error('Cannot delete current company')
+                        return
+                      }
+                      setSelectedCompany(company)
+                      setShowDeleteModal(true)
+                    }}
+                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                    title="Delete Company"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Company Details */}
@@ -138,6 +162,46 @@ export default function Companies() {
           ))}
         </div>
       )}
+
+      {/* Add Company Modal */}
+      <AddCompanyModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          setShowAddModal(false)
+          fetchCompanies()
+        }}
+      />
+
+      {/* Edit Company Modal */}
+      <EditCompanyModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedCompany(null)
+        }}
+        onSuccess={() => {
+          setShowEditModal(false)
+          setSelectedCompany(null)
+          fetchCompanies()
+        }}
+        company={selectedCompany}
+      />
+
+      {/* Delete Company Modal */}
+      <DeleteCompanyModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setSelectedCompany(null)
+        }}
+        onSuccess={() => {
+          setShowDeleteModal(false)
+          setSelectedCompany(null)
+          fetchCompanies()
+        }}
+        company={selectedCompany}
+      />
     </div>
   )
 }

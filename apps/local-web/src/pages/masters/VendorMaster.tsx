@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { 
   Users, Plus, Search, Filter, Download, Upload, 
   Phone, Mail, MapPin, Building2, CreditCard,
-  FileText, Package, CheckCircle, Edit, Eye, MoreVertical
+  FileText, Package, CheckCircle, Edit, Eye, MoreVertical,
+  Trash2, Copy, UserX
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
@@ -39,6 +40,8 @@ export default function VendorMaster() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletingVendor, setDeletingVendor] = useState<Vendor | null>(null)
 
   useEffect(() => {
     fetchVendors()
@@ -76,6 +79,72 @@ export default function VendorMaster() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     fetchVendors()
+  }
+
+  const handleDelete = async () => {
+    if (!deletingVendor) return
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/vendors/${deletingVendor.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (response.ok) {
+        toast.success('Vendor deleted successfully')
+        setShowDeleteModal(false)
+        setDeletingVendor(null)
+        fetchVendors()
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Failed to delete vendor')
+      }
+    } catch (error) {
+      console.error('Error deleting vendor:', error)
+      toast.error('Failed to delete vendor')
+    }
+  }
+
+  const handleExport = () => {
+    const csvData = vendors.map(vendor => ({
+      Code: vendor.code,
+      Name: vendor.name,
+      Type: vendor.type,
+      Email: vendor.email || '',
+      Phone: vendor.phone,
+      City: vendor.city,
+      State: vendor.state,
+      CreditLimit: vendor.creditLimit,
+      CreditDays: vendor.creditDays,
+      Status: vendor.isActive ? 'Active' : 'Inactive'
+    }))
+
+    const csv = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).map(v => `"${v}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `vendors_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast.success('Vendors exported successfully')
+  }
+
+  const handleImport = () => {
+    // TODO: Implement import functionality
+    toast.info('Import functionality coming soon')
   }
 
   const getStatusBadge = (isActive: boolean) => {
@@ -123,11 +192,18 @@ export default function VendorMaster() {
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage vendor master data and information</p>
         </div>
         <div className="flex gap-3">
-          <button className="btn-secondary flex items-center gap-2">
+          <button 
+            onClick={handleImport}
+            className="btn-secondary flex items-center gap-2"
+          >
             <Upload className="h-4 w-4" />
             Import
           </button>
-          <button className="btn-secondary flex items-center gap-2">
+          <button 
+            onClick={handleExport}
+            disabled={vendors.length === 0}
+            className="btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Download className="h-4 w-4" />
             Export
           </button>
@@ -361,12 +437,47 @@ export default function VendorMaster() {
                         >
                           <Edit className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </button>
-                        <button 
-                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                          title="More Options"
-                        >
-                          <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </button>
+                        <div className="relative group">
+                          <button 
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                            title="More Options"
+                          >
+                            <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                          </button>
+                          <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(vendor.email || '')
+                                toast.success('Email copied to clipboard')
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <Copy className="h-4 w-4" />
+                              Copy Email
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedVendor(vendor)
+                                setShowEditModal(true)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <UserX className="h-4 w-4" />
+                              {vendor.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <hr className="my-1 border-gray-200 dark:border-gray-700" />
+                            <button
+                              onClick={() => {
+                                setDeletingVendor(vendor)
+                                setShowDeleteModal(true)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete Vendor
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -401,6 +512,39 @@ export default function VendorMaster() {
         }}
         vendor={selectedVendor}
       />
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deletingVendor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Delete Vendor
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to delete <span className="font-semibold">{deletingVendor.name}</span>? 
+              This action cannot be undone and will remove all associated data.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeletingVendor(null)
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="btn-danger flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Vendor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
