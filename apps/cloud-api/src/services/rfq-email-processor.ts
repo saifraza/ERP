@@ -22,16 +22,22 @@ export class RFQEmailProcessor {
    */
   async processRFQEmails(companyId: string) {
     try {
+      console.log(`Processing RFQ emails for company: ${companyId}`)
+      
       // Fetch unread emails with RFQ-related subjects
+      // Include common reply prefixes and quotation terms
       const emails = await multiTenantGmail.listEmails(
         companyId, 
         50,
-        'is:unread subject:(RFQ OR "Request for Quotation" OR Quotation)'
+        'is:unread (subject:(RFQ OR "Request for Quotation" OR Quotation OR Quote OR "Price Quote" OR "RE: RFQ" OR "Re: RFQ"))'
       )
+      
+      console.log(`Found ${emails.length} unread RFQ-related emails`)
       
       const results = []
       
       for (const email of emails) {
+        console.log(`Processing email: ${email.subject} from ${email.from}`)
         try {
           // Check if email is from a vendor
           const vendor = await prisma.vendor.findFirst({
@@ -57,12 +63,23 @@ export class RFQEmailProcessor {
           }
           
           // Find the RFQ
-          const rfq = await prisma.rFQ.findFirst({
+          // First try exact match
+          let rfq = await prisma.rFQ.findFirst({
             where: {
               companyId,
               rfqNumber
             }
           })
+          
+          // If not found and rfqNumber doesn't start with "RFQ", try adding prefix
+          if (!rfq && !rfqNumber.toUpperCase().startsWith('RFQ')) {
+            rfq = await prisma.rFQ.findFirst({
+              where: {
+                companyId,
+                rfqNumber: `RFQ-${rfqNumber}`
+              }
+            })
+          }
           
           if (!rfq) {
             console.log(`RFQ ${rfqNumber} not found`)
@@ -86,8 +103,13 @@ export class RFQEmailProcessor {
           const result = await this.processVendorResponse(email, fullEmail, rfq, vendor)
           results.push(result)
           
-          // TODO: Implement markAsRead in multiTenantGmail
-          // await multiTenantGmail.markAsRead(companyId, email.id)
+          // Mark email as read after successful processing
+          try {
+            await multiTenantGmail.markAsRead(companyId, email.id)
+          } catch (error) {
+            console.warn(`Failed to mark email ${email.id} as read:`, error)
+            // Don't fail the entire process if marking as read fails
+          }
           
         } catch (error) {
           console.error(`Error processing email ${email.id}:`, error)
@@ -99,10 +121,23 @@ export class RFQEmailProcessor {
         }
       }
       
+      // Summarize results
+      const summary = {
+        totalEmails: emails.length,
+        processed: results.length,
+        successful: results.filter(r => r.success).length,
+        quotationsCreated: results.filter(r => r.action === 'quotation_created').length,
+        manualReviewRequired: results.filter(r => r.action === 'manual_review_required').length,
+        failed: results.filter(r => r.success === false).length
+      }
+      
+      console.log('RFQ Email Processing Summary:', summary)
+      
       return {
         success: true,
         processed: results.length,
-        results
+        results,
+        summary
       }
     } catch (error) {
       console.error('Error processing RFQ emails:', error)
@@ -229,16 +264,32 @@ export class RFQEmailProcessor {
    * Extract RFQ number from email
    */
   private extractRFQNumber(subject: string, body: string): string | null {
-    // Try to extract from subject first
-    const subjectMatch = subject.match(/RFQ[- ]?(\w+)/i)
-    if (subjectMatch) {
-      return subjectMatch[1]
+    // Common RFQ number formats:
+    // RFQ-2024-0001, RFQ 2024-0001, RFQ2024-0001, RFQ#2024-0001
+    // Also match if in reply: Re: RFQ-2024-0001, RE: Your RFQ 2024-0001
+    
+    const patterns = [
+      /RFQ[-#\s]*([\d]{4}[-\s]*\d{4})/i,  // RFQ-2024-0001 format
+      /RFQ[-#\s]*(\w+-\d+)/i,              // RFQ-XXXX-001 format
+      /RFQ[-#\s]*([\w\d]+)/i,              // RFQ123 or RFQABC123 format
+    ]
+    
+    // Try to extract from subject first (more reliable)
+    for (const pattern of patterns) {
+      const subjectMatch = subject.match(pattern)
+      if (subjectMatch) {
+        // Clean up the extracted number (remove spaces)
+        return subjectMatch[1].replace(/\s+/g, '-')
+      }
     }
     
     // Try to extract from body
-    const bodyMatch = body.match(/RFQ[- ]?(\w+)/i)
-    if (bodyMatch) {
-      return bodyMatch[1]
+    for (const pattern of patterns) {
+      const bodyMatch = body.match(pattern)
+      if (bodyMatch) {
+        // Clean up the extracted number (remove spaces)
+        return bodyMatch[1].replace(/\s+/g, '-')
+      }
     }
     
     return null

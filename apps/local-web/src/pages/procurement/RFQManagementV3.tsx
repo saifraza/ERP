@@ -101,6 +101,7 @@ export default function RFQManagementV3() {
   const [expandedRFQ, setExpandedRFQ] = useState<string | null>(null)
   const [emailLogs, setEmailLogs] = useState<{ [key: string]: EmailLog[] }>({})
   const [loadingEmailLogs, setLoadingEmailLogs] = useState<string | null>(null)
+  const [checkingEmails, setCheckingEmails] = useState(false)
 
   useEffect(() => {
     fetchRFQs()
@@ -278,6 +279,66 @@ export default function RFQManagementV3() {
       }
     } catch (error) {
       toast.error('Failed to close RFQ')
+    }
+  }
+
+  const checkEmailResponses = async () => {
+    setCheckingEmails(true)
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/rfq-emails/process`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.processed === 0 && data.summary?.totalEmails === 0) {
+          toast('No new RFQ responses found in emails', {
+            icon: '📧',
+            style: {
+              background: '#3b82f6',
+              color: '#fff',
+            },
+          })
+        } else if (data.processed === 0 && data.summary?.totalEmails > 0) {
+          toast(`Found ${data.summary.totalEmails} emails but none matched active RFQs`, {
+            icon: '⚠️',
+            duration: 5000
+          })
+        } else {
+          const summary = data.summary || {}
+          let message = `Processed ${data.processed} RFQ responses\n`
+          
+          if (summary.quotationsCreated > 0) {
+            message += `✓ ${summary.quotationsCreated} quotations created\n`
+          }
+          if (summary.manualReviewRequired > 0) {
+            message += `⚠ ${summary.manualReviewRequired} require manual review\n`
+          }
+          if (summary.failed > 0) {
+            message += `✗ ${summary.failed} failed to process`
+          }
+          
+          toast.success(message, { duration: 5000 })
+          
+          // Refresh RFQs to show updated counts
+          fetchRFQs()
+        }
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to check email responses')
+      }
+    } catch (error: any) {
+      console.error('Check email responses error:', error)
+      toast.error('Failed to check email responses')
+    } finally {
+      setCheckingEmails(false)
     }
   }
 
@@ -620,6 +681,23 @@ export default function RFQManagementV3() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={checkEmailResponses}
+            disabled={checkingEmails}
+            className="btn-secondary text-sm flex items-center gap-1"
+          >
+            {checkingEmails ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              <>
+                <Inbox className="h-4 w-4" />
+                Check Email Responses
+              </>
+            )}
+          </button>
           <button
             onClick={() => fetchRFQs()}
             className="btn-secondary text-sm flex items-center gap-1"

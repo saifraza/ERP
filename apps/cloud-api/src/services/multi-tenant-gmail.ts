@@ -408,6 +408,29 @@ export class MultiTenantGmailService {
   }
   
   /**
+   * Mark email as read
+   */
+  async markAsRead(companyId: string | undefined, messageId: string) {
+    const { client } = await this.getClient(companyId)
+    const gmail = google.gmail({ version: 'v1', auth: client })
+    
+    try {
+      await gmail.users.messages.modify({
+        userId: 'me',
+        id: messageId,
+        requestBody: {
+          removeLabelIds: ['UNREAD']
+        }
+      })
+      
+      return { success: true }
+    } catch (error: any) {
+      console.error('Error marking email as read:', error)
+      throw new Error(`Failed to mark email as read: ${error.message}`)
+    }
+  }
+  
+  /**
    * Store OAuth credentials for a company
    */
   async storeCredentials(
