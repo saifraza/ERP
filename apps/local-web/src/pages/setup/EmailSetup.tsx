@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Mail, AlertCircle, CheckCircle, ExternalLink, Loader2 } from 'lucide-react'
+import { Mail, AlertCircle, CheckCircle, ExternalLink, Loader2, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'react-hot-toast'
 
