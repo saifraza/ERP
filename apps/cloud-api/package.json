@@ -12,7 +12,9 @@
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "studio": "prisma studio",
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts",
+    "clear-data": "npx tsx src/scripts/clear-all-data.ts",
+    "clear-test": "npx tsx src/scripts/clear-test-data.ts"
   },
   "engines": {
     "node": ">=18.0.0"
