@@ -201,31 +201,124 @@ app.post('/fix-email/:userId', async (c) => {
     
     console.log('Fixing email for user:', targetUserId)
     
-    // Direct database update
-    const result = await prisma.$executeRaw`
-      UPDATE "User" 
-      SET "linkedGmailEmail" = NULL 
-      WHERE id = ${targetUserId} 
-      AND "linkedGmailEmail" = 'perchase@mspil.in'
-    `
-    
-    console.log('Update result:', result)
-    
-    // Verify the update
-    const user = await prisma.user.findUnique({
+    // First, let's see what's actually in the database
+    const beforeUser = await prisma.user.findUnique({
       where: { id: targetUserId }
     })
+    console.log('User before update:', beforeUser)
+    
+    // Try multiple approaches
+    let result = 0
+    
+    // Approach 1: Direct SQL with exact match
+    try {
+      result = await prisma.$executeRaw`
+        UPDATE "User" 
+        SET "linkedGmailEmail" = NULL 
+        WHERE id = ${targetUserId} 
+        AND "linkedGmailEmail" = 'perchase@mspil.in'
+      `
+      console.log('Approach 1 result:', result)
+    } catch (e) {
+      console.error('Approach 1 failed:', e)
+    }
+    
+    // Approach 2: Update without condition
+    if (result === 0) {
+      try {
+        result = await prisma.$executeRaw`
+          UPDATE "User" 
+          SET "linkedGmailEmail" = NULL 
+          WHERE id = ${targetUserId}
+        `
+        console.log('Approach 2 result:', result)
+      } catch (e) {
+        console.error('Approach 2 failed:', e)
+      }
+    }
+    
+    // Approach 3: Use Prisma ORM
+    if (result === 0) {
+      try {
+        await prisma.user.update({
+          where: { id: targetUserId },
+          data: { linkedGmailEmail: null }
+        })
+        result = 1
+        console.log('Approach 3 succeeded')
+      } catch (e) {
+        console.error('Approach 3 failed:', e)
+      }
+    }
+    
+    // Verify the update
+    const afterUser = await prisma.user.findUnique({
+      where: { id: targetUserId }
+    })
+    console.log('User after update:', afterUser)
     
     return c.json({
       success: true,
-      message: 'Fixed email issue',
-      updatedRows: result,
-      currentLinkedEmail: user?.linkedGmailEmail
+      message: 'Attempted to fix email issue',
+      beforeEmail: beforeUser?.linkedGmailEmail,
+      afterEmail: afterUser?.linkedGmailEmail,
+      updatedRows: result
     })
   } catch (error: any) {
     console.error('Fix email error:', error)
     return c.json({ 
       error: 'Failed to fix email', 
+      details: error.message 
+    }, 500)
+  }
+})
+
+// Nuclear option - force update with transaction
+app.post('/nuclear-clear/:userId', async (c) => {
+  try {
+    const targetUserId = c.req.param('userId')
+    const authUserId = c.get('userId')
+    
+    if (targetUserId !== authUserId) {
+      return c.json({ error: 'Unauthorized' }, 403)
+    }
+    
+    console.log('Nuclear clear for user:', targetUserId)
+    
+    // Use a transaction to ensure it happens
+    const result = await prisma.$transaction(async (tx) => {
+      // Clear email credentials
+      await tx.emailCredential.deleteMany({
+        where: { userId: targetUserId }
+      })
+      
+      // Force update user
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: { 
+          linkedGmailEmail: null,
+          updatedAt: new Date() // Force a change
+        }
+      })
+      
+      return user
+    })
+    
+    console.log('Nuclear clear result:', result)
+    
+    return c.json({
+      success: true,
+      message: 'Nuclear clear completed',
+      user: {
+        id: result.id,
+        email: result.email,
+        linkedGmailEmail: result.linkedGmailEmail
+      }
+    })
+  } catch (error: any) {
+    console.error('Nuclear clear error:', error)
+    return c.json({ 
+      error: 'Nuclear clear failed', 
       details: error.message 
     }, 500)
   }

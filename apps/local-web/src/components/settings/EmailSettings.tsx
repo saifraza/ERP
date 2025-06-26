@@ -386,35 +386,70 @@ export function EmailSettings() {
                     Simple Clear (Just remove linked email)
                   </button>
                   {debugInfo?.user?.linkedGmailEmail === 'perchase@mspil.in' && (
-                    <button
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(
-                            `${import.meta.env.VITE_API_URL}/api/debug-email/fix-email/${debugInfo.user.id}`,
-                            {
-                              method: 'POST',
-                              headers: {
-                                Authorization: `Bearer ${token}`,
-                              },
+                    <>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(
+                              `${import.meta.env.VITE_API_URL}/api/debug-email/fix-email/${debugInfo.user.id}`,
+                              {
+                                method: 'POST',
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                },
+                              }
+                            )
+                            const data = await response.json()
+                            if (data.success) {
+                              toast.success(`Before: ${data.beforeEmail}, After: ${data.afterEmail}`)
+                              setDebugInfo(null)
+                              checkDebugInfo()
+                              loadAccounts()
+                            } else {
+                              toast.error(data.error || 'Failed to fix')
                             }
-                          )
-                          const data = await response.json()
-                          if (data.success) {
-                            toast.success('Fixed the typo email issue!')
-                            setDebugInfo(null)
-                            checkDebugInfo()
-                            loadAccounts()
-                          } else {
-                            toast.error(data.error || 'Failed to fix')
+                          } catch (err) {
+                            toast.error('Failed to fix email issue')
                           }
-                        } catch (err) {
-                          toast.error('Failed to fix email issue')
-                        }
-                      }}
-                      className="text-sm text-green-600 hover:text-green-800 underline block font-medium"
-                    >
-                      🔧 Fix Typo Email Issue (perchase → clear it)
-                    </button>
+                        }}
+                        className="text-sm text-green-600 hover:text-green-800 underline block font-medium"
+                      >
+                        🔧 Fix Typo Email Issue (perchase → clear it)
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm('This will forcefully clear ALL email data. Continue?')) return
+                          try {
+                            const response = await fetch(
+                              `${import.meta.env.VITE_API_URL}/api/debug-email/nuclear-clear/${debugInfo.user.id}`,
+                              {
+                                method: 'POST',
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                },
+                              }
+                            )
+                            const data = await response.json()
+                            if (data.success) {
+                              toast.success('Nuclear clear successful!')
+                              setDebugInfo(null)
+                              setAccounts([])
+                              setTimeout(() => {
+                                checkDebugInfo()
+                                loadAccounts()
+                              }, 1000)
+                            } else {
+                              toast.error(data.error || 'Nuclear clear failed')
+                            }
+                          } catch (err) {
+                            toast.error('Nuclear clear failed')
+                          }
+                        }}
+                        className="text-sm text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded font-medium"
+                      >
+                        ☢️ NUCLEAR CLEAR (Last Resort)
+                      </button>
+                    </>
                   )}
                 </div>
               )}
