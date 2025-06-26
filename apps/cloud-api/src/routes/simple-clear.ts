@@ -18,28 +18,65 @@ app.post('/company', authMiddleware, async (c) => {
       return c.json({ error: 'Unauthorized - Admin only' }, 403)
     }
     
-    // Delete in correct order to avoid foreign key constraints
-    console.log('Starting deletion process...')
+    // Delete ALL tables in dependency order
+    console.log('Starting complete database clear...')
     
-    // Delete all procurement-related tables first
+    // Level 1: Most dependent tables (no other tables depend on these)
+    await prisma.emailResponse.deleteMany({})
+    await prisma.emailLog.deleteMany({})
+    await prisma.quotationItem.deleteMany({})
+    await prisma.rFQVendor.deleteMany({})
+    await prisma.rFQItem.deleteMany({})
+    await prisma.purchaseOrderItem.deleteMany({})
+    await prisma.goodsReceiptItem.deleteMany({})
+    await prisma.invoiceItem.deleteMany({})
+    await prisma.stockTransferItem.deleteMany({})
+    await prisma.requisitionItem.deleteMany({})
+    
+    // Level 2: Tables that depend on Level 1
+    await prisma.quotation.deleteMany({})
+    await prisma.rFQ.deleteMany({})
+    await prisma.purchaseOrder.deleteMany({})
+    await prisma.goodsReceipt.deleteMany({})
+    await prisma.invoice.deleteMany({})
+    await prisma.payment.deleteMany({})
+    await prisma.stockTransfer.deleteMany({})
+    await prisma.requisition.deleteMany({})
     await prisma.purchaseRequisitionItem.deleteMany({})
     await prisma.purchaseRequisition.deleteMany({})
-    await prisma.requisitionItem.deleteMany({})
-    await prisma.requisition.deleteMany({})
     
-    // Delete department and divisions
+    // Level 3: Master data and inventory
+    await prisma.inventory.deleteMany({})
+    await prisma.materialCategory.deleteMany({})
+    await prisma.material.deleteMany({})
+    await prisma.vendorCategory.deleteMany({})
+    await prisma.vendorInvoice.deleteMany({})
+    await prisma.vendor.deleteMany({})
+    await prisma.customer.deleteMany({})
+    await prisma.bankAccount.deleteMany({})
+    await prisma.approvalMatrix.deleteMany({})
+    
+    // Level 4: Factory and division related
+    await prisma.weighbridgeEntry.deleteMany({})
+    await prisma.equipment.deleteMany({})
     await prisma.department.deleteMany({})
+    await prisma.factory.deleteMany({})
     await prisma.division.deleteMany({})
     
-    // Delete company-related tables
+    // Level 5: Company related
     await prisma.companyUser.deleteMany({})
     await prisma.emailCredential.deleteMany({})
-    await prisma.factory.deleteMany({})
+    
+    // Level 6: Core tables
+    await prisma.hSNCode.deleteMany({})
+    await prisma.taxRate.deleteMany({})
+    await prisma.uOM.deleteMany({})
+    await prisma.account.deleteMany({})
     
     // Finally delete companies
     const deleted = await prisma.company.deleteMany({})
     
-    console.log(`Deleted ${deleted.count} companies`)
+    console.log(`Cleared all data! Deleted ${deleted.count} companies`)
     
     return c.json({ 
       message: 'Companies deleted successfully',
