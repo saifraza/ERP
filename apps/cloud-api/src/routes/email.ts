@@ -105,4 +105,71 @@ app.get('/message/:messageId', async (c) => {
   }
 })
 
+// Get email content by ID for RFQ email details
+app.get('/content/:emailId', async (c) => {
+  const userId = c.get('userId')
+  const emailId = c.req.param('emailId')
+  
+  try {
+    // Get user's company
+    const { prisma } = await import('../lib/prisma.js')
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
+    // Fetch full email content from Gmail
+    const emailContent = await multiTenantGmail.getEmailContent(companyUser.companyId, emailId)
+    
+    return c.json(emailContent)
+  } catch (error: any) {
+    console.error('Error fetching email content:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// Download email attachment
+app.get('/attachment/:emailId/:attachmentId', async (c) => {
+  const userId = c.get('userId')
+  const emailId = c.req.param('emailId')
+  const attachmentId = c.req.param('attachmentId')
+  
+  try {
+    // Get user's company
+    const { prisma } = await import('../lib/prisma.js')
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId },
+      select: { companyId: true }
+    })
+    
+    if (!companyUser?.companyId) {
+      return c.json({ error: 'User not associated with a company' }, 400)
+    }
+    
+    // Get attachment from Gmail
+    const attachment = await multiTenantGmail.getAttachment(companyUser.companyId, emailId, attachmentId)
+    
+    if (!attachment) {
+      return c.json({ error: 'Attachment not found' }, 404)
+    }
+    
+    // Decode base64 data
+    const buffer = Buffer.from(attachment.data, 'base64')
+    
+    // Set appropriate headers
+    c.header('Content-Type', attachment.mimeType || 'application/octet-stream')
+    c.header('Content-Disposition', `attachment; filename="${attachment.filename || 'attachment'}"`)
+    c.header('Content-Length', buffer.length.toString())
+    
+    return c.body(buffer)
+  } catch (error: any) {
+    console.error('Error fetching attachment:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
 export default app

@@ -13,6 +13,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useCompanyStore } from '../../stores/companyStore'
 import { toast } from 'react-hot-toast'
 import DenseTable, { Column } from '../../components/DenseTable'
+import EmailDetailModal from '../../components/procurement/EmailDetailModal'
 
 interface Vendor {
   id: string
@@ -102,6 +103,8 @@ export default function RFQManagementV3() {
   const [emailLogs, setEmailLogs] = useState<{ [key: string]: EmailLog[] }>({})
   const [loadingEmailLogs, setLoadingEmailLogs] = useState<string | null>(null)
   const [checkingEmails, setCheckingEmails] = useState(false)
+  const [selectedEmail, setSelectedEmail] = useState<EmailLog | null>(null)
+  const [showEmailDetail, setShowEmailDetail] = useState(false)
 
   useEffect(() => {
     fetchRFQs()
@@ -896,7 +899,11 @@ export default function RFQManagementV3() {
                 {emailLogs[expandedRFQ].map((log) => (
                   <div
                     key={log.id}
-                    className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+                    onClick={() => {
+                      setSelectedEmail(log)
+                      setShowEmailDetail(true)
+                    }}
+                    className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -991,6 +998,12 @@ export default function RFQManagementV3() {
                         )}
                       </div>
                     </div>
+                    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        Click to view full email
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1069,6 +1082,17 @@ export default function RFQManagementV3() {
           </div>
         </div>
       </div>
+      
+      {/* Email Detail Modal */}
+      <EmailDetailModal
+        isOpen={showEmailDetail}
+        onClose={() => {
+          setShowEmailDetail(false)
+          setSelectedEmail(null)
+        }}
+        emailLog={selectedEmail}
+        rfqNumber={rfqs.find(r => r.id === expandedRFQ)?.rfqNumber || ''}
+      />
     </div>
   )
 }

@@ -506,6 +506,59 @@ export class MultiTenantGmailService {
   }
   
   /**
+   * Get email attachment
+   */
+  async getAttachment(companyId: string, messageId: string, attachmentId: string): Promise<any> {
+    try {
+      const { gmail } = await this.getClient(companyId)
+      
+      const response = await gmail.users.messages.attachments.get({
+        userId: 'me',
+        messageId: messageId,
+        id: attachmentId
+      })
+      
+      if (!response.data) {
+        return null
+      }
+      
+      // Get the message to find attachment metadata
+      const message = await gmail.users.messages.get({
+        userId: 'me',
+        id: messageId,
+        format: 'metadata'
+      })
+      
+      // Find the attachment part to get filename and mime type
+      let attachmentPart: any = null
+      const findAttachment = (parts: any[]): void => {
+        for (const part of parts || []) {
+          if (part.body?.attachmentId === attachmentId) {
+            attachmentPart = part
+            return
+          }
+          if (part.parts) {
+            findAttachment(part.parts)
+          }
+        }
+      }
+      
+      if (message.data.payload?.parts) {
+        findAttachment(message.data.payload.parts)
+      }
+      
+      return {
+        data: response.data.data,
+        filename: attachmentPart?.filename || 'attachment',
+        mimeType: attachmentPart?.mimeType || 'application/octet-stream'
+      }
+    } catch (error) {
+      console.error('Error fetching attachment:', error)
+      throw error
+    }
+  }
+
+  /**
    * List calendar events for a specific company account
    */
   async listCalendarEvents(
