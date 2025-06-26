@@ -256,7 +256,7 @@ export default function EmailDetailModal({ isOpen, onClose, emailLog, rfqNumber 
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .email-content {
           font-family: inherit;
         }
