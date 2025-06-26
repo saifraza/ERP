@@ -155,7 +155,11 @@ export default function RFQManagementV3() {
         const data = await response.json()
         // Combine emailLogs and emailResponses for display
         const allLogs = [...(data.emailLogs || []), ...(data.emailResponses || [])]
-          .sort((a, b) => new Date(b.sentAt || b.receivedAt).getTime() - new Date(a.sentAt || a.receivedAt).getTime())
+          .sort((a, b) => {
+            const dateA = new Date(a.sentAt || a.receivedAt || 0).getTime()
+            const dateB = new Date(b.sentAt || b.receivedAt || 0).getTime()
+            return dateB - dateA
+          })
         setEmailLogs(prev => ({ ...prev, [rfqId]: allLogs }))
       } else {
         const errorData = await response.json()
@@ -810,7 +814,11 @@ export default function RFQManagementV3() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-3 w-3" />
-                            <span>{(log.sentAt || log.receivedAt) ? new Date(log.sentAt || log.receivedAt).toLocaleString('en-IN') : 'Not sent'}</span>
+                            <span>
+                              {(log.sentAt || log.receivedAt) 
+                                ? new Date(log.sentAt || log.receivedAt || '').toLocaleString('en-IN') 
+                                : 'Not sent'}
+                            </span>
                           </div>
                           {log.subject && (
                             <div className="flex items-start gap-2">
