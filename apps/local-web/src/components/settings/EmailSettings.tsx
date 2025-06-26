@@ -104,7 +104,7 @@ export function EmailSettings() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/email-oauth-user/disconnect`,
+        `${import.meta.env.VITE_API_URL}/api/email-oauth/accounts/${currentCompany?.id || 'default'}/${email}`,
         {
           method: 'DELETE',
           headers: {
@@ -119,6 +119,31 @@ export function EmailSettings() {
       loadAccounts()
     } catch (err) {
       toast.error('Failed to remove email account')
+    }
+  }
+
+  const clearAllCredentials = async () => {
+    if (!confirm('This will remove all linked email accounts. You will need to reconnect your email. Continue?')) return
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/email-oauth/clear-credentials`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to clear credentials')
+
+      const data = await response.json()
+      toast.success(data.message || 'All email credentials cleared')
+      setAccounts([])
+      loadAccounts()
+    } catch (err) {
+      toast.error('Failed to clear email credentials')
     }
   }
 
@@ -225,14 +250,26 @@ export function EmailSettings() {
               </div>
             )}
 
-            <button
-              onClick={connectEmail}
-              disabled={connecting}
-              className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {connecting ? 'Connecting...' : 'Connect Email Account'}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={connectEmail}
+                disabled={connecting}
+                className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {connecting ? 'Connecting...' : 'Connect Email Account'}
+              </button>
+
+              {accounts.length > 0 && (
+                <button
+                  onClick={clearAllCredentials}
+                  className="w-full flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Clear All Email Credentials
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 text-sm text-gray-600">

@@ -320,4 +320,34 @@ app.get('/debug', async (c) => {
   })
 })
 
+// Clear current user's email credentials
+app.post('/clear-credentials', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    // Delete all email credentials for this user
+    await prisma.emailCredential.deleteMany({
+      where: { userId }
+    })
+    
+    // Clear linkedGmailEmail from user
+    await prisma.user.update({
+      where: { id: userId },
+      data: { linkedGmailEmail: null }
+    })
+    
+    return c.json({
+      success: true,
+      message: 'Email credentials cleared successfully'
+    })
+  } catch (error: any) {
+    console.error('Clear credentials error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to clear credentials',
+      details: error.message
+    }, 500)
+  }
+})
+
 export default app
